@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, CommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 
 /**
  * Command to test the bot is online and working.
@@ -14,7 +14,7 @@ export = {
         .setDescription('Replies with Pong!'),
 
     // execute our desired task
-    async execute(interaction: CommandInteraction) {
+    async execute(interaction: ChatInputCommandInteraction) {
         await interaction.reply('Pong!');
     },
 };
