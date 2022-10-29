@@ -37,11 +37,19 @@ export = {
         }
 
         // fetch the userlist from the interaction channel
-        await interaction.guild.members.fetch();
+        const smogon = interaction.client.guilds.cache.get('192713314399289344');
+        if (smogon === undefined) {
+            return;
+        }
+        await smogon?.members.fetch();
+        // await interaction.guild.members.fetch();
 
         // filter the users by the desired role
         // here the id is the role id for comp helpers
-        const roleFetch = interaction.guild.roles.cache.get('580468109438353470');
+        // const roleFetch = interaction.guild.roles.cache.get('580468109438353470'); // test server
+        const roleFetch = smogon.roles.cache.get('630430864634937354');
+        // const roleFetch = interaction.guild.roles.cache.get('630430864634937354'); // main
+
 
         // typecheck roleFetch to make sure you got the data
         if (roleFetch === undefined) {
@@ -106,7 +114,8 @@ export = {
         await interaction.reply(`Parsing messages from ${ startDateIn.toString() } to ${ endDateIn.toString() }...`);
 
         // loop through the different RMT channels to get all of the messages
-        const channelIDs = ['584069912364974100', '580464846471036948'];
+        // const channelIDs = ['584069912364974100', '580464846471036948']; // test server
+        const channelIDs = ['630478290729041920', '635257209416187925'];
 
         // variable preallocation for getting the users who posted messages in the RMT channels
         const users: string[] = [], userIDs: string[] = [];
@@ -155,6 +164,11 @@ export = {
                             // extract the ID and account name of the user who sent the message
                             ID = msg.author.id;
                             username = msg.author.username + '#' + msg.author.discriminator;
+
+                            // if the username includes a comma, remove it
+                            if (username.includes(',')) {
+                                username = username.replaceAll(',', '');
+                            }
 
                             // log it to the arrays for further processing
                             userIDs.push(ID);
