@@ -118,9 +118,10 @@ export = {
         const channelIDs = ['630478290729041920', '635257209416187925'];
 
         // variable preallocation for getting the users who posted messages in the RMT channels
-        const users: string[] = [], userIDs: string[] = [];
+        const users: string[] = [], userIDs: string[] = [], charCount: number[] = [];
         let ID = '', msgPointer = '', channel: Channel | undefined, username = '';
         let breakflag = false;
+        let characters = 0;
 
         // loop over the different channels
         for (let i = 0; i < channelIDs.length; i++) {
@@ -162,8 +163,10 @@ export = {
                         // mesages are fetched newest to oldest
                         if (Number(msgPointer) >= startDateDisc) {
                             // extract the ID and account name of the user who sent the message
+                            // also get the character length of the message
                             ID = msg.author.id;
                             username = msg.author.username + '#' + msg.author.discriminator;
+                            characters = msg.content.length;
 
                             // if the username includes a comma, remove it
                             if (username.includes(',')) {
@@ -173,6 +176,7 @@ export = {
                             // log it to the arrays for further processing
                             userIDs.push(ID);
                             users.push(username);
+                            charCount.push(characters);
                         }
                     });
 
@@ -197,6 +201,10 @@ export = {
         // create an object to hold (ID, username) pairs
         // format: { "ID": "username" }
         const filteredUsers: { [key: string]: string; } = {};
+
+        // create an object to hold (ID, characterCount) pairs
+        // format: { "ID": num }
+        const filteredChars: { [key: string]: number; } = {};
 
         // index of the ID in the userID array to get the associated account name from the users array
         let idIndex = 0;
@@ -233,17 +241,55 @@ export = {
             filteredUsers[id] = users[idIndex];
         });
 
-        // convert [userIDs, usernames, counts] to a CSV for output
+        // find the average character count
+        // the data has already been filtered, so we can loop through the filtered objects to compute the average
+        // we can use this same loop to constructed the object for output
+        const list: [string, string, number, number][] = [];
+        for (const id in counts) {
+            // find all occurances of the ID in the userIDs array
+            const indices: number[] = [];
+
+            for (let i = 0; i < userIDs.length; i++) {
+                if (userIDs[i] === id) {
+                    indices.push(i);
+                }
+            }
+
+            // add the id/character count pair to the filteredChars object, with the key as the ID as the value as the sum of the charCounts
+            // if the entry exists, add the character count to the existing value
+            // else, add 0 and initialize to the character count
+            for (let i = 0; i < indices.length; i++) {
+                filteredChars[id] = (filteredChars[id] || 0) + charCount[indices[i]];
+            }
+
+            // compute the average
+            // if they don't have any lines, don't do any math
+            if (counts[id] === 0) {
+                filteredChars[id] = 0;
+            }
+            else {
+                filteredChars[id] = Number((filteredChars[id] / counts[id]).toFixed(3));
+            }
+
+            // push it to the array for sorting
+            list.push([
+                id,
+                filteredUsers[id],
+                counts[id],
+                filteredChars[id],
+            ]);
+        }
+
+        // sort the list by linecount (most to least)
+        list.sort((a, b) => b[2] - a[2]);
+
+        // convert [userIDs, usernames, counts, avgChar] to a CSV for output
         // first, preallocate the variable containing the CSV
         let csv = '';
 
-        // loop through the counts object and concat to a CSV
-        // the userID is already saved in the count and filteredUsers objects as the key, so we don't need to use the userID array again
-        // so loop over each key (userID) in the object
-        for (const id in counts) {
-            // format: ID, username#1234, line count
-            csv += `${id},${filteredUsers[id]},${counts[id]}\n`;
-
+        // loop through the sorted list and concat to a CSV
+        for (let i = 0; i < list.length; i++) {
+            csv += `${list[i][0]},${list[i][1]},${list[i][2]},${list[i][3]}\n`;
         }
 
         // output the CSV to wherever the interaction occurred
