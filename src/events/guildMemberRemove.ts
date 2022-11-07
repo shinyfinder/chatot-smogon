@@ -33,9 +33,9 @@ export = {
             // Since there's only 1 audit log entry in this collection, grab the first one
             const kickLog = fetchedLogs.entries.first();
 
-            // If there's nothing in the audit log, output what we can
+            // If there's nothing in the audit log, return
             if (!kickLog) {
-                await buildEmbed('Self', null);
+                // await buildEmbed('Self', null);
                 return;
             }
 
@@ -49,13 +49,17 @@ export = {
                 return;
             }
 
-            // Update the output with a bit more information
+            // if the executor is the same as the person who left, they left on their own, so don't log it.
+            if (target.id === executor.id) {
+                return;
+            }
+
             // Also run a check to make sure that the log returned was for the same kicked member
             if (target.id === member.id) {
                 await buildEmbed(executor, reason);
             }
             else {
-                await buildEmbed('Inconclusive. No audit log entry at this time.', null);
+                // we don't know what this is, so do nothing
                 return;
             }
 
@@ -86,7 +90,8 @@ export = {
             // build the embed for output
             const embed = new EmbedBuilder()
                 .setColor(0x0099FF)
-                .setTitle('User Left')
+                .setTitle('User Kicked')
+                .setDescription(`${member.user.tag} was kicked from the server.`)
                 .addFields(
                     { name: 'User', value: `<@${member.id}>` },
                     { name: 'Removed by', value: `${executorOut}` },

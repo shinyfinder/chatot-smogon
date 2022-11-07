@@ -35,9 +35,9 @@ export = {
             // Since there's only 1 audit log entry in this collection, grab the first one
             const deletionLog = fetchedLogs.entries.first();
 
-            // If there's nothing in the audit log, output what we can
+            // If there's nothing in the audit log, don't do anything.
             if (!deletionLog) {
-                await buildEmbed('Unknown. Possibly a bot or self.');
+                // await buildEmbed('Unknown. Possibly a bot or self.');
                 return;
             }
 
@@ -57,7 +57,8 @@ export = {
                 await buildEmbed(executor);
             }
             else {
-                await buildEmbed('Unknown. Possibly a bot or self.');
+                // await buildEmbed('Unknown. Possibly a bot or self.');
+                // we don't know what it is, so do nothing
                 return;
             }
 
@@ -84,6 +85,7 @@ export = {
             const embed = new EmbedBuilder()
                 .setColor(0x0099FF)
                 .setTitle('Message Deleted')
+                .setDescription(`${message.author.tag}'s message was deleted.`)
                 .addFields(
                     { name: 'Content', value: `${message.content}` || 'No text' },
                     // blank space

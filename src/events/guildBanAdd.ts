@@ -87,6 +87,7 @@ export = {
             const embed = new EmbedBuilder()
                 .setColor(0x0099FF)
                 .setTitle('User Banned')
+                .setDescription(`${ban.user.tag} was banned from the server.`)
                 .addFields(
                     { name: 'User', value: `<@${ban.user.id}>` },
                     { name: 'Banned by', value: `${executorOut}` },
