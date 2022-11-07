@@ -72,11 +72,14 @@ export = {
             // we only care about their id, so grab that.
             // Otherwise output the string we passed
             let executorOut = '';
+            let executorName = '';
             if (executor instanceof User) {
                 executorOut = `<@${executor.id}>`;
+                executorName = executor.tag;
             }
             else {
                 executorOut = executor;
+                executorName = 'Unknown';
             }
 
             // typecheck reason
@@ -87,7 +90,7 @@ export = {
             const embed = new EmbedBuilder()
                 .setColor(0x0099FF)
                 .setTitle('User Banned')
-                .setDescription(`${ban.user.tag} was banned from the server.`)
+                .setDescription(`${ban.user.tag} was banned from the server by ${executorName}.`)
                 .addFields(
                     { name: 'User', value: `<@${ban.user.id}>` },
                     { name: 'Banned by', value: `${executorOut}` },

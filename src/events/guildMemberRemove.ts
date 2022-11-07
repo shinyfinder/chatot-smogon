@@ -76,11 +76,14 @@ export = {
             // we only care about their id, so grab that.
             // Otherwise output the string we passed
             let executorOut = '';
+            let executorName = '';
             if (executor instanceof User) {
                 executorOut = `<@${executor.id}>`;
+                executorName = executor.tag;
             }
             else {
                 executorOut = executor;
+                executorName = 'Unknown';
             }
 
             // typecheck reason
@@ -91,10 +94,10 @@ export = {
             const embed = new EmbedBuilder()
                 .setColor(0x0099FF)
                 .setTitle('User Kicked')
-                .setDescription(`${member.user.tag} was kicked from the server.`)
+                .setDescription(`${member.user.tag} was kicked from the server by ${executorName}.`)
                 .addFields(
                     { name: 'User', value: `<@${member.id}>` },
-                    { name: 'Removed by', value: `${executorOut}` },
+                    { name: 'Kicked by', value: `${executorOut}` },
                     { name: 'Reason', value: `${reason}` },
                 );
 

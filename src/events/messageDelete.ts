@@ -75,21 +75,24 @@ export = {
             // we only care about their id, so grab that.
             // Otherwise output the string we passed
             let executorOut = '';
+            let executorName = '';
             if (executor instanceof User) {
                 executorOut = `<@${executor.id}>`;
+                executorName = executor.tag;
             }
             else {
                 executorOut = executor;
+                executorName = 'Unknown';
             }
             // build the embed for output
             const embed = new EmbedBuilder()
                 .setColor(0x0099FF)
                 .setTitle('Message Deleted')
-                .setDescription(`${message.author.tag}'s message was deleted.`)
+                .setDescription(`${message.author.tag}'s message was deleted by ${executorName}.`)
                 .addFields(
                     { name: 'Content', value: `${message.content}` || 'No text' },
                     // blank space
-                    { name: '\u200B', value: '\u200B' },
+                    // { name: '\u200B', value: '\u200B' },
                     { name: 'Author', value: `<@${message.author.id}>`, inline: true },
                     { name: 'Channel', value: `<#${message.channelId}>`, inline: true },
                     { name: 'Deleted By', value: `${executorOut}` },
