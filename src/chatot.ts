@@ -3,7 +3,7 @@
  * This file has 4 main sections: create the client with the intents, load the commands, setup the event handler, and login
  */
 
-import { Client, GatewayIntentBits, Collection } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, Partials } from 'discord.js';
 import type { SlashCommand } from './types/slash-command-base';
 import type { eventHandler } from 'src/types/event-base';
 import fs from 'fs';
@@ -23,12 +23,18 @@ import config from './config';
  * GUILD_PRESENCES, GUILD_MEMBERS, and MESSAGE_CONTENT are privileged and must be manually enabled in the discord developer portal
  * intents should follow the principle of least privilege
  */
-const client = new Client({ intents: [
+const client = new Client({
+  intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildBans,
     GatewayIntentBits.MessageContent,
-] });
+  ],
+  partials: [
+    Partials.GuildMember,
+  ],
+});
 
 
 /**

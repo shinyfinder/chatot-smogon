@@ -51,6 +51,11 @@ export = {
                 return;
             }
 
+            // if the target is a bot, don't log it
+            if (target.bot === true) {
+                return;
+            }
+
             // Update the output with a bit more information
             // Also run a check to make sure that the log returned was for the same author's message
             if (target.id === message.author.id) {
