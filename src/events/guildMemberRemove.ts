@@ -71,6 +71,12 @@ export = {
              return;
         }
 
+        /**
+         * Builds discord embed to log kicks.
+         * @param executor User who initiated the kick
+         * @param reason Provided reason for the kick
+         * @returns void. Posts embed to log channel
+         */
         async function buildEmbed(executor: User | string, reason: string | null) {
             // if the executor is a User type, that means we found an audit log entry
             // we only care about their id, so grab that.

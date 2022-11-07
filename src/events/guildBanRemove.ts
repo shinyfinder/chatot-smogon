@@ -4,7 +4,7 @@ import config from '../config';
 /**
  * Ban handler
  *
- * Event handler for when a user is banned.
+ * Event handler for when a user is unbanned.
  * Ban events are logged with the user, the mod, and the reason to the specified channel in the config file.
  * Content information is supplied by the audit log.
  *
@@ -14,7 +14,7 @@ import config from '../config';
 
 export = {
     // define the name of the trigger event
-    name: 'guildBanAdd',
+    name: 'guildBanRemove',
     // execute the code for this event
     async execute(ban: GuildBan) {
         // ignore DMs
@@ -27,7 +27,7 @@ export = {
             // since we're only banning 1 user at a time, fetch the latest event from the audit log of type ban
             const fetchedLogs = await ban.guild.fetchAuditLogs({
                 limit: 1,
-                type: AuditLogEvent.MemberBanAdd,
+                type: AuditLogEvent.MemberBanRemove,
             });
 
             // Since there's only 1 audit log entry in this collection, grab the first one
@@ -95,11 +95,11 @@ export = {
             // build the embed for output
             const embed = new EmbedBuilder()
                 .setColor(0x0099FF)
-                .setTitle('User Banned')
-                .setDescription(`${ban.user.tag} was banned from the server by ${executorName}.`)
+                .setTitle('User Unbanned')
+                .setDescription(`${ban.user.tag} was unbanned from the server by ${executorName}.`)
                 .addFields(
                     { name: 'User', value: `<@${ban.user.id}>` },
-                    { name: 'Banned by', value: `${executorOut}` },
+                    { name: 'Unbanned by', value: `${executorOut}` },
                     { name: 'Reason', value: `${reason}` },
                 );
 

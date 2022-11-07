@@ -70,6 +70,11 @@ export = {
              return;
         }
 
+        /**
+         * Builds a discord embed to log the mod action.
+         * @param executor User who deleted the message
+         * @returns void. Posts embed to log channel
+         */
         async function buildEmbed(executor: User | string) {
             // if the executor is a User type, that means we found an audit log entry
             // we only care about their id, so grab that.
