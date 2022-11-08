@@ -1,6 +1,6 @@
 import { AuditLogEvent, Message, EmbedBuilder, User, ChannelType } from 'discord.js';
 import config from '../config';
-
+import { sleep } from '../helpers/sleep';
 /**
  * messageDelete handler
  *
@@ -26,6 +26,9 @@ export = {
 
         // wrap the execution in a try/catch so that errors are handled and won't cause the bot to crash
         try {
+            // wait a bit for the audit log to update
+            await sleep(5000);
+
             // since we're only deleteing 1 message at a time, fetch the latest event from the audit log of type message deleted
             const fetchedLogs = await message.guild.fetchAuditLogs({
                 limit: 1,

@@ -25,6 +25,7 @@ export = {
 
         // wrap the execution in a try/catch so that errors are handled and won't cause the bot to crash
         try {
+            // wait a bit for the audit log to populate
             await sleep(10000);
 
             // since we're only banning 1 user at a time, fetch the latest event from the audit log of type ban

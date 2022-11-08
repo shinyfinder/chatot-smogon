@@ -24,7 +24,9 @@ export = {
 
         // wrap the execution in a try/catch so that errors are handled and won't cause the bot to crash
         try {
+            // wait a bit for the audit log to update
             await sleep(10000);
+
             // since we're only kicking 1 user at a time, fetch the latest event from the audit log of type kick
             const fetchedLogs = await member.guild.fetchAuditLogs({
                 limit: 1,
