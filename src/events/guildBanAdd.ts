@@ -1,5 +1,6 @@
 import { AuditLogEvent, GuildBan, EmbedBuilder, User, ChannelType } from 'discord.js';
 import config from '../config';
+import { sleep } from '../helpers/sleep';
 
 /**
  * Ban handler
@@ -24,6 +25,8 @@ export = {
 
         // wrap the execution in a try/catch so that errors are handled and won't cause the bot to crash
         try {
+            await sleep(10000);
+
             // since we're only banning 1 user at a time, fetch the latest event from the audit log of type ban
             const fetchedLogs = await ban.guild.fetchAuditLogs({
                 limit: 1,
@@ -45,7 +48,7 @@ export = {
 
             // make sure executor and target isn't null to make TS happy. It shouldn't be
             if (!executor || !target) {
-                await buildEmbed('Inconclusive. No audit log entry at this time.', null);
+                await buildEmbed('Inconclusive. No executor/target at this time.', null);
                 return;
             }
 
@@ -55,7 +58,7 @@ export = {
                 await buildEmbed(executor, reason);
             }
             else {
-                await buildEmbed('Inconclusive. No audit log entry at this time.', null);
+                await buildEmbed('Inconclusive.', null);
                 return;
             }
 
