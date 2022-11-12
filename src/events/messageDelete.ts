@@ -55,7 +55,8 @@ export = {
             }
 
             // if the target is a bot, don't log it
-            if (target.bot === true) {
+            // similarly, don't log it if the executor is the author
+            if (target.bot === true || executor.id === message.author.id) {
                 return;
             }
 
