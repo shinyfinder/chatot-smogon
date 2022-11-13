@@ -26,6 +26,9 @@ export = {
 
         // wrap the execution in a try/catch so that errors are handled and won't cause the bot to crash
         try {
+            // get the current timestamp of when this event was triggered, in ms since the epoch
+            const currentTime = Date.now();
+
             // wait a bit for the audit log to update
             await sleep(5000);
 
@@ -41,6 +44,26 @@ export = {
             // If there's nothing in the audit log, don't do anything.
             if (!deletionLog) {
                 // await buildEmbed('Unknown. Possibly a bot or self.');
+                return;
+            }
+
+            // get the time the audit log entry was created
+            const auditTime = deletionLog.createdTimestamp;
+
+            /**
+             * Check the difference between the audit log creation time and the time this event was triggered.
+             * If that time difference is > 5 min, then it's an old audit log entry and we don't want to use it
+             *
+             * Known bug:
+             *
+             * The audit log creates a stack of similar events that persists for 5 minutes (300000 ms), meaning new events can be logged under old data.
+             * This creates problems when the target deletes one of their own messages within 5 mins of a mod deleting it
+             * As well as when two mods delete messages, followed by a self delete or another delete by the first mod of the first target within those 5 minutes
+             * Either of these cases will falsely attribute the executor to the mod (the more recent audit executor in the latter case)
+             * A way around this would be to store the stack count after each call to it. If the stack count increased since the last call, then that mod deleted it
+             * Alternatively, you could loop through the stacks and compile the list of possible exectors for output.
+             */
+            if (auditTime - currentTime > 300000) {
                 return;
             }
 
