@@ -208,7 +208,7 @@ export = {
             }
             // build the embed for output
             const embed = new EmbedBuilder()
-                .setColor(0x0099FF)
+                .setColor(0xFEE75C)
                 .setTitle(`${titleOut}`)
                 .setDescription(`${descOut}`)
                 .addFields(

@@ -101,7 +101,7 @@ export = {
             }
             // build the embed for output
             const embed = new EmbedBuilder()
-                .setColor(0x0099FF)
+                .setColor(0xE67E22)
                 .setTitle('User Kicked')
                 .setDescription(`${member.user.tag} was kicked from the server by ${executorName}.`)
                 .addFields(
