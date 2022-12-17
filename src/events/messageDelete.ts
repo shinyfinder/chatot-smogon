@@ -121,6 +121,15 @@ export = {
                 executorOut = executor;
                 executorName = 'Unknown';
             }
+
+            // check for messages that are too long
+            // the embed expects a field <= 1024 characters in length
+            if (message.content) {
+                if (message.content.length > 1024) {
+                    message.content = 'Message too long to output.';
+                }
+            }
+
             // build the embed for output
             const embed = new EmbedBuilder()
                 .setColor(0x0099FF)
