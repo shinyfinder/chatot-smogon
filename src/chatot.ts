@@ -98,6 +98,8 @@ for (const file of eventFiles) {
   }
 }
 
+// array of times when the rmt ping was last issued
+export const cooldowns: {[key: string]: {[key: string]: number}} = {};
 
 /**
  * Login to Discord with your client's token, or log any errors
