@@ -4,5 +4,5 @@
 .env
 .eslintcache
 .DS_Store
-/db/raters.json
-/db/cooldown.json
+/src/db/raters.json
+/src/db/cooldown.json
