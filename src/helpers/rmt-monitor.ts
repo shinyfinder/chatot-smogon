@@ -151,19 +151,24 @@ export async function rmtMonitor(msg: Message) {
 
     // specific OMs
     if (metamatchArr !== null) {
-        const meta = metamatchArr[1];
+        const meta = metamatchArr[1].toLowerCase();
         if (meta !== undefined) {
-            if (meta == 'Mono' || meta == 'Monotype') {
+            // differentiate NatDex non-ou from Monotype
+            if ((meta == 'mono' || meta == 'monotype') && msg.channelId == '1059658237097545758') {
+                genNum = '9';
+            }
+            // differentiate NatDex non-ou from Monotype
+            if (meta == 'mono' || meta == 'monotype') {
                 genNum = 'mono';
             }
-            else if (meta == 'Godly Gift' || meta == 'GG') {
+            else if (meta == 'godly gift' || meta == 'gg') {
                 genNum = 'gg';
             }
-            else if (meta == 'Mashup' || meta == 'OMM') {
+            else if (meta == 'mashup' || meta == 'omm') {
                 genNum == 'omm';
             }
             else {
-                genNum = meta.toLowerCase();
+                genNum = meta;
             }
         }
 
