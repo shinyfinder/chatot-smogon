@@ -151,8 +151,9 @@ export async function rmtMonitor(msg: Message) {
 
     // specific OMs
     if (metamatchArr !== null) {
-        const meta = metamatchArr[1].toLowerCase();
+        let meta = metamatchArr[1];
         if (meta !== undefined) {
+            meta = meta.toLowerCase();
             // differentiate NatDex non-ou from Monotype
             if ((meta == 'mono' || meta == 'monotype') && msg.channelId == '1059658237097545758') {
                 genNum = '9';
