@@ -98,8 +98,13 @@ for (const file of eventFiles) {
   }
 }
 
-// array of times when the rmt ping was last issued
-export const cooldowns: {[key: string]: {[key: string]: number}} = {};
+// array of times when the ping was last issued
+const rmtPingPath = path.join(__dirname, './db/cooldown.json');
+const cooldownDB = fs.readFileSync(rmtPingPath, 'utf8');
+interface Data {
+  [key: string]: {[key: string]: number},
+}
+export const cooldowns = JSON.parse(cooldownDB) as Data;
 
 /**
  * Login to Discord with your client's token, or log any errors

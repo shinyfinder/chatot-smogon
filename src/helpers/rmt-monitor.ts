@@ -1,6 +1,6 @@
 import { Message } from 'discord.js';
 import { cooldowns } from '../chatot';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import * as path from 'path';
 /**
  * Handler to determine whether to ping raters for a new rate
@@ -188,9 +188,13 @@ export async function rmtMonitor(msg: Message) {
         return;
     }
     // if the cooldown doesn't exist yet, log the current time into the array
+	// and write the file to disc so that it persists across restarts
 	if (!cooldowns[msg.channelId]) {
         cooldowns[msg.channel.id] = {};
         cooldowns[msg.channel.id][genNum] = Date.now();
+        // write file
+        const dbpath = path.join(__dirname, '../../src/db/cooldown.json');
+        writeFileSync(dbpath, JSON.stringify(cooldowns));
     }
 
     // ping the relevant parties
