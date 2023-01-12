@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "tsc && node dist/deploy-commands.js",
     "delete": "tsc && node dist/delete-commands.js",
-    "build": "tst"
+    "build": "tsc"
   },
   "author": "",
   "license": "ISC",
