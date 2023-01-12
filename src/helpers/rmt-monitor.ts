@@ -152,13 +152,9 @@ export async function rmtMonitor(msg: Message) {
     // specific OMs
     if (metamatchArr !== null) {
         let meta = metamatchArr[1];
-        if (meta !== undefined) {
+        // only try to parse if it's in the OM or ND non-ou channels
+        if (meta !== undefined && (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028')) {
             meta = meta.toLowerCase();
-            // differentiate NatDex non-ou from Monotype
-            if ((meta == 'mono' || meta == 'monotype') && msg.channelId == '1059658237097545758') {
-                genNum = '9';
-            }
-            // differentiate NatDex non-ou from Monotype
             if (meta == 'mono' || meta == 'monotype') {
                 genNum = 'mono';
             }
