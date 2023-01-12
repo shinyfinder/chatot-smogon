@@ -5,7 +5,7 @@ import * as path from 'path';
 /**
  * Handler to determine whether to ping raters for a new rate
  * Triggered by messageCreate event
- *
+ * Test
  */
 
 
