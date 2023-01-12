@@ -187,13 +187,21 @@ export async function rmtMonitor(msg: Message) {
 	if (cooldown && cooldown + (cd * 60 * 60 * 1000) >= Date.now()) {
         return;
     }
-    // log the current time into the array
+    // if the cooldown doesn't exist yet, log the current time into the array
 	// and write the file to disc so that it persists across restarts
-    cooldowns[msg.channel.id] = {};
-    cooldowns[msg.channel.id][genNum] = Date.now();
-    // write file
-    const dbpath = path.join(__dirname, '../../src/db/cooldown.json');
-    writeFileSync(dbpath, JSON.stringify(cooldowns));
+	if (!cooldowns[msg.channelId]) {
+        cooldowns[msg.channel.id] = {};
+        cooldowns[msg.channel.id][genNum] = Date.now();
+        // write file
+        const dbpath = path.join(__dirname, '../../src/db/cooldown.json');
+        writeFileSync(dbpath, JSON.stringify(cooldowns));
+    }
+    else {
+        cooldowns[msg.channel.id][genNum] = Date.now();
+        // write file
+        const dbpath = path.join(__dirname, '../../src/db/cooldown.json');
+        writeFileSync(dbpath, JSON.stringify(cooldowns));
+    }
 
     // ping the relevant parties
     // retrieve the info from the db
