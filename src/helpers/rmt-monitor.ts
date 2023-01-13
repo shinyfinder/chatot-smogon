@@ -10,7 +10,7 @@ import * as path from 'path';
 
 
 // cooldown time in hours
-const cd = 3;
+const cd = 6;
 
 // define the json structure to make TS happy
 interface Data {
@@ -183,6 +183,14 @@ export async function rmtMonitor(msg: Message) {
 	if (cooldown && cooldown + (cd * 60 * 60 * 1000) >= Date.now()) {
         return;
     }
+
+    // check to make sure the person who made the message isn't a comp helper
+    // if they are, return
+    const isHelper = msg.member?.roles.cache.some(role => role.id === '630430864634937354');
+    if (isHelper) {
+        return;
+    }
+
     // if the cooldown doesn't exist yet, log the current time into the array
 	// and write the file to disc so that it persists across restarts
 	if (!cooldowns[msg.channelId]) {
