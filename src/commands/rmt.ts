@@ -115,7 +115,46 @@ export = {
 
         // loop through the different RMT channels to get all of the messages
         // const channelIDs = ['584069912364974100', '580464846471036948']; // test server
-        const channelIDs = ['630478290729041920', '635257209416187925'];
+        const channelIDs = [
+            // pu
+            '1061136198208344084',
+            // nu
+            '1061136091056439386',
+            // ru
+            '1061135917160607766',
+            // lc
+            '1061135027599048746',
+            // bss
+            '1060690402711183370',
+            // other
+            '1060682530094862477',
+            // ag
+            '1060682013453078711',
+            // old gen ou
+            '1060339824537641152',
+            // natdex non ou
+            '1060037469472555028',
+            // uber
+            '1059901370477576272',
+            // uu
+            '1059743348728004678',
+            // nat dex ou'
+            '1059714627384115290',
+            // cap
+            '1059708679814918154',
+            // vgc
+            '1059704283072831499',
+            // 1v1
+            '1059673638145622096',
+            // mono
+            '1059658237097545758',
+            // om
+            '1059657287293222912',
+            // dou
+            '1059655497587888158',
+            // ou
+            '1059653209678950460',
+        ];
 
         // variable preallocation for getting the users who posted messages in the RMT channels
         const users: string[] = [], userIDs: string[] = [], charCount: number[] = [];
