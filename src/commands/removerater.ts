@@ -45,6 +45,7 @@ export = {
         // we resuse the channel variable to include the list of allowable names if it's invalid
         if (!valid) {
             await interaction.reply({ content: `I did not recognize that meta or am not setup to track it. Please choose one from the following (case insensitive) and try again:\`\`\`${channel}\`\`\``, ephemeral: true });
+            return;
         }
 
         // load the rater file
