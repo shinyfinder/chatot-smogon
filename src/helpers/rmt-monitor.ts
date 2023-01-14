@@ -5,7 +5,7 @@ import * as path from 'path';
 /**
  * Handler to determine whether to ping raters for a new rate
  * Triggered by messageCreate event
- * Test
+ *
  */
 
 
@@ -225,9 +225,9 @@ export async function rmtMonitor(msg: Message) {
     const taggablePings: string[] = [];
 
     for (const id of pingsArr) {
-        taggablePings.push('<' + id + '>');
+        taggablePings.push('<@' + id + '>');
     }
     // join into a single string and reply into the channel where the pokepaste was made
     const pingOut = taggablePings.join(', ');
-    await msg.channel.send(`New ${json[msg.channelId].name[0]} RMT ${pingOut}. I won't notify you again for at least 3 hours.\n\nThis is a test of the monitor system and is not meant to ping.`);
+    await msg.channel.send(`New ${json[msg.channelId].name[0]} RMT ${pingOut}. I won't notify you again for at least 6 hours.`);
 }
