@@ -99,7 +99,7 @@ export async function rmtMonitor(msg: Message) {
     // this regex tries to find Gen #, G#, or the smogon prefix used to denote the gen
     // it excludes possible matches within the pokepaste link
     // ... in theory
-    const genRegex = /((Gen|G|Generation)\s*([1-9])|(?<!https:\/\/pokepast\.es\/|[0-9a-z])(SV|SWSH|SS|BDSP|LGPE|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|ADV|GSC|RBY))/i;
+    const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|BDSP|LGPE|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|ADV|GSC|RBY))[ou]*\b/i;
     let matchArr = msg.content.match(genRegex) || 'na';
 
     // if there are no gen matches, they didn't specify the gen
@@ -143,7 +143,7 @@ export async function rmtMonitor(msg: Message) {
     }
 
     // Check for metas
-    const metaRegex = /.*(BH|AAA|MnM|STABmons|Godly Gift|GG|NFE|2v2|OMM|Mashup|ZU|UU|AG|Monotype|Mono)|(?<!https:\/\/pokepast\.es\/|[0-9a-z])/i;
+    const metaRegex = /\b[om ?|nd ?|National Dex ?]*(BH|AAA|MnM|STABmons|Godly Gift|GG|NFE|2v2|OMM|Mashup|ZU|UU|AG|Monotype|Mono)\b/i;
     const metamatchArr = msg.content.match(metaRegex);
 
     // check to see if you're in the right channel and if you found a meta match
