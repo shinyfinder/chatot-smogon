@@ -77,6 +77,7 @@ export = {
             try {
                 writeFileSync(filepath, JSON.stringify(json));
                 await interaction.reply(`${user.username} removed from the list of ${meta} raters.`);
+                return;
             }
             catch (err) {
                 console.error(err);
