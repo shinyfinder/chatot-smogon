@@ -63,7 +63,7 @@ export = {
              * A way around this would be to store the stack count after each call to it. If the stack count increased since the last call, then that mod deleted it
              * Alternatively, you could loop through the stacks and compile the list of possible exectors for output.
              */
-            if (auditTime - currentTime > 300000) {
+            if (Math.abs(currentTime - auditTime) > 300000) {
                 return;
             }
 
