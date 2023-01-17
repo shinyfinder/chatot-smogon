@@ -36,7 +36,12 @@ export = {
             console.error(error);
             // and let the user know there was a problem
             // keep errors ephemeral so it doesn't clog the chat and only the person who initiated can see the error
-            await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+            try {
+                await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+            }
+            catch (err) {
+                console.error(err);
+            }
         }
     },
 };
