@@ -44,6 +44,9 @@ export = {
         const stringArr: string[] = [];
         const raterArr: string[][] = [];
         if (meta === undefined) {
+            // defer reply the interaction so that discord knows we're trying
+            await interaction.deferReply();
+
             // get the list of the stored metas
             const allChannels = Object.keys(json);
             for (let i = 0; i < allChannels.length; i++) {
@@ -96,35 +99,56 @@ export = {
             const filter = (reaction: MessageReaction, user: User) => {
                 return (reaction.emoji.name === '◀️' || reaction.emoji.name === '▶️') && user.id === interaction.user.id;
             };
-
+            // set the max number of fields we want per embed
             const maxFields = 10;
+            // figure out how many pages we need depending on how many rater teams there are
             const maxPages = Math.ceil(stringArr.length / (maxFields));
+
+            // build the pages for the embed
+            // each page is an array of arrays of objects
+            /**
+             * page array
+             * |
+             * |__each element is an array containing each page of the embed
+             * |
+             * |______each page consists of an array of embed fields (objects)
+             *
+             */
             const embedFieldArr: APIEmbedField[][] = [];
             let page = 0;
             const embed = new EmbedBuilder().setTitle('Team Raters');
             for (let k = 0; k < maxPages; k++) {
+                // get the meta names and lists of raters for each meta
                 const embedPageStrings = stringArr.slice(k * maxFields, k * maxFields + maxFields);
                 const embedPageRaters = raterArr.slice(k * maxFields, k * maxFields + maxFields);
+
+                // build the pages in a loop
                 const tempEmbedFieldArr: APIEmbedField[] = [];
                 for (let i = 0; i < embedPageStrings.length; i++) {
                     // format the raters into a taggable string list
+                    // '<@id>, <@id>, <@id>, ...'
                     const taggablePings: string[] = [];
                     let pingOut = '';
                     for (const id of embedPageRaters[i]) {
                         taggablePings.push('<@' + id + '>');
                     }
+                    // if there are no raters stored for this meta, just say 'none' for output
                     if (!taggablePings.length) {
                         pingOut = 'None';
                     }
                     else {
                         pingOut = taggablePings.join(', ');
                     }
+                    // formulate the fields for the embeds (objects) and push them into an array
+                    // this array is a page of the embed
                     tempEmbedFieldArr.push(
                         { name: embedPageStrings[i], value: pingOut },
                     );
                 }
+                // add each page to the overarching array
                 embedFieldArr.push(tempEmbedFieldArr);
             }
+
             // intitialize an embed to attach the reaction collector to
             embedFieldArr[page].forEach(e => {
                 embed.addFields(e);
@@ -136,10 +160,10 @@ export = {
             );
 
             // post it to the channel
-            await interaction.reply('Please react to the following message to navigate through the pages. Embeds do not ping.');
-            const message = await interaction.channel?.send({ embeds: [embed] });
+            // we can't make this ephemeral because the bot cannot react to hidden messages
+            const message = await interaction.followUp({ content: 'Please react to the following message to navigate through the pages. Embeds do not ping.', embeds: [embed] });
             if (message === undefined) {
-                await interaction.reply({ content: 'An error occurred. Please try again', ephemeral: true });
+                await interaction.editReply({ content: 'An error occurred. Please try again' });
                 return;
             }
 
@@ -168,7 +192,7 @@ export = {
                                 { text: `Page ${page + 1} / ${maxPages}` },
                             );
                             // post it
-                            await message.edit({ embeds: [newEmbed] });
+                            await interaction.editReply({ embeds: [newEmbed] });
                         }
 
                         // increment page by 1
@@ -182,7 +206,7 @@ export = {
                             newEmbed.setFooter(
                                 { text: `Page ${page + 1} / ${maxPages}` },
                             );
-                            await message.edit({ embeds: [newEmbed] });
+                            await interaction.editReply({ embeds: [newEmbed] });
                         }
 
                         // remove the user's reaction so they can react again
@@ -232,8 +256,7 @@ export = {
                 .setDescription(`${pingOut}`);
 
             // post it to the channel
-            await interaction.reply('One second while I look those up');
-            await interaction.channel?.send({ embeds: [embed] });
+            await interaction.reply({ embeds: [embed] });
             return;
         }
 
