@@ -170,10 +170,6 @@ export async function rmtMonitor(msg: Message) {
         }
 
     }
-    // general OMs
-    else if (msg.channelId == '1059657287293222912') {
-        genNum = 'om';
-    }
 
 
     // check cooldown
@@ -191,6 +187,20 @@ export async function rmtMonitor(msg: Message) {
         return;
     }
 
+    // ping the relevant parties
+    // retrieve the info from the db
+    const filepath = path.join(__dirname, '../db/raters.json');
+    const raterDB = readFileSync(filepath, 'utf8');
+    const json = JSON.parse(raterDB) as Data;
+
+    // extract the raters list
+    const pingsArr = json?.[msg.channelId]?.[genNum];
+
+    // if the raters list is empty, return because we don't know who to ping
+    if (pingsArr === undefined || !pingsArr.length) {
+        return;
+    }
+
     // if the cooldown doesn't exist yet, log the current time into the array
 	// and write the file to disc so that it persists across restarts
 	if (!cooldowns[msg.channelId]) {
@@ -205,20 +215,6 @@ export async function rmtMonitor(msg: Message) {
         // write file
         const dbpath = path.join(__dirname, '../../src/db/cooldown.json');
         writeFileSync(dbpath, JSON.stringify(cooldowns));
-    }
-
-    // ping the relevant parties
-    // retrieve the info from the db
-    const filepath = path.join(__dirname, '../db/raters.json');
-    const raterDB = readFileSync(filepath, 'utf8');
-    const json = JSON.parse(raterDB) as Data;
-
-    // extract the raters list
-    const pingsArr = json?.[msg.channelId]?.[genNum];
-
-    // if the raters list is empty, return because we don't know who to ping
-    if (pingsArr === undefined || !pingsArr.length) {
-        return;
     }
 
     // build a taggable output
