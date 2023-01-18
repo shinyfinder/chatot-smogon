@@ -24,6 +24,9 @@ export = {
 
         // wrap the execution in a try/catch so that errors are handled and won't cause the bot to crash
         try {
+            // get the current time
+            const currentTime = Date.now();
+
             // wait a bit for the audit log to populate
             await sleep(10000);
 
@@ -39,6 +42,13 @@ export = {
             // If there's nothing in the audit log, return
             if (!kickLog) {
                 // await buildEmbed('Self', null);
+                return;
+            }
+
+            // check to see if it's an old audit log entry
+            // if it's too old, return
+            const auditTime = kickLog.createdTimestamp;
+            if (Math.abs(currentTime - auditTime) > 30000) {
                 return;
             }
 

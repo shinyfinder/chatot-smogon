@@ -62,7 +62,7 @@ export = {
                 return;
             }
 
-            // since we're only kicking 1 user at a time, fetch the latest event from the audit log of type kick
+            // since we're only updating 1 user at a time, fetch the latest event from the audit log of type update
             const fetchedLogs = await newMember.guild.fetchAuditLogs({
                 limit: 1,
                 type: AuditLogEvent.MemberUpdate,
@@ -92,7 +92,7 @@ export = {
                 return;
             }
 
-            // Also run a check to make sure that the log returned was for the same kicked member
+            // Also run a check to make sure that the log returned was for the same member
             if (target.id !== newMember.id) {
                 return;
             }

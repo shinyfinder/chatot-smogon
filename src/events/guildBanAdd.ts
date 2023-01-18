@@ -25,6 +25,9 @@ export = {
 
         // wrap the execution in a try/catch so that errors are handled and won't cause the bot to crash
         try {
+            // get the current time
+            const currentTime = Date.now();
+
             // wait a bit for the audit log to populate
             await sleep(10000);
 
@@ -40,6 +43,14 @@ export = {
             // If there's nothing in the audit log, output what we can
             if (!banLog) {
                 await buildEmbed('Inconclusive. No audit log entry at this time', null);
+                return;
+            }
+
+            // check to see if the audit log entry is too old
+            // if it is, ignore it and do nothing
+            const auditTime = banLog.createdTimestamp;
+
+            if (Math.abs(currentTime - auditTime) > 30000) {
                 return;
             }
 
