@@ -114,7 +114,8 @@ export = {
         await interaction.reply(`Parsing messages from ${ startDateIn.toString() } to ${ endDateIn.toString() }...`);
 
         // loop through the different RMT channels to get all of the messages
-        // const channelIDs = ['584069912364974100', '580464846471036948']; // test server
+        const channelIDs = ['630478290729041920', '635257209416187925'];
+        /*
         const channelIDs = [
             // pu
             '1061136198208344084',
@@ -155,7 +156,7 @@ export = {
             // ou
             '1059653209678950460',
         ];
-
+        */
         // variable preallocation for getting the users who posted messages in the RMT channels
         const users: string[] = [], userIDs: string[] = [], charCount: number[] = [];
         let ID = '', msgPointer = '', channel: Channel | undefined, username = '';
