@@ -11,10 +11,11 @@ export = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('ping')
-        .setDescription('Replies with Pong!'),
+        .setDescription('Replies with Pong!')
+        .setDefaultMemberPermissions(0),
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
-        await interaction.reply('Pong!');
+        await interaction.reply({ content: 'Pong!', ephemeral: true });
     },
 };
