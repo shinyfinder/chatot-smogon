@@ -114,8 +114,8 @@ export = {
         await interaction.reply(`Parsing messages from ${ startDateIn.toString() } to ${ endDateIn.toString() }...`);
 
         // loop through the different RMT channels to get all of the messages
-        const channelIDs = ['630478290729041920', '635257209416187925'];
-        /*
+        // const channelIDs = ['630478290729041920', '635257209416187925']; // originals
+        // forums
         const channelIDs = [
             // pu
             '1061136198208344084',
@@ -155,8 +155,12 @@ export = {
             '1059655497587888158',
             // ou
             '1059653209678950460',
+            // rmt1 -- legacy system
+            '630478290729041920',
+            // rmt2 -- legacy system
+            '635257209416187925',
         ];
-        */
+
         // variable preallocation for getting the users who posted messages in the RMT channels
         const users: string[] = [], userIDs: string[] = [], charCount: number[] = [];
         let ID = '', msgPointer = '', channel: Channel | undefined, username = '';
@@ -339,7 +343,13 @@ export = {
 
         // do one last bit of type checking
         if (interaction.channel === null || interaction.member === null) {
-            await interaction.reply({ content: 'An error occurred.', ephemeral: true });
+            await interaction.followUp({ content: 'An error occurred.', ephemeral: true });
+            return;
+        }
+
+        // let the user know there aren't any lines rather than posting a blank file
+        if (csv == '') {
+            await interaction.followUp('No lines found over that time period.');
             return;
         }
         // post it to the channel the interaction occurred and tag the person who initiated
