@@ -8,6 +8,7 @@ import type { SlashCommand } from './types/slash-command-base';
 import type { eventHandler } from 'src/types/event-base';
 import fs from 'fs';
 import * as path from 'path';
+import { server } from './helpers/server';
 
 /**
  * Load in the environment variables
@@ -108,6 +109,13 @@ interface Data {
   [key: string]: {[key: string]: number},
 }
 export const cooldowns = JSON.parse(cooldownDB) as Data;
+
+
+process.on('uncaughtException', err => console.error(err));
+process.on('unhandledRejection', err => console.error(err));
+process.on('SIGTERM', () => {
+  server.close();
+});
 
 /**
  * Login to Discord with your client's token, or log any errors
