@@ -8,7 +8,7 @@ import type { SlashCommand } from './types/slash-command-base';
 import type { eventHandler } from 'src/types/event-base';
 import fs from 'fs';
 import * as path from 'path';
-import { server } from './helpers/server';
+import * as net from 'node:net';
 
 /**
  * Load in the environment variables
@@ -110,14 +110,20 @@ interface Data {
 }
 export const cooldowns = JSON.parse(cooldownDB) as Data;
 
+let server: net.Server;
+
+/**
+ * Login to Discord with your client's token, or log any errors
+ * Then, once the Discord connection is established, create a new net.Server listening on fd 3
+ */
+client.login(config.TOKEN)
+  .then(() => {
+    server = net.createServer().listen({ fd: 3 });
+  })
+  .catch(e => console.error(e));
 
 process.on('uncaughtException', err => console.error(err));
 process.on('unhandledRejection', err => console.error(err));
 process.on('SIGTERM', () => {
   server.close();
 });
-
-/**
- * Login to Discord with your client's token, or log any errors
- */
-void (async () => client.login(config.TOKEN).catch(e => console.error(e)))();

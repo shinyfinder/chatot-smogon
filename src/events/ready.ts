@@ -1,5 +1,4 @@
 import { Client } from 'discord.js';
-import { createNetServer } from '../helpers/server';
 /**
  * on Ready handler
  *
@@ -16,7 +15,7 @@ export = {
     once: true,
     // execute
     execute(client: Client) {
-        // console.log('Logging in...');
+        console.log('Logging in...');
         // if there wasn an issue logging in. let the user know
         if (!client.user || !client.application) {
             console.error('There was an issue during start up');
@@ -24,7 +23,6 @@ export = {
         }
         // success!
         console.log(`Ready! Logged in as ${client.user.tag}`);
-        createNetServer();
 
         return Promise.resolve();
     },
