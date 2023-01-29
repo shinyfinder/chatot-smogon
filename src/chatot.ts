@@ -125,5 +125,7 @@ client.login(config.TOKEN)
 process.on('uncaughtException', err => console.error(err));
 process.on('unhandledRejection', err => console.error(err));
 process.on('SIGTERM', () => {
-  server.close();
+  server.close(() => {
+    console.log('server closed');
+  });
 });

@@ -23,7 +23,6 @@ export = {
         }
         // success!
         console.log(`Ready! Logged in as ${client.user.tag}`);
-
         return Promise.resolve();
     },
 };
