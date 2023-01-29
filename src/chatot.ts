@@ -171,11 +171,6 @@ async function createPool() {
 const pool = await createPool();
 export {pool}; 
 
-const moo = {'test1': 'test'};
-
-export {moo};
-
-
 
 /**
  * Login to Discord with your client's token, or log any errors
