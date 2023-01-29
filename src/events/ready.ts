@@ -1,4 +1,5 @@
 import { Client } from 'discord.js';
+import { eventHandler } from '../types/event-base';
 /**
  * on Ready handler
  *
@@ -8,7 +9,7 @@ import { Client } from 'discord.js';
  * Because our template requires a promise, return a dummy promise resolution
  */
 
-export = {
+export const clientEvent: eventHandler = {
     // trigger event name
     name: 'ready',
     // tell the code to run this only once on trigger
@@ -23,7 +24,6 @@ export = {
         }
         // success!
         console.log(`Ready! Logged in as ${client.user.tag}`);
-
         return Promise.resolve();
     },
 };

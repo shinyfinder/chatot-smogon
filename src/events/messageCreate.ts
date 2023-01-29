@@ -1,5 +1,7 @@
 import { Message } from 'discord.js';
-import { rmtMonitor } from '../helpers/rmt-monitor';
+import { eventHandler } from '../types/event-base';
+import { rmtMonitor } from '../helpers/rmt-monitor.js';
+
 /**
  * messageCreate handler
  *
@@ -8,7 +10,7 @@ import { rmtMonitor } from '../helpers/rmt-monitor';
  * This triggers on each message, so the once parameter is left out (alternatively could be set to false)
  */
 
-export = {
+export const clientEvent: eventHandler = {
     // define the name of the trigger event
     name: 'messageCreate',
     // execute the command

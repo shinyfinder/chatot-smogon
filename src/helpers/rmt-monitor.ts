@@ -1,7 +1,9 @@
 import { Message } from 'discord.js';
-import { cooldowns } from '../chatot';
+import { cooldowns } from '../chatot.js';
 import { readFileSync, writeFileSync } from 'fs';
 import * as path from 'path';
+import { getWorkingDir } from './getWorkingDir.js';
+
 /**
  * Handler to determine whether to ping raters for a new rate
  * Triggered by messageCreate event
@@ -189,6 +191,7 @@ export async function rmtMonitor(msg: Message) {
 
     // ping the relevant parties
     // retrieve the info from the db
+    const __dirname = getWorkingDir();
     const filepath = path.join(__dirname, '../db/raters.json');
     const raterDB = readFileSync(filepath, 'utf8');
     const json = JSON.parse(raterDB) as Data;
@@ -226,4 +229,4 @@ export async function rmtMonitor(msg: Message) {
     // join into a single string and reply into the channel where the pokepaste was made
     const pingOut = taggablePings.join(', ');
     await msg.channel.send(`New ${json[msg.channelId].name[0]} RMT ${pingOut}. I won't notify you again for at least 6 hours.`);
-}
+};

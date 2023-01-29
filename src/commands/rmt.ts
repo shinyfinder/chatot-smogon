@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Channel, ChannelType } from 'discord.js';
+import { SlashCommand } from '../types/slash-command-base';
 
 /**
  * Command to dump the line count of the comp helpers in the RMT channels of the main Smogon discord.
@@ -9,7 +10,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, Channel, ChannelType 
  * @returns CSV to the channel of userID, username, line count pairs
  *
  */
-export = {
+export const command: SlashCommand = {
     // setup the slash command
 	data: new SlashCommandBuilder()
 		.setName('rmt')
@@ -31,13 +32,13 @@ export = {
 	async execute(interaction: ChatInputCommandInteraction) {
         // check to make sure it's actually in a guild and used in the main server
         // this should always happen, since this command is a guild command
-        if (!interaction.guild || !(interaction.guild.id == '192713314399289344' || interaction.guild.id == '580459698692816896')) {
+        if (!interaction.guild || !(interaction.guild.id == '192713314399289344' || interaction.guild.id == '1040378543626002442')) {
             await interaction.reply({ content: 'You must use this command in the Smogon main server!', ephemeral: true });
             return;
         }
 
         // fetch the userlist from the interaction channel
-        const smogon = interaction.client.guilds.cache.get('192713314399289344');
+        const smogon = interaction.client.guilds.cache.get('1040378543626002442');
         if (smogon === undefined) {
             return;
         }
@@ -47,7 +48,7 @@ export = {
         // filter the users by the desired role
         // here the id is the role id for comp helpers
         // const roleFetch = interaction.guild.roles.cache.get('580468109438353470'); // test server
-        const roleFetch = smogon.roles.cache.get('630430864634937354');
+        const roleFetch = smogon.roles.cache.get('1046554598783062066');
         // const roleFetch = interaction.guild.roles.cache.get('630430864634937354'); // main
 
 
@@ -116,7 +117,8 @@ export = {
         // loop through the different RMT channels to get all of the messages
         // const channelIDs = ['630478290729041920', '635257209416187925']; // originals
         // forums
-        const channelIDs = [
+        const channelIDs = ['1060628096442708068', '1065764634562416680']; // dev server
+        /*const channelIDs = [
             // pu
             '1061136198208344084',
             // nu
@@ -160,6 +162,7 @@ export = {
             // rmt2 -- legacy system
             '635257209416187925',
         ];
+        */
 
         // variable preallocation for getting the users who posted messages in the RMT channels
         const users: string[] = [], userIDs: string[] = [], charCount: number[] = [];

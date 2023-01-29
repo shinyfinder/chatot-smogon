@@ -1,6 +1,7 @@
 import { AuditLogEvent, Message, EmbedBuilder, User, ChannelType } from 'discord.js';
-import config from '../config';
-import { sleep } from '../helpers/sleep';
+import { eventHandler } from '../types/event-base.js';
+import config from '../config.js';
+import { sleep } from '../helpers/sleep.js';
 /**
  * messageDelete handler
  *
@@ -14,7 +15,7 @@ import { sleep } from '../helpers/sleep';
  * Deleting a bot message does not trigger the event
  */
 
-export = {
+export const clientEvent: eventHandler = {
     // define the name of the trigger event
     name: 'messageDelete',
     // execute the code for this event

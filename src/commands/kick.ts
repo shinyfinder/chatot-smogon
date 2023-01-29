@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommand } from '../types/slash-command-base';
 
 /**
  * Command to kick a user from the chat
@@ -7,7 +8,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
  * @param dm Optional DM to be sent to the user
  *
  */
-export = {
+export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('kick')

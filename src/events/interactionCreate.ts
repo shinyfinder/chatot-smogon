@@ -1,5 +1,6 @@
 import { BaseInteraction } from 'discord.js';
-import { SlashCommand } from 'src/types/slash-command-base';
+import { eventHandler } from '../types/event-base';
+import { SlashCommand } from '../types/slash-command-base';
 
 /**
  * interactionCreate handler
@@ -10,7 +11,7 @@ import { SlashCommand } from 'src/types/slash-command-base';
  * This triggers on interaction, so the once parameter is left out (alternatively could be set to false)
  */
 
-export = {
+export const clientEvent: eventHandler = {
     // define the name of the trigger event
     name: 'interactionCreate',
     // execute the command
@@ -37,7 +38,7 @@ export = {
             // and let the user know there was a problem
             // keep errors ephemeral so it doesn't clog the chat and only the person who initiated can see the error
             try {
-                await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+                await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
             }
             catch (err) {
                 console.error(err);

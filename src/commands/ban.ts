@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommand } from '../types/slash-command-base';
 
 /**
  * Command to ban a user from the server
@@ -9,7 +10,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
  * @param dm Optional message to send to the user befor banning them
  *
  */
-export = {
+export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('ban')

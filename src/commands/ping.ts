@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommand } from '../types/slash-command-base';
 
 /**
  * Command to test the bot is online and working.
@@ -7,7 +8,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
  *
  * Can be used as a template for future commands
  */
-export = {
+export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('ping')

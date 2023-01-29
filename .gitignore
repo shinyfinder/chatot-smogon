@@ -6,3 +6,7 @@
 .DS_Store
 /src/db/raters.json
 /src/db/cooldown.json
+.devcontainer
+.vscode
+.cache
+.pnpm-store

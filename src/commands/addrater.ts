@@ -1,7 +1,9 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { readFileSync, writeFileSync } from 'fs';
 import * as path from 'path';
-import { validateMeta } from '../helpers/validateMeta';
+import { validateMeta } from '../helpers/validateMeta.js';
+import { SlashCommand } from '../types/slash-command-base';
+import { getWorkingDir } from '../helpers/getWorkingDir.js';
 
 /**
  * Command to add a team rater
@@ -10,7 +12,8 @@ import { validateMeta } from '../helpers/validateMeta';
 interface Data {
     [key: string]: { [key: string]: string[] },
 }
-export = {
+
+export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('addrater')
@@ -50,6 +53,7 @@ export = {
 
         // load the rater file
         // we point back to the one in src so that if we have to rebuild/restart the bot is it not overwritten
+        const __dirname = getWorkingDir();
         const filepath = path.join(__dirname, '../../src/db/raters.json');
         let json: Data = {};
         try {

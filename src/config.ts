@@ -1,8 +1,10 @@
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { getWorkingDir } from './helpers/getWorkingDir.js';
 
 // parse the env file
 // running dotenv.config exposes the env variables as process.env
+const __dirname = getWorkingDir();
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 /**
@@ -26,6 +28,11 @@ interface ENV {
     CLIENT_ID: string | undefined;
     GUILD_ID: string | undefined;
     LOG_CHANNEL_ID: string | undefined;
+    PGUSER: string | undefined;
+    PGPASSWORD: string | undefined;
+    PGHOST: string | undefined;
+    PGPORT: number | undefined;
+    PGDATABASE: string | undefined;
     // ...
 }
 
@@ -41,6 +48,11 @@ interface Config {
     CLIENT_ID: string;
     GUILD_ID: string;
     LOG_CHANNEL_ID: string;
+    PGUSER: string;
+    PGPASSWORD: string;
+    PGHOST: string;
+    PGPORT: number;
+    PGDATABASE: string;
     // ...
 }
 
@@ -48,6 +60,7 @@ interface Config {
 /**
  * Loads the env variables and assigns them the ENV types
  * @returns typeset process.env
+ * Note that process.env returns strings on each entry
  */
 
 const getConfig = (): ENV => {
@@ -56,6 +69,11 @@ const getConfig = (): ENV => {
         CLIENT_ID: process.env.CLIENT_ID,
         GUILD_ID: process.env.GUILD_ID,
         LOG_CHANNEL_ID: process.env.LOG_CHANNEL_ID,
+        PGUSER: process.env.PGUSER,
+        PGPASSWORD: process.env.PGPASSWORD,
+        PGHOST: process.env.PGHOST,
+        PGPORT: parseInt(process.env.PGPORT || "", 10),
+        PGDATABASE: process.env.PGDATABASE,
         // ...
     };
 };

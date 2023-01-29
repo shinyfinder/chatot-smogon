@@ -1,6 +1,7 @@
 import { AuditLogEvent, GuildBan, EmbedBuilder, User, ChannelType } from 'discord.js';
-import config from '../config';
-import { sleep } from '../helpers/sleep';
+import { eventHandler } from '../types/event-base';
+import config from '../config.js';
+import { sleep } from '../helpers/sleep.js';
 /**
  * Ban handler
  *
@@ -12,7 +13,7 @@ import { sleep } from '../helpers/sleep';
  * If the person who deleted the message is a bot or the author, no audit log event is created.
  */
 
-export = {
+export const clientEvent: eventHandler = {
     // define the name of the trigger event
     name: 'guildBanRemove',
     // execute the code for this event
