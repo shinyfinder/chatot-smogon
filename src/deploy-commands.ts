@@ -10,14 +10,16 @@
 import fs from 'fs';
 import * as path from 'path';
 import { REST, Routes } from 'discord.js';
-import config from './config';
+import config from './config.js';
 import { SlashCommand } from './types/slash-command-base';
+import { getWorkingDir } from './helpers/getWorkingDir.js';
 
 // setup a container for the command info to be pushed to discord
 // discord only needs the data entry from the command, formatted as a JSON array
 const commands: unknown[] = [];
 
 // locate the command directory
+const __dirname = getWorkingDir();
 const commandsPath = path.join(__dirname, 'commands');
 // get a list of all of the command files
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
@@ -25,10 +27,16 @@ const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('
 // push the commands to the array
 for (const file of commandFiles) {
     // get the path to the specific command file
-	const filePath = path.join(commandsPath, file);
+	// const filePath = path.join(commandsPath, file);
     // load the command
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-	const command = require(filePath) as SlashCommand;
+    // get the path to the specific command file
+    const filePath = new URL(`commands/${file}`, import.meta.url);
+
+    // load the module
+    const command = await import(filePath.toString()).then((obj) =>{
+      const obj2: SlashCommand = obj.command;
+      return obj2;
+    });
 
     // push the command data to the array formatted as a JSON
 	commands.push(command.data.toJSON());

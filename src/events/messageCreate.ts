@@ -2,6 +2,7 @@ import { Message } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { rmtMonitor } from '../helpers/rmt-monitor.js';
 
+
 /**
  * messageCreate handler
  *

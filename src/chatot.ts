@@ -3,17 +3,13 @@
  * This file has 4 main sections: create the client with the intents, load the commands, setup the event handler, and login
  */
 
-import { Client, GatewayIntentBits, Collection, Partials, SlashCommandBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, Collection, Partials } from 'discord.js';
 import type { SlashCommand } from './types/slash-command-base';
 import type { eventHandler } from './types/event-base';
-import fs from 'fs';
-import * as path from 'path';
+import { readdir } from 'node:fs/promises';
 import * as net from 'node:net';
-import pkg from 'pg';
-const { Pool } = pkg;
-import { getWorkingDir } from './helpers/getWorkingDir.js';
-//import * as messageCreateModule from './events/messageCreate.js';
-//const messageCreateEvent = messageCreateModule.clientEvent;
+import { getCooldowns } from './helpers/getCooldowns.js';
+import { createPool, pool } from './helpers/createPool.js';
 
 
 /**
@@ -22,6 +18,7 @@ import { getWorkingDir } from './helpers/getWorkingDir.js';
  * Env variables are saved in the ./.env file and accessed as config.VARIABLE_NAME
  */
 import config from './config.js';
+
 
 
 /**
@@ -56,43 +53,44 @@ const client = new Client({
 // create the command collection
 client.commands = new Collection();
 // set the path to the commands directory
-const __dirname = getWorkingDir();
-
-// array of times when the ping was last issued
-const rmtPingPath = path.join(__dirname, './db/cooldown.json');
-const cooldownDB = fs.readFileSync(rmtPingPath, 'utf8');
-interface cooldownData {
-  [key: string]: {[key: string]: number},
-}
-export const cooldowns: cooldownData = JSON.parse(cooldownDB);
-
-
-const commandsPath = path.join(__dirname, 'commands');
+const commandsPath = new URL('commands', import.meta.url);
 
 // get a list of all the .js files in the commands directory
-// this returns and array of strings
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+// this returns an array of strings
+try {
+  const commandFiles = await readdir(commandsPath);//.filter(file => file.endsWith('.js'));
+  // loop over the array of commands and set them to the collection as (name, command) pairs
+  for (const file of commandFiles) {
+    // if the file doesn't end in .js, don't consider it. It's not a command.
+    if (!file.endsWith('.js')) {
+      continue;
+    }
 
-// loop over the array of commands and set them to the collection as (name, command) pairs
-for (const file of commandFiles) {
-  // get the path to the specific command file
-	const filePath = path.join(commandsPath, file);
-  // load the module
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-	// const command = require(filePath) as SlashCommand;
-  try {
-    const command = await import(filePath).then((obj) =>{
+    // get the path to the specific command file
+    const filePath = new URL(`commands/${file}`, import.meta.url);
+
+    // load the module
+    const command = await import(filePath.toString()).then((obj) =>{
       const obj2: SlashCommand = obj.command;
       return obj2;
     });
-
+    // set it to the client
     client.commands.set(command.data.name, command);
   }
-  catch(error) {
-    console.error(error);
-    process.exit();
-  }
 }
+catch (error) {
+  console.error(error);
+  process.exit();
+}
+
+
+
+
+
+/**
+ * Fetch the list of cooldowns from the local json
+ */
+getCooldowns();
 
 
 /**
@@ -103,74 +101,52 @@ for (const file of commandFiles) {
  */
 
 // set the path to the events directory
-const eventsPath = path.join(__dirname, 'events');
+const eventsPath = new URL('events', import.meta.url);
+
 // get a list of all of the trigger events we want to act on. Loads into an array of strings
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.js'));
+try {
+  const eventFiles = await readdir(eventsPath);
 
-// loop over the list of events
-for (const file of eventFiles) {
-  // get the path to the specific event file
-  const filePath = path.join(eventsPath, file);
-  // load the module
+  // loop over the list of events
+  for (const file of eventFiles) {
+    // if it's not a js file, ignore it.
+    if (!file.endsWith('.js')) {
+      continue;
+    }
 
-  /**
-   * HACK
-   * 
-   * import() does not like the rmt-monitor logic
-   * Anything that invokes the code causes the build process to end without warning
-   * This happens even if the rmt-monitor.ts code is directly written to messageCreate.ts (with or without the async function)
-   * The program runs fine using a top level import statement
-   * 
-   */
-  if (file == 'messageCreate.js') {
-    //continue;
-  }
-  try {
-    const event = await import(filePath).then((obj) =>{
+    // get the path to the specific event file
+    const filePath = new URL(`events/${file}`, import.meta.url);
+    // load the module
+    const event = await import(filePath.toString()).then((obj) =>{
       const obj2: eventHandler = obj.clientEvent;
       return obj2;
     });
+    // load it onto the client
     if (event.once) {
       client.once(event.name, (...args) => event.execute(...args));
+    }
+    // else (event.once is not set or set to false), trigger whenever the event occurs
+    else {
+        client.on(event.name, (...args) => event.execute(...args));
+    }
+    
   }
-  // else (event.once is not set or set to false), trigger whenever the event occurs
-  else {
-      client.on(event.name, (...args) => event.execute(...args));
-  }
-  }
-  catch(error) {
-    console.error(error);
-    process.exit();
-  }
+
+}
+catch(error) {
+  console.error(error);
+  process.exit();
 }
 
-// HACK -- see above note on messageCreate()
-// client.on(messageCreateEvent.name, (...args) => messageCreateEvent.execute(...args));
+
+/**
+ * Connect to the postgres DB
+ */
+await createPool();
+
 
 // initialize variable for server on fd 3
 let server: net.Server;
-
-
-// connect to the Postgres DB
-async function createPool() {
-  try {
-    return await new Pool({
-      user: config.PGUSER,
-      host: config.PGHOST,
-      database: config.PGDATABASE,
-      password: config.PGPASSWORD,
-      port: config.PGPORT,
-    });
-  }
-  catch(error) {
-    console.error(error);
-    process.exit();
-  }
-}
-
-const pool = await createPool();
-export {pool}; 
-
 
 /**
  * Login to Discord with your client's token, or log any errors

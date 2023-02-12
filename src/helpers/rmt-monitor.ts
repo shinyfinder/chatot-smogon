@@ -1,8 +1,9 @@
 import { Message } from 'discord.js';
-import { cooldowns } from '../chatot.js';
+import { cooldowns } from './getCooldowns.js';
 import { readFileSync, writeFileSync } from 'fs';
 import * as path from 'path';
 import { getWorkingDir } from './getWorkingDir.js';
+import { pool } from './createPool.js';
 
 /**
  * Handler to determine whether to ping raters for a new rate
@@ -57,6 +58,8 @@ export async function rmtMonitor(msg: Message) {
         '1059708679814918154',
         // om
         '1059657287293222912',
+        // test
+        '1060628096442708068',
     ];
 
     // define the gen abbreviations
@@ -175,7 +178,19 @@ export async function rmtMonitor(msg: Message) {
 
 
     // check cooldown
-    const cooldown = cooldowns[msg.channelId]?.[genNum];
+    let cooldown = 0;
+    try {
+        const cooldownPostgres = await pool.query('SELECT date FROM cooldown WHERE channelID = $1 AND gen = $2', [msg.channelId, genNum]);
+        const dbmatches: Date | undefined = cooldownPostgres.rows[0].date;
+        if (dbmatches instanceof Date) {
+            cooldown = new Date(dbmatches).valueOf();
+        }
+    }
+    catch(err) {
+        console.error(err);
+        return;
+    }
+    // cooldown = cooldowns[msg.channelId]?.[genNum];
     // if the CD exists, check if the current time is after the end of the CD
     // if we haven't waited the full cooldown for this tier, return and don't ping
 	if (cooldown && cooldown + (cd * 60 * 60 * 1000) >= Date.now()) {
@@ -192,7 +207,7 @@ export async function rmtMonitor(msg: Message) {
     // ping the relevant parties
     // retrieve the info from the db
     const __dirname = getWorkingDir();
-    const filepath = path.join(__dirname, '../db/raters.json');
+    const filepath = path.join(__dirname, '../src/db/raters.json');
     const raterDB = readFileSync(filepath, 'utf8');
     const json = JSON.parse(raterDB) as Data;
 
@@ -204,20 +219,40 @@ export async function rmtMonitor(msg: Message) {
         return;
     }
 
+    /*
     // if the cooldown doesn't exist yet, log the current time into the array
 	// and write the file to disc so that it persists across restarts
 	if (!cooldowns[msg.channelId]) {
         cooldowns[msg.channel.id] = {};
         cooldowns[msg.channel.id][genNum] = Date.now();
         // write file
-        const dbpath = path.join(__dirname, '../../src/db/cooldown.json');
+        const dbpath = path.join(__dirname, '../src/db/cooldown.json');
         writeFileSync(dbpath, JSON.stringify(cooldowns));
     }
     else {
         cooldowns[msg.channel.id][genNum] = Date.now();
         // write file
-        const dbpath = path.join(__dirname, '../../src/db/cooldown.json');
+        const dbpath = path.join(__dirname, '../src/db/cooldown.json');
         writeFileSync(dbpath, JSON.stringify(cooldowns));
+    }
+    */
+
+    // save the entry to the postgres database
+    // if the cooldown is 0, that means we did have this entry yet for the gen/channel combo. So we need to INSERT a new row into the db
+    // if the cooldown is not 0, then the gen/channel combo did exist. So we need to UPDATE the row in the db
+    // the table is setup so that it users the time on the db server for the timestamp by default
+    try {
+        if (cooldown === 0) {
+            await pool.query('ISNERT INTO cooldown (channelid, gen) VALUES ($1, $2)', [msg.channelId, genNum]);    
+        }
+        else {
+            await pool.query('UPDATE cooldown SET date = default WHERE channelid = $1 AND gen = $2', [msg.channelId, genNum]);
+        }
+        
+    }
+    catch(err) {
+        console.error(err);
+        return;
     }
 
     // build a taggable output

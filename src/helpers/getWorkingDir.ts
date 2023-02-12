@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url';
  * Useful when creating paths to files
  */
 export function getWorkingDir() {
-    const __filename = fileURLToPath(import.meta.url);
+    // const __filename = fileURLToPath(import.meta.url);
     const __dirname =  fileURLToPath(new URL('..', import.meta.url)); //path.dirname(__filename);
     return __dirname;
 }

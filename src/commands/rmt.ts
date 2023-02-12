@@ -175,8 +175,8 @@ export const command: SlashCommand = {
             // load the channel
             channel = interaction.client.channels.cache.get(channelIDs[i]);
 
-            if (channel?.type !== ChannelType.GuildText) {
-                await interaction.reply({ content: 'There was an error fetching the channels in the API, please retry', ephemeral: true });
+            if (!(channel?.type === ChannelType.GuildText || channel?.type === ChannelType.PublicThread)) {
+                await interaction.followUp({ content: 'There was an error fetching the channels in the API, please retry', ephemeral: true });
                 return;
             }
 

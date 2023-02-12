@@ -10,7 +10,7 @@
 
 
 import { REST, Routes } from 'discord.js';
-import config from './config';
+import config from './config.js';
 
 // setup the API call, specifying the API version number and providing the bot's authentication token
 const rest = new REST({ version: '10' }).setToken(config.TOKEN);
@@ -29,11 +29,11 @@ const commandID = '';
  * for SINGLE guild-based command
  * delete specfied command from specified guild
  */
-
+/*
 rest.delete(Routes.applicationGuildCommand(config.CLIENT_ID, config.GUILD_ID, commandID))
 	.then(() => console.log('Successfully deleted guild command from your specified guild.'))
 	.catch(console.error);
-
+*/
 
 /**
  * for SINGLE global command
@@ -52,11 +52,11 @@ rest.delete(Routes.applicationCommand(config.CLIENT_ID, commandID'))
  * delete all guild-based commands in specified guild
  */
 
-/*
+
 rest.put(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID), { body: [] })
 	.then(() => console.log('Successfully deleted all guild commands from your specified guild.'))
 	.catch(console.error);
-*/
+
 
 
 /**
