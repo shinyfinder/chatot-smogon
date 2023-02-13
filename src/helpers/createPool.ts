@@ -1,6 +1,3 @@
-import { getWorkingDir } from './getWorkingDir.js';
-import * as path from 'path';
-import fs from 'fs';
 import pkg from 'pg';
 const { Pool } = pkg;
 import config from '../config.js';

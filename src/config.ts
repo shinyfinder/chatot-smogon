@@ -1,11 +1,14 @@
-import * as path from 'path';
+// import * as path from 'path';
 import * as dotenv from 'dotenv';
-import { getWorkingDir } from './helpers/getWorkingDir.js';
+// import { getWorkingDir } from './helpers/getWorkingDir.js';
 
 // parse the env file
 // running dotenv.config exposes the env variables as process.env
-const __dirname = getWorkingDir();
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// const __dirname = getWorkingDir();
+//dotenv.config({ path: path.resolve('.env') });
+dotenv.config();
+
+
 
 /**
  * Interface to load env variables

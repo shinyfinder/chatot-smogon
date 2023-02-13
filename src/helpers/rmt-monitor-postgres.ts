@@ -1,8 +1,4 @@
 import { Message } from 'discord.js';
-import { cooldowns } from './getCooldowns.js';
-import { readFileSync, writeFileSync } from 'fs';
-import * as path from 'path';
-import { getWorkingDir } from './getWorkingDir.js';
 import { pool } from './createPool.js';
 
 /**

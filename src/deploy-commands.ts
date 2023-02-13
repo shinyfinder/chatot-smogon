@@ -7,28 +7,23 @@
  * Commands are not updated on the front end until this code is run
  */
 
-import fs from 'fs';
-import * as path from 'path';
+import { readdir } from 'node:fs/promises';
 import { REST, Routes } from 'discord.js';
 import config from './config.js';
 import { SlashCommand } from './types/slash-command-base';
-import { getWorkingDir } from './helpers/getWorkingDir.js';
 
 // setup a container for the command info to be pushed to discord
 // discord only needs the data entry from the command, formatted as a JSON array
 const commands: unknown[] = [];
 
 // locate the command directory
-const __dirname = getWorkingDir();
-const commandsPath = path.join(__dirname, 'commands');
-// get a list of all of the command files
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
+const commandsPath = new URL('commands', import.meta.url);
 
-// push the commands to the array
-for (const file of commandFiles) {
-    // get the path to the specific command file
-	// const filePath = path.join(commandsPath, file);
-    // load the command
+// get a list of all of the command files
+try {
+  const commandFiles = await readdir(commandsPath);
+  // push the commands to the array
+  for (const file of commandFiles) {
     // get the path to the specific command file
     const filePath = new URL(`commands/${file}`, import.meta.url);
 
@@ -39,8 +34,16 @@ for (const file of commandFiles) {
     });
 
     // push the command data to the array formatted as a JSON
-	commands.push(command.data.toJSON());
+    commands.push(command.data.toJSON());
+  }
 }
+catch(err) {
+  console.error(err);
+  process.exit();
+}
+
+
+
 
 // setup the API call, specifying the API version number and providing the bot's authentication token
 const rest = new REST({ version: '10' }).setToken(config.TOKEN);
