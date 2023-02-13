@@ -28,36 +28,48 @@ export async function rmtMonitor(msg: Message) {
     // define the viable channel IDs
     // some of the channels are not ready for gen 9, so we don't track those
     const rmtChannels = [
-        // uu
-        '1059743348728004678',
-        // ou
-        '1059653209678950460',
-        // uber
-        '1059901370477576272',
-        // dou
-        '1059655497587888158',
+        // pu
+        '1061136198208344084',
+        // nu
+        '1061136091056439386',
+        // ru
+        '1061135917160607766',
         // lc
         '1061135027599048746',
-        // mono
-        '1059658237097545758',
-        // old gen ou
-        '1060339824537641152',
-        // vgc
-        '1059704283072831499',
         // bss
         '1060690402711183370',
-        // natdex ou
-        '1059714627384115290',
-        // natdex non-ou
-        '1060037469472555028',
-        // 1v1
-        '1059673638145622096',
+        // other
+        '1060682530094862477',
         // ag
         '1060682013453078711',
+        // old gen ou
+        '1060339824537641152',
+        // natdex non ou
+        '1060037469472555028',
+        // uber
+        '1059901370477576272',
+        // uu
+        '1059743348728004678',
+        // nat dex ou'
+        '1059714627384115290',
         // cap
         '1059708679814918154',
+        // vgc
+        '1059704283072831499',
+        // 1v1
+        '1059673638145622096',
+        // mono
+        '1059658237097545758',
         // om
         '1059657287293222912',
+        // dou
+        '1059655497587888158',
+        // ou
+        '1059653209678950460',
+        // rmt1 -- legacy system
+        '630478290729041920',
+        // rmt2 -- legacy system
+        '635257209416187925',
         // test
         '1060628096442708068',
     ];
@@ -89,6 +101,12 @@ export async function rmtMonitor(msg: Message) {
 
     // check channel list
     if (!rmtChannels.includes(msg.channelId)) {
+        return;
+    }
+
+    // if the message contains an @, they already pinged someone so no need to do it again
+    const tagRegex = /@/;
+    if (tagRegex.test(msg.content)) {
         return;
     }
 
@@ -207,7 +225,7 @@ export async function rmtMonitor(msg: Message) {
     // ping the relevant parties
     // retrieve the info from the db
     const __dirname = getWorkingDir();
-    const filepath = path.join(__dirname, '../src/db/raters.json');
+    const filepath = path.join(__dirname, '../../src/db/raters.json');
     const raterDB = readFileSync(filepath, 'utf8');
     const json = JSON.parse(raterDB) as Data;
 
@@ -243,7 +261,7 @@ export async function rmtMonitor(msg: Message) {
     // the table is setup so that it users the time on the db server for the timestamp by default
     try {
         if (cooldown === 0) {
-            await pool.query('ISNERT INTO cooldown (channelid, gen) VALUES ($1, $2)', [msg.channelId, genNum]);    
+            await pool.query('INSERT INTO cooldown (channelid, gen) VALUES ($1, $2)', [msg.channelId, genNum]);    
         }
         else {
             await pool.query('UPDATE cooldown SET date = default WHERE channelid = $1 AND gen = $2', [msg.channelId, genNum]);

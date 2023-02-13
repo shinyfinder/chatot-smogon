@@ -213,7 +213,7 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
 
         // retrieve the rater list from the db
         try {
-            let dbmatches: { userid: string }[];
+            let dbmatches: { userid: string }[] | undefined;
             const ratersPostgres = await pool.query('SELECT userid FROM raters WHERE meta = $1 AND gen = $2', [meta, gen]);
             dbmatches = ratersPostgres.rows;
             
