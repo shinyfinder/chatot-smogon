@@ -192,7 +192,7 @@ export const command: SlashCommand = {
                 // once a set of 100 has been fetched, parse each message to get the author
                 .then(messages => {
                     // log some output so you know it's doing something
-                    console.log(`Received ${messages.size} messages`);
+                    // console.log(`Received ${messages.size} messages`);
 
                     // loop through each message
                     messages.forEach(msg => {
