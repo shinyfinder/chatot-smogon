@@ -22,7 +22,7 @@ export async function addRater(interaction: ChatInputCommandInteraction, metaIn:
     // postgres
     try {
         // query the db and extract the matches
-        const ratersPostgres = await pool.query('SELECT userid FROM raters WHERE meta = $1 AND gen = $2', [meta, gen]);
+        const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
         const dbmatches: { userid: string}[] = ratersPostgres.rows;
         
         // if there are matches (people already are listed to rate for this meta), check the list against the person we are trying to add
@@ -37,7 +37,7 @@ export async function addRater(interaction: ChatInputCommandInteraction, metaIn:
 
         // if you're still here, then this is a valid case.
         // push it to the db
-        await pool.query('INSERT INTO raters (channelid, meta, gen, userid) VALUES ($1, $2, $3, $4)', [channel, meta, gen, user.id]);
+        await pool.query('INSERT INTO chatot.raters (channelid, meta, gen, userid) VALUES ($1, $2, $3, $4)', [channel, meta, gen, user.id]);
         await interaction.followUp(`${user.username} added to the list of ${gen} ${meta} raters.`);
         return;
     }

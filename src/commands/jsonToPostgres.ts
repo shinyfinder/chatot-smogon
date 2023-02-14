@@ -5,11 +5,7 @@ import { readFileSync } from 'fs';
 import * as path from 'path';
 import { pool } from '../helpers/createPool.js';
 /**
- * Command to test the bot is online and working.
- * @param data SlashCommandBuilder() instance from discord.js
- * @returns Replies Pong! in the chat
- *
- * Can be used as a template for future commands
+ * Dev command to migrate json to postgres.
  */
 interface Data {
     [key: string]: { [key: string]: string[] },
@@ -30,7 +26,7 @@ export const command: SlashCommand = {
         // load the json
         // ping the relevant parties
         // retrieve the info from the db
-        
+        /*
         const __dirname = getWorkingDir();
         const filepath = path.join(__dirname, '../src/db/raters.json');
         const raterDB = readFileSync(filepath, 'utf8');
@@ -157,17 +153,17 @@ export const command: SlashCommand = {
 
                 // loop over the array of userids
                 for (const element of raters) {
-                    await pool.query('INSERT INTO raters (channelid, meta, gen, userid) VALUES ($1, $2, $3, $4)', [key, nameOut, key2Out, element]);    
+                    await pool.query('INSERT INTO chatot.raters (channelid, meta, gen, userid) VALUES ($1, $2, $3, $4)', [key, nameOut, key2Out, element]);    
                 }
             }
         }
         await interaction.reply('done');
+        */
+
+
+
+
         
-
-
-
-
-        /*
         const __dirname = getWorkingDir();
         const filepath = path.join(__dirname, '../src/db/cooldown.json');
         const raterDB = readFileSync(filepath, 'utf8');
@@ -234,7 +230,7 @@ export const command: SlashCommand = {
                         key2Out = `NatDex Mono`;
                         
                     }
-                    else if (key2 === 'mono') {
+                    else {
                         key2Out = `NatDex ${key2.toUpperCase()}`;
                     }
 
@@ -269,14 +265,14 @@ export const command: SlashCommand = {
                 }
 
                 // loop over the array of userids
-                await pool.query('INSERT INTO cooldown2 (channelid, identifier, date) VALUES ($1, $2, to_timestamp($3))', [key, key2Out, cooldown]);    
+                await pool.query('INSERT INTO chatot.cooldown (channelid, identifier, date) VALUES ($1, $2, to_timestamp($3))', [key, key2Out, cooldown]);    
                 
             }
             
         }
         
         await interaction.reply('done');
-        */
+        
 
     },
 };

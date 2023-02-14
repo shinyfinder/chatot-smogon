@@ -23,7 +23,7 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
         };
         let dbmatches: ratersTable[];
         try {
-            const ratersPostgres = await pool.query('SELECT channelid, meta, gen, userid FROM raters ORDER BY channelid ASC, meta ASC, gen DESC');
+            const ratersPostgres = await pool.query('SELECT channelid, meta, gen, userid FROM chatot.raters ORDER BY channelid ASC, meta ASC, gen DESC');
             dbmatches = ratersPostgres.rows;
         }
         catch (err) {
@@ -214,7 +214,7 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
         // retrieve the rater list from the db
         try {
             let dbmatches: { userid: string }[] | undefined;
-            const ratersPostgres = await pool.query('SELECT userid FROM raters WHERE meta = $1 AND gen = $2', [meta, gen]);
+            const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
             dbmatches = ratersPostgres.rows;
             
             // format the userids as taggable output

@@ -21,7 +21,7 @@ export async function removeRater(interaction: ChatInputCommandInteraction, meta
     // postgres
     try {
         // query the db and extract the matches
-        const ratersPostgres = await pool.query('SELECT userid FROM raters WHERE meta = $1 AND gen = $2', [meta, gen]);
+        const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
         const dbmatches: { userid: string}[] = ratersPostgres.rows;
         
         // if there are matches (people already are listed to rate for this meta), check the list against the person we are trying to add
@@ -36,7 +36,7 @@ export async function removeRater(interaction: ChatInputCommandInteraction, meta
 
         // if you're still here, then this is a valid case.
         // remove them from the db
-        await pool.query('DELETE FROM raters WHERE meta=$1 AND gen=$2 AND userid=$3', [meta, gen, user.id]);
+        await pool.query('DELETE FROM chatot.raters WHERE meta=$1 AND gen=$2 AND userid=$3', [meta, gen, user.id]);
         await interaction.followUp(`${user.username} removed from the list of ${gen} ${meta} raters.`);
         return;
     }

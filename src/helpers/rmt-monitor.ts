@@ -1,8 +1,4 @@
 import { Message } from 'discord.js';
-import { cooldowns } from './getCooldowns.js';
-import { readFileSync, writeFileSync } from 'fs';
-import * as path from 'path';
-import { getWorkingDir } from './getWorkingDir.js';
 import { pool } from './createPool.js';
 
 /**
@@ -14,11 +10,6 @@ import { pool } from './createPool.js';
 
 // cooldown time in hours
 const cd = 6;
-
-// define the json structure to make TS happy
-interface Data {
-    [key: string]: { [key: string]: string[] },
-}
 
 export async function rmtMonitor(msg: Message) {
     // check whether the message is a valid case to consider for pinging RMT raters
@@ -72,31 +63,44 @@ export async function rmtMonitor(msg: Message) {
         '635257209416187925',
         // test
         '1060628096442708068',
+        "1060623647649308712",
     ];
 
     // define the gen abbreviations
     // we need to store cooldowns for SS, BDSP, and LGPE separately because they have separate metas we need to ping for
     const gens: {[key: string]: string} = {
-        'sv': '9',
-        'swsh': '8',
-        'ss': '8',
-        'bdsp': 'bdsp',
-        'lgpe': 'lgpe',
-        'usum': '7',
-        'usm': '7',
-        'sm': '7',
-        'oras': '6',
-        'xy': '6',
-        'b2w2': '5',
-        'bw2': '5',
-        'bw': '5',
-        'hgss': '4',
-        'dpp': '4',
-        'dp': '4',
-        'rse': '3',
-        'adv': '3',
-        'gsc': '2',
-        'rby': '1',
+        'sv': 'SV',
+        '9': 'SV',
+        'swsh': 'SS',
+        'ss': 'SS',
+        '8': 'SS',
+        'bdsp': 'BDSP',
+        'lgpe': 'LGPE',
+        'usum': 'SM',
+        'usm': 'SM',
+        'sm': 'SM',
+        '7': 'SM',
+        'oras': 'XY',
+        'xy': 'XY',
+        '6': 'XY',
+        'b2w2': 'BW',
+        'bw2': 'BW',
+        'bw': 'BW',
+        '5': 'BW',
+        'hgss': 'DP',
+        'dpp': 'DP',
+        'dp': 'DP',
+        '4': 'DP',
+        'rse': 'RS',
+        'rs': 'RS',
+        'adv': 'RS',
+        '3': 'RS',
+        'gsc': 'GS',
+        'gs': 'GS',
+        '2': 'GS',
+        'rby': 'RB',
+        'rb': 'RB',
+        '1': 'RB',
     };
 
     // check channel list
@@ -122,84 +126,119 @@ export async function rmtMonitor(msg: Message) {
     // this regex tries to find Gen #, G#, or the smogon prefix used to denote the gen
     // it excludes possible matches within the pokepaste link
     // ... in theory
-    const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|BDSP|LGPE|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|ADV|GSC|RBY))[ou]*\b/i;
-    let matchArr = msg.content.match(genRegex) || 'na';
+    const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|BDSP|LGPE|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|RS|ADV|GSC|GS|RBY|RB))[ou]*\b/i;
+    let matchArr = msg.content.match(genRegex);
 
     // if there are no gen matches, they didn't specify the gen
-    // return, because we don't know who to ping
     // there are exceptions (i.e. OM) where users don't need to specify the gen, so instead we'll need to filter by meta later
 
     const specialCases = [
         // old gen OU
         '1060339824537641152',
+        //'1060628096442708068',
     ];
 
     // if they didn't specify a gen and there are multiple options, return
-    if (matchArr === 'na' && specialCases.includes(msg.channelId)) {
+    if (matchArr === null && specialCases.includes(msg.channelId)) {
         return;
     }
-    else if (matchArr === 'na') {
-        matchArr = '9';
-    }
     // get the descriptor for the gen
-    // at this point, it is either the number or the smogon abbreviation
-    // 3 is gen number, 4 is abbreviation
-    let genNum = '';
-    if (matchArr.length > 1) {
+    // index 3 is gen number, index 4 is abbreviation in matchArr
+    let identifier = '';
+    // if there was a match from the regex test...
+    if (matchArr !== null) {
         const genDesr = (matchArr[3] || matchArr[4]).toLowerCase();
-        // check if it's the abbreviation
-        if (Object.keys(gens).includes(genDesr)) {
-            genNum = gens[genDesr];
-        }
-        else {
-            genNum = genDesr;
-        }
+        identifier = gens[genDesr];
     }
+    // else, no gen was specified, so assume they mean gen 9
     else {
-        genNum = '9';
+        identifier = 'SV';
     }
 
+    /**
+     * At this point, the identifier is either 1-9, lgpe, or bdsp
+     * For some channels, that is enough because we only care about pinging for the current gen (gen 9)
+     * For other channels, like OMs and ND, we assume by default everything is the current gen, so we need to identify by the meta
+     * So now we need to check for whether they specified by an old gen or the meta, when applicable
+     */
 
     // if the channel is not a special case (can have multiple gens) and they specified a gen other than 9, return
-    if (genNum !== '9' && !specialCases.includes(msg.channelId)) {
+    if (identifier !== 'SV' && !specialCases.includes(msg.channelId)) {
         return;
     }
 
     // Check for metas
-    const metaRegex = /\b[om ?|nd ?|National Dex ?]*(BH|AAA|MnM|STABmons|Godly Gift|GG|NFE|2v2|OMM|Mashup|ZU|UU|AG|Monotype|Mono)\b/i;
+    const metaRegex = /\b[om ?|nd ?|National Dex ?]*(BH|AAA|MnM|STABmons|Godly Gift|GG|NFE|2v2|OMM|Mashup|UU|AG|Monotype|Mono)\b/i;
     const metamatchArr = msg.content.match(metaRegex);
 
     // check to see if you're in the right channel and if you found a meta match
     // if you did, use the name of the meta as the cooldown storage key
-
-    // specific OMs
     if (metamatchArr !== null) {
         let meta = metamatchArr[1];
         // only try to parse if it's in the OM or ND non-ou channels
-        if (meta !== undefined && (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028')) {
-            meta = meta.toLowerCase();
-            if (meta == 'mono' || meta == 'monotype') {
-                genNum = 'mono';
-            }
-            else if (meta == 'godly gift' || meta == 'gg') {
-                genNum = 'gg';
+        // om
+        if (meta !== undefined && (msg.channelId === '1059657287293222912' || msg.channelId == '1060623647649308712')) {
+            if (meta == 'godly gift' || meta == 'gg') {
+                identifier = 'GG';
             }
             else if (meta == 'mashup' || meta == 'omm') {
-                genNum == 'omm';
+                identifier = 'OM Mashup';
             }
+            else if (meta == 'mnm') {
+                identifier = 'MnM';
+            }
+            else if (meta == '2v2') {
+                identifier = '2v2';
+            }
+            else if (meta == 'stabmons') {
+                identifier = 'STABmons';
+            }
+            // bh, aaa, nfe
             else {
-                genNum = meta;
+                identifier = meta.toUpperCase();
             }
+        }
+        // nd
+        else if (meta !== undefined && (msg.channelId == '1060037469472555028' || msg.channelId == '1060623647649308712')) {
+            meta = meta.toLowerCase();
+            if (meta == 'mono' || meta == 'monotype') {
+                identifier = 'NatDex Mono';
+            }
+            else if (meta == 'uu' || meta == 'ag') {
+                identifier = `NatDex ${meta.toUpperCase()}`;
+            }
+            
         }
 
     }
+    // if this is in OM or ND non-OU and they didn't specify a meta, return
+    else if (metamatchArr === null && (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028' || msg.channelId == '1060623647649308712')) {
+        return;
+    }
+
+    /**
+     * The identifier is now anything in the following list
+     * SV, SS, SM, XY, BW, DP, RS, GS, RB, LGPE, BDSP
+     * Mono
+     * GG
+     * OM Mashup
+     * BH
+     * AAA
+     * MnM
+     * STABmons
+     * NFE
+     * 2v2
+     * UU
+     * AG
+     * Mono
+     */
 
 
     // check cooldown
     let cooldown = 0;
     try {
-        const cooldownPostgres = await pool.query('SELECT date FROM cooldown WHERE channelID = $1 AND gen = $2', [msg.channelId, genNum]);
-        const dbmatches: Date | undefined = cooldownPostgres.rows[0].date;
+        const cooldownPostgres = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, identifier]);
+        const dbmatches: Date | undefined = cooldownPostgres.rows[0]?.date;
         if (dbmatches instanceof Date) {
             cooldown = new Date(dbmatches).valueOf();
         }
@@ -224,47 +263,17 @@ export async function rmtMonitor(msg: Message) {
 
     // ping the relevant parties
     // retrieve the info from the db
-    const __dirname = getWorkingDir();
-    const filepath = path.join(__dirname, '../../src/db/raters.json');
-    const raterDB = readFileSync(filepath, 'utf8');
-    const json = JSON.parse(raterDB) as Data;
-
-    // extract the raters list
-    const pingsArr = json?.[msg.channelId]?.[genNum];
-
-    // if the raters list is empty, return because we don't know who to ping
-    if (pingsArr === undefined || !pingsArr.length) {
-        return;
-    }
-
-    /*
-    // if the cooldown doesn't exist yet, log the current time into the array
-	// and write the file to disc so that it persists across restarts
-	if (!cooldowns[msg.channelId]) {
-        cooldowns[msg.channel.id] = {};
-        cooldowns[msg.channel.id][genNum] = Date.now();
-        // write file
-        const dbpath = path.join(__dirname, '../src/db/cooldown.json');
-        writeFileSync(dbpath, JSON.stringify(cooldowns));
-    }
-    else {
-        cooldowns[msg.channel.id][genNum] = Date.now();
-        // write file
-        const dbpath = path.join(__dirname, '../src/db/cooldown.json');
-        writeFileSync(dbpath, JSON.stringify(cooldowns));
-    }
-    */
-
-    // save the entry to the postgres database
-    // if the cooldown is 0, that means we did have this entry yet for the gen/channel combo. So we need to INSERT a new row into the db
-    // if the cooldown is not 0, then the gen/channel combo did exist. So we need to UPDATE the row in the db
-    // the table is setup so that it users the time on the db server for the timestamp by default
+    let ratersdbmatches: { meta: string, userid: string }[] | undefined;
     try {
-        if (cooldown === 0) {
-            await pool.query('INSERT INTO cooldown (channelid, gen) VALUES ($1, $2)', [msg.channelId, genNum]);    
+        // if you're in the OM or ND nonou channels, we need to earch by the meta
+        // otherwise, you can search by gen
+        if (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028' || msg.channelId == '1060623647649308712') {
+            const ratersPostgres = await pool.query('SELECT meta, userid FROM chatot.raters WHERE channelID = $1 AND meta = $2', [msg.channelId, identifier]);
+            ratersdbmatches = ratersPostgres.rows;
         }
         else {
-            await pool.query('UPDATE cooldown SET date = default WHERE channelid = $1 AND gen = $2', [msg.channelId, genNum]);
+            const ratersPostgres = await pool.query('SELECT meta, userid FROM chatot.raters WHERE channelID = $1 AND gen = $2', [msg.channelId, identifier]);
+            ratersdbmatches = ratersPostgres.rows;
         }
         
     }
@@ -273,13 +282,38 @@ export async function rmtMonitor(msg: Message) {
         return;
     }
 
-    // build a taggable output
+    // if you didn't get a match from the raters db, return because we don't know who to ping
+    if (ratersdbmatches === undefined || ratersdbmatches.length === 0) {
+        return;
+    }
+    // format the userids as taggable output
     const taggablePings: string[] = [];
-
-    for (const id of pingsArr) {
+    for (const element of ratersdbmatches) {
+        const id = element.userid;
         taggablePings.push('<@' + id + '>');
     }
-    // join into a single string and reply into the channel where the pokepaste was made
+
+    // concat the taggable ids as a single string
     const pingOut = taggablePings.join(', ');
-    await msg.channel.send(`New ${json[msg.channelId].name[0]} RMT ${pingOut}. I won't notify you again for at least 6 hours.`);
+
+    // save the entry to the postgres database
+    // if the cooldown is 0, that means we did have this entry yet for the gen/channel combo. So we need to INSERT a new row into the db
+    // if the cooldown is not 0, then the gen/channel combo did exist. So we need to UPDATE the row in the db
+    // the table is setup so that it users the time on the db server for the timestamp by default
+    try {
+        if (cooldown === 0) {
+            await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2)', [msg.channelId, identifier]);    
+        }
+        else {
+            await pool.query('UPDATE chatot.cooldown SET date = default WHERE channelid = $1 AND identifier = $2', [msg.channelId, identifier]);
+        }
+        
+    }
+    catch(err) {
+        console.error(err);
+        return;
+    }
+
+    
+    await msg.channel.send(`New ${ratersdbmatches[0].meta} RMT ${pingOut}. I won't notify you again for at least 6 hours.`);
 };

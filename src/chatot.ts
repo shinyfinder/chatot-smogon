@@ -8,7 +8,6 @@ import type { SlashCommand } from './types/slash-command-base';
 import type { eventHandler } from './types/event-base';
 import { readdir } from 'node:fs/promises';
 import * as net from 'node:net';
-import { getCooldowns } from './helpers/getCooldowns.js';
 import { createPool, pool } from './helpers/createPool.js';
 
 
@@ -82,15 +81,6 @@ catch (error) {
   console.error(error);
   process.exit();
 }
-
-
-
-
-
-/**
- * Fetch the list of cooldowns from the local json
- */
-getCooldowns();
 
 
 /**
