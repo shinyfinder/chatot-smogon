@@ -61,9 +61,6 @@ export async function rmtMonitor(msg: Message) {
         '630478290729041920',
         // rmt2 -- legacy system
         '635257209416187925',
-        // test
-        '1060628096442708068',
-        "1060623647649308712",
     ];
 
     // define the gen abbreviations
@@ -177,7 +174,7 @@ export async function rmtMonitor(msg: Message) {
         let meta = metamatchArr[1];
         // only try to parse if it's in the OM or ND non-ou channels
         // om
-        if (meta !== undefined && (msg.channelId === '1059657287293222912' || msg.channelId == '1060623647649308712')) {
+        if (meta !== undefined && msg.channelId === '1059657287293222912') {
             if (meta == 'godly gift' || meta == 'gg') {
                 identifier = 'GG';
             }
@@ -199,7 +196,7 @@ export async function rmtMonitor(msg: Message) {
             }
         }
         // nd
-        else if (meta !== undefined && (msg.channelId == '1060037469472555028' || msg.channelId == '1060623647649308712')) {
+        else if (meta !== undefined && msg.channelId == '1060037469472555028') {
             meta = meta.toLowerCase();
             if (meta == 'mono' || meta == 'monotype') {
                 identifier = 'NatDex Mono';
@@ -212,7 +209,7 @@ export async function rmtMonitor(msg: Message) {
 
     }
     // if this is in OM or ND non-OU and they didn't specify a meta, return
-    else if (metamatchArr === null && (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028' || msg.channelId == '1060623647649308712')) {
+    else if (metamatchArr === null && (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028')) {
         return;
     }
 
@@ -267,7 +264,7 @@ export async function rmtMonitor(msg: Message) {
     try {
         // if you're in the OM or ND nonou channels, we need to earch by the meta
         // otherwise, you can search by gen
-        if (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028' || msg.channelId == '1060623647649308712') {
+        if (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028') {
             const ratersPostgres = await pool.query('SELECT meta, userid FROM chatot.raters WHERE channelID = $1 AND meta = $2', [msg.channelId, identifier]);
             ratersdbmatches = ratersPostgres.rows;
         }

@@ -47,9 +47,7 @@ export const command: SlashCommand = {
 
         // filter the users by the desired role
         // here the id is the role id for comp helpers
-        // const roleFetch = interaction.guild.roles.cache.get('580468109438353470'); // test server
-        const roleFetch = smogon.roles.cache.get('1046554598783062066');
-        // const roleFetch = interaction.guild.roles.cache.get('630430864634937354'); // main
+        const roleFetch = interaction.guild.roles.cache.get('630430864634937354'); // main
 
 
         // typecheck roleFetch to make sure you got the data
@@ -115,10 +113,8 @@ export const command: SlashCommand = {
         await interaction.reply(`Parsing messages from ${ startDateIn.toString() } to ${ endDateIn.toString() }...`);
 
         // loop through the different RMT channels to get all of the messages
-        // const channelIDs = ['630478290729041920', '635257209416187925']; // originals
         // forums
-        const channelIDs = ['1060628096442708068', '1065764634562416680']; // dev server
-        /*const channelIDs = [
+        const channelIDs = [
             // pu
             '1061136198208344084',
             // nu
@@ -162,7 +158,7 @@ export const command: SlashCommand = {
             // rmt2 -- legacy system
             '635257209416187925',
         ];
-        */
+        
 
         // variable preallocation for getting the users who posted messages in the RMT channels
         const users: string[] = [], userIDs: string[] = [], charCount: number[] = [];
