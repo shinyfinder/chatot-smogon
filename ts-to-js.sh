@@ -12,6 +12,5 @@
 # file (non-negotiable).
 
 set -o pipefail
-set +x
 
 git ls-files "*.ts" "*.tsx" | xargs node_modules/.bin/esbuild --log-level=error --outbase=. --outdir=.
