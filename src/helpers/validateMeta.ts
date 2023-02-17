@@ -1,4 +1,4 @@
-import { allowedMetas } from "./constants.js";
+import { allowedMetas } from './constants.js';
 /**
  * Validates the input when adding/removing team raters
  * Also maps the meta and provided gen to a number and channel
@@ -21,7 +21,7 @@ export function validateMeta(meta: string, genIn: string): [boolean, string, str
 
     // map the meta to the channel
     let channel = '';
-    let metaOut = ''
+    let metaOut = '';
     switch (meta) {
         case 'lgpe ou':
             channel = '1060339824537641152';
@@ -34,7 +34,7 @@ export function validateMeta(meta: string, genIn: string): [boolean, string, str
         case 'ou':
             if (genIn === 'SV') {
                 channel = '1059653209678950460';
-                metaOut = 'OU'
+                metaOut = 'OU';
                 break;
             }
             // old gens ou
@@ -43,7 +43,6 @@ export function validateMeta(meta: string, genIn: string): [boolean, string, str
                 metaOut = 'OU';
                 break;
             }
-            
         case 'ubers':
             channel = '1059901370477576272';
             metaOut = 'Ubers';

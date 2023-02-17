@@ -20,11 +20,17 @@ export async function addRater(interaction: ChatInputCommandInteraction, metaIn:
 
     // load the rater file
     // postgres
+    interface pgres {
+        userid: string
+    }
+
     try {
         // query the db and extract the matches
         const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
-        const dbmatches: { userid: string}[] = ratersPostgres.rows;
-        
+         const dbmatches = ratersPostgres.rows as pgres[];
+        // const dbmatches: { userid: string}[] = ratersPostgres.rows;
+        // const dbmatches = rows as pgres[];
+
         // if there are matches (people already are listed to rate for this meta), check the list against the person we are trying to add
         // if they are already listed, return
         if (dbmatches.length) {
@@ -41,9 +47,9 @@ export async function addRater(interaction: ChatInputCommandInteraction, metaIn:
         await interaction.followUp(`${user.username} added to the list of ${gen} ${meta} raters.`);
         return;
     }
-    catch(err) {
+    catch (err) {
         console.error(err);
         await interaction.followUp({ content: 'An error occurred and the user was not added to the database.' });
         return;
     }
-};
+}

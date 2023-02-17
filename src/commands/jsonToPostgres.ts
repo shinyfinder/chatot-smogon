@@ -56,7 +56,7 @@ export const command: SlashCommand = {
             // loop over the entries in the extracted object
             for (let key2 in obj) {
                 // key2 is the gen
-                
+
                 // skip over the name field
                 if (key2 === 'name') {
                     continue;
@@ -102,7 +102,7 @@ export const command: SlashCommand = {
 
                 // get the array of raters
                 const raters = obj[key2];
-                
+
                 // natdex non-ou handler
                 if (name === 'Natdex Non-OU') {
                     if (key2 === 'mono') {
@@ -147,13 +147,13 @@ export const command: SlashCommand = {
                     else {
                         nameOut = key2.toUpperCase();
                     }
-                    
+
                     key2Out = 'SV';
                 }
 
                 // loop over the array of userids
                 for (const element of raters) {
-                    await pool.query('INSERT INTO chatot.raters (channelid, meta, gen, userid) VALUES ($1, $2, $3, $4)', [key, nameOut, key2Out, element]);    
+                    await pool.query('INSERT INTO chatot.raters (channelid, meta, gen, userid) VALUES ($1, $2, $3, $4)', [key, nameOut, key2Out, element]);
                 }
             }
         }
@@ -161,9 +161,6 @@ export const command: SlashCommand = {
         */
 
 
-
-
-        
         const __dirname = getWorkingDir();
         const filepath = path.join(__dirname, '../src/db/cooldown.json');
         const raterDB = readFileSync(filepath, 'utf8');
@@ -177,7 +174,7 @@ export const command: SlashCommand = {
             const obj = json[key];
             let key2Out = '';
             // loop over the entries in the extracted object
-            for (let key2 in obj) {
+            for (const key2 in obj) {
                 // key2 is the gen
 
                 // convert the numbers to the gen prefix
@@ -192,9 +189,6 @@ export const command: SlashCommand = {
                 }
                 else if (key2 === '4') {
                     key2Out = 'DP';
-                }
-                else if (key2 === '5') {
-                    key2Out = 'BW';
                 }
                 else if (key2 === '5') {
                     key2Out = 'BW';
@@ -220,15 +214,14 @@ export const command: SlashCommand = {
 
                 // get the array of raters
                 const cooldown = Math.round(obj[key2] / 1000);
-                
+
                 // natdex non-ou handler
                 if (key === '1060037469472555028') {
                     if (key2 === '9') {
                         continue;
                     }
                     else if (key2 === 'mono') {
-                        key2Out = `NatDex Mono`;
-                        
+                        key2Out = 'NatDex Mono';
                     }
                     else {
                         key2Out = `NatDex ${key2.toUpperCase()}`;
@@ -265,14 +258,10 @@ export const command: SlashCommand = {
                 }
 
                 // loop over the array of userids
-                await pool.query('INSERT INTO chatot.cooldown (channelid, identifier, date) VALUES ($1, $2, to_timestamp($3))', [key, key2Out, cooldown]);    
-                
+                await pool.query('INSERT INTO chatot.cooldown (channelid, identifier, date) VALUES ($1, $2, to_timestamp($3))', [key, key2Out, cooldown]);
             }
-            
         }
-        
         await interaction.reply('done');
-        
 
     },
 };

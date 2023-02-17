@@ -58,7 +58,6 @@ export const clientEvent: eventHandler = {
                 if (command.autocomplete) {
                     await command.autocomplete(interaction);
                 }
-                
             }
             catch (error) {
                 // if there's an error, log it
@@ -67,6 +66,5 @@ export const clientEvent: eventHandler = {
 
         }
 
-        
     },
 };

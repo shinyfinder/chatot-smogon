@@ -4,10 +4,7 @@ import * as dotenv from 'dotenv';
 
 // parse the env file
 // running dotenv.config exposes the env variables as process.env
-// const __dirname = getWorkingDir();
-//dotenv.config({ path: path.resolve('.env') });
 dotenv.config();
-
 
 
 /**
@@ -75,7 +72,7 @@ const getConfig = (): ENV => {
         PGUSER: process.env.PGUSER,
         PGPASSWORD: process.env.PGPASSWORD,
         PGHOST: process.env.PGHOST,
-        PGPORT: parseInt(process.env.PGPORT || "", 10),
+        PGPORT: parseInt(process.env.PGPORT || '', 10),
         PGDATABASE: process.env.PGDATABASE,
         // ...
     };

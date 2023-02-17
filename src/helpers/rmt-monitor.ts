@@ -124,7 +124,7 @@ export async function rmtMonitor(msg: Message) {
     // it excludes possible matches within the pokepaste link
     // ... in theory
     const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|BDSP|LGPE|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|RS|ADV|GSC|GS|RBY|RB))[ou]*\b/i;
-    let matchArr = msg.content.match(genRegex);
+    const matchArr = msg.content.match(genRegex);
 
     // if there are no gen matches, they didn't specify the gen
     // there are exceptions (i.e. OM) where users don't need to specify the gen, so instead we'll need to filter by meta later
@@ -132,7 +132,6 @@ export async function rmtMonitor(msg: Message) {
     const specialCases = [
         // old gen OU
         '1060339824537641152',
-        //'1060628096442708068',
     ];
 
     // if they didn't specify a gen and there are multiple options, return
@@ -204,7 +203,6 @@ export async function rmtMonitor(msg: Message) {
             else if (meta == 'uu' || meta == 'ag') {
                 identifier = `NatDex ${meta.toUpperCase()}`;
             }
-            
         }
 
     }
@@ -233,14 +231,19 @@ export async function rmtMonitor(msg: Message) {
 
     // check cooldown
     let cooldown = 0;
+    interface pgres {
+        date: Date
+    }
     try {
         const cooldownPostgres = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, identifier]);
-        const dbmatches: Date | undefined = cooldownPostgres.rows[0]?.date;
-        if (dbmatches instanceof Date) {
-            cooldown = new Date(dbmatches).valueOf();
+        // const { rows } = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, identifier]);
+        const dbmatches = cooldownPostgres.rows[0] as pgres;
+        // const dbmatches = rows[0] as pgres | undefined;
+        if (dbmatches !== undefined) {
+            cooldown = new Date(dbmatches.date).valueOf();
         }
     }
-    catch(err) {
+    catch (err) {
         console.error(err);
         return;
     }
@@ -272,9 +275,9 @@ export async function rmtMonitor(msg: Message) {
             const ratersPostgres = await pool.query('SELECT meta, userid FROM chatot.raters WHERE channelID = $1 AND gen = $2', [msg.channelId, identifier]);
             ratersdbmatches = ratersPostgres.rows;
         }
-        
+
     }
-    catch(err) {
+    catch (err) {
         console.error(err);
         return;
     }
@@ -299,18 +302,16 @@ export async function rmtMonitor(msg: Message) {
     // the table is setup so that it users the time on the db server for the timestamp by default
     try {
         if (cooldown === 0) {
-            await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2)', [msg.channelId, identifier]);    
+            await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2)', [msg.channelId, identifier]);
         }
         else {
             await pool.query('UPDATE chatot.cooldown SET date = default WHERE channelid = $1 AND identifier = $2', [msg.channelId, identifier]);
         }
-        
+
     }
-    catch(err) {
+    catch (err) {
         console.error(err);
         return;
     }
-
-    
     await msg.channel.send(`New ${ratersdbmatches[0].meta} RMT ${pingOut}. I won't notify you again for at least 6 hours.`);
-};
+}

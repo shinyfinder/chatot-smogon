@@ -8,7 +8,7 @@ import { pool } from '../helpers/createPool.js';
  * @param gen Optional - gen which you want the list of raters for. Must be combined with meta
  * @returns Posts embed containing the list of team raters
  */
-export async function listRater(interaction: ChatInputCommandInteraction, metaIn?: string, gen?: string) {    
+export async function listRater(interaction: ChatInputCommandInteraction, metaIn?: string, gen?: string) {
     // if they didn't specify a meta, list all of the raters
     if (metaIn === undefined) {
         const stringArr: string[] = [];
@@ -20,11 +20,11 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
             meta: string,
             gen: string,
             userid: string,
-        };
+        }
         let dbmatches: ratersTable[];
         try {
             const ratersPostgres = await pool.query('SELECT channelid, meta, gen, userid FROM chatot.raters ORDER BY channelid ASC, meta ASC, gen DESC');
-            dbmatches = ratersPostgres.rows;
+            dbmatches = ratersPostgres.rows as ratersTable[];
         }
         catch (err) {
             console.error(err);
@@ -212,11 +212,12 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
         }
 
         // retrieve the rater list from the db
+        interface pgres {
+            userid: string
+        }
         try {
-            let dbmatches: { userid: string }[] | undefined;
             const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
-            dbmatches = ratersPostgres.rows;
-            
+            const dbmatches = ratersPostgres.rows as pgres[];
             // format the userids as taggable output
             const taggablePings: string[] = [];
             for (const element of dbmatches) {
@@ -241,14 +242,11 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
             // post it to the channel
             await interaction.followUp({ embeds: [embed] });
             return;
-            
         }
-        catch(err) {
+        catch (err) {
             console.error(err);
             await interaction.followUp({ content: 'An error occurred in polling the database.' });
             return;
         }
-
-        
     }
-};
+}

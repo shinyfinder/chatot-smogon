@@ -20,6 +20,10 @@ const commands: unknown[] = [];
 const commandsPath = new URL('commands', import.meta.url);
 
 // get a list of all of the command files
+interface cmdModule {
+  command: SlashCommand;
+}
+
 try {
   const commandFiles = await readdir(commandsPath);
   // push the commands to the array
@@ -28,21 +32,20 @@ try {
     const filePath = new URL(`commands/${file}`, import.meta.url);
 
     // load the module
-    const command = await import(filePath.toString()).then((obj) =>{
-      const obj2: SlashCommand = obj.command;
+    const command = await import(filePath.toString()).then((obj: cmdModule) => {
+      const obj2 = obj.command;
       return obj2;
     });
 
     // push the command data to the array formatted as a JSON
+    // commands.push(JSON.stringify(command.data));
     commands.push(command.data.toJSON());
   }
 }
-catch(err) {
+catch (err) {
   console.error(err);
   process.exit();
 }
-
-
 
 
 // setup the API call, specifying the API version number and providing the bot's authentication token

@@ -47,7 +47,7 @@ export const command: SlashCommand = {
 
         // filter the users by the desired role
         // here the id is the role id for comp helpers
-        const roleFetch = interaction.guild.roles.cache.get('630430864634937354'); // main
+        const roleFetch = interaction.guild.roles.cache.get('630430864634937354');
 
 
         // typecheck roleFetch to make sure you got the data
@@ -158,7 +158,6 @@ export const command: SlashCommand = {
             // rmt2 -- legacy system
             '635257209416187925',
         ];
-        
 
         // variable preallocation for getting the users who posted messages in the RMT channels
         const users: string[] = [], userIDs: string[] = [], charCount: number[] = [];

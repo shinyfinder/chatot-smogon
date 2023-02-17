@@ -58,7 +58,6 @@ rest.put(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID), { b
 	.catch(console.error);
 
 
-
 /**
  * for ALL global commands
  * delete all global commands

@@ -9,9 +9,9 @@ import config from '../config.js';
 export let pool: pkg.Pool;
 
 // connect to the Postgres DB
-export async function createPool() {
+export function createPool() {
     try {
-      return pool = await new Pool({
+      return pool = new Pool({
         user: config.PGUSER,
         host: config.PGHOST,
         database: config.PGDATABASE,
@@ -19,7 +19,7 @@ export async function createPool() {
         port: config.PGPORT,
       });
     }
-    catch(error) {
+    catch (error) {
       console.error(error);
       process.exit();
     }

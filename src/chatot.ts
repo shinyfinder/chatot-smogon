@@ -19,7 +19,6 @@ import { createPool, pool } from './helpers/createPool.js';
 import config from './config.js';
 
 
-
 /**
  * Create a new client instance
  * A list of intents can be found here: https://discord.com/developers/docs/topics/gateway#list-of-intents
@@ -56,8 +55,12 @@ const commandsPath = new URL('commands', import.meta.url);
 
 // get a list of all the .js files in the commands directory
 // this returns an array of strings
+interface cmdModule {
+  command: SlashCommand;
+}
+
 try {
-  const commandFiles = await readdir(commandsPath);//.filter(file => file.endsWith('.js'));
+  const commandFiles = await readdir(commandsPath);
   // loop over the array of commands and set them to the collection as (name, command) pairs
   for (const file of commandFiles) {
     // if the file doesn't end in .js, don't consider it. It's not a command.
@@ -69,7 +72,7 @@ try {
     const filePath = new URL(`commands/${file}`, import.meta.url);
 
     // load the module
-    const command = await import(filePath.toString()).then((obj) =>{
+    const command = await import(filePath.toString()).then((obj: cmdModule) => {
       const obj2: SlashCommand = obj.command;
       return obj2;
     });
@@ -93,6 +96,10 @@ catch (error) {
 // set the path to the events directory
 const eventsPath = new URL('events', import.meta.url);
 
+interface eventModule {
+  clientEvent: eventHandler
+}
+
 // get a list of all of the trigger events we want to act on. Loads into an array of strings
 try {
   const eventFiles = await readdir(eventsPath);
@@ -107,23 +114,24 @@ try {
     // get the path to the specific event file
     const filePath = new URL(`events/${file}`, import.meta.url);
     // load the module
-    const event = await import(filePath.toString()).then((obj) =>{
-      const obj2: eventHandler = obj.clientEvent;
+    const event = await import(filePath.toString()).then((obj: eventModule) => {
+      const obj2 = obj.clientEvent;
       return obj2;
     });
     // load it onto the client
     if (event.once) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       client.once(event.name, (...args) => event.execute(...args));
     }
     // else (event.once is not set or set to false), trigger whenever the event occurs
     else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         client.on(event.name, (...args) => event.execute(...args));
     }
-    
   }
 
 }
-catch(error) {
+catch (error) {
   console.error(error);
   process.exit();
 }
@@ -132,7 +140,7 @@ catch(error) {
 /**
  * Connect to the postgres DB
  */
-await createPool();
+createPool();
 
 
 // initialize variable for server on fd 3
@@ -144,7 +152,7 @@ let server: net.Server;
  */
 client.login(config.TOKEN)
   .then(() => {
-    server = new net.Server().listen({fd: 3})
+    server = new net.Server().listen({ fd: 3 });
   })
   .catch(e => {
     console.error(e);
@@ -153,7 +161,9 @@ client.login(config.TOKEN)
 // error handling and graceful shutdown
 process.on('uncaughtException', err => console.error(err));
 process.on('unhandledRejection', err => console.error(err));
-process.on('SIGTERM', async () => {
-  server.close();
-  await pool.end();
+process.on('SIGTERM', () => {
+  void (async () => {
+    server.close();
+    await pool.end();
+  })();
 });

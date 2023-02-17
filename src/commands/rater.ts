@@ -8,13 +8,13 @@ import { listRater } from '../helpers/listrater.js';
 /**
  * Command to manage the team rater database.
  * Subcommands are add, remove, list all, and list meta.
- * 
+ *
  * add: Adds a user to the specified meta.
- * 
+ *
  * remove: Removes a user from the specified meta.
- * 
+ *
  * list all: Lists all raters in the database grouped by the meta which they rate for.
- * 
+ *
  * list meta: Lists all raters for the specified meta.
  */
 export const command: SlashCommand = {
@@ -49,17 +49,17 @@ export const command: SlashCommand = {
                 option.setName('generation')
                 .setDescription('Which gen this user rates teams for')
                 .addChoices(
-                    {name: 'SV', value: 'SV'},
-                    {name: 'SS', value: 'SS'},
-                    {name: 'SM', value: 'SM'},
-                    {name: 'XY', value: 'XY'},
-                    {name: 'BW', value: 'BW'},
-                    {name: 'DP', value: 'DP'},
-                    {name: 'RS', value: 'RS'},
-                    {name: 'GS', value: 'GS'},
-                    {name: 'RB', value: 'RB'},
-                    {name: 'LGPE', value: 'LGPE'},
-                    {name: 'BDSP', value: 'BDSP'},
+                    { name: 'SV', value: 'SV' },
+                    { name: 'SS', value: 'SS' },
+                    { name: 'SM', value: 'SM' },
+                    { name: 'XY', value: 'XY' },
+                    { name: 'BW', value: 'BW' },
+                    { name: 'DP', value: 'DP' },
+                    { name: 'RS', value: 'RS' },
+                    { name: 'GS', value: 'GS' },
+                    { name: 'RB', value: 'RB' },
+                    { name: 'LGPE', value: 'LGPE' },
+                    { name: 'BDSP', value: 'BDSP' },
                 )
                 .setRequired(true))
             .addStringOption(option =>
@@ -81,17 +81,17 @@ export const command: SlashCommand = {
                 option.setName('generation')
                 .setDescription('Which gen this user rates teams for')
                 .addChoices(
-                    {name: 'SV', value: 'SV'},
-                    {name: 'SS', value: 'SS'},
-                    {name: 'SM', value: 'SM'},
-                    {name: 'XY', value: 'XY'},
-                    {name: 'BW', value: 'BW'},
-                    {name: 'DP', value: 'DP'},
-                    {name: 'RS', value: 'RS'},
-                    {name: 'GS', value: 'GS'},
-                    {name: 'RB', value: 'RB'},
-                    {name: 'LGPE', value: 'LGPE'},
-                    {name: 'BDSP', value: 'BDSP'},
+                    { name: 'SV', value: 'SV' },
+                    { name: 'SS', value: 'SS' },
+                    { name: 'SM', value: 'SM' },
+                    { name: 'XY', value: 'XY' },
+                    { name: 'BW', value: 'BW' },
+                    { name: 'DP', value: 'DP' },
+                    { name: 'RS', value: 'RS' },
+                    { name: 'GS', value: 'GS' },
+                    { name: 'RB', value: 'RB' },
+                    { name: 'LGPE', value: 'LGPE' },
+                    { name: 'BDSP', value: 'BDSP' },
                 )
                 .setRequired(true))
             .addStringOption(option =>
@@ -121,17 +121,17 @@ export const command: SlashCommand = {
                     option.setName('generation')
                     .setDescription('Respective gen the user rates teams for')
                     .addChoices(
-                        {name: 'SV', value: 'SV'},
-                        {name: 'SS', value: 'SS'},
-                        {name: 'SM', value: 'SM'},
-                        {name: 'XY', value: 'XY'},
-                        {name: 'BW', value: 'BW'},
-                        {name: 'DP', value: 'DP'},
-                        {name: 'RS', value: 'RS'},
-                        {name: 'GS', value: 'GS'},
-                        {name: 'RB', value: 'RB'},
-                        {name: 'LGPE', value: 'LGPE'},
-                        {name: 'BDSP', value: 'BDSP'},
+                        { name: 'SV', value: 'SV' },
+                        { name: 'SS', value: 'SS' },
+                        { name: 'SM', value: 'SM' },
+                        { name: 'XY', value: 'XY' },
+                        { name: 'BW', value: 'BW' },
+                        { name: 'DP', value: 'DP' },
+                        { name: 'RS', value: 'RS' },
+                        { name: 'GS', value: 'GS' },
+                        { name: 'RB', value: 'RB' },
+                        { name: 'LGPE', value: 'LGPE' },
+                        { name: 'BDSP', value: 'BDSP' },
                     )
                     .setRequired(true))
                 .addStringOption(option =>
@@ -139,11 +139,10 @@ export const command: SlashCommand = {
                     .setDescription('Meta which the user rates teams for')
                     .setRequired(true)
                     .setAutocomplete(true)))),
-    
+
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {
         const focusedOption = interaction.options.getFocused(true);
-        //let choices: string[];
 
         if (focusedOption.name === 'meta') {
             // filter the options shown to the user based on what they've typed in
