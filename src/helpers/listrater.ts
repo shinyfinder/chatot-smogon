@@ -21,10 +21,14 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
             gen: string,
             userid: string,
         }
-        let dbmatches: ratersTable[];
+        let dbmatches: ratersTable[] | [];
         try {
             const ratersPostgres = await pool.query('SELECT channelid, meta, gen, userid FROM chatot.raters ORDER BY channelid ASC, meta ASC, gen DESC');
-            dbmatches = ratersPostgres.rows as ratersTable[];
+            dbmatches = ratersPostgres.rows;
+            if (!dbmatches.length) {
+                await interaction.followUp('No raters found');
+                return;
+            }
         }
         catch (err) {
             console.error(err);
@@ -207,17 +211,18 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
         // if it's invalid input, let them know and return
         // we resuse the channel variable to include the list of allowable names if it's invalid
         if (!valid) {
-            await interaction.reply({ content: `I did not recognize that meta or am not setup to track it. Please choose one from the following (case insensitive) and try again:\`\`\`${channel}\`\`\`` });
+            await interaction.followUp({ content: `I did not recognize that meta or am not setup to track it. Please choose one from the following (case insensitive) and try again:\`\`\`${channel}\`\`\`` });
             return;
         }
 
         // retrieve the rater list from the db
-        interface pgres {
-            userid: string
-        }
         try {
             const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
-            const dbmatches = ratersPostgres.rows as pgres[];
+            const dbmatches: { userid: string}[] | [] = ratersPostgres.rows;
+            if (!dbmatches.length) {
+                await interaction.followUp('No raters found');
+                return;
+            }
             // format the userids as taggable output
             const taggablePings: string[] = [];
             for (const element of dbmatches) {

@@ -19,13 +19,10 @@ export async function removeRater(interaction: ChatInputCommandInteraction, meta
 
     // load the rater file
     // postgres
-    interface pgres {
-        userid: string
-    }
     try {
         // query the db and extract the matches
         const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
-        const dbmatches = ratersPostgres.rows as pgres[];
+        const dbmatches: { userid: string }[] | [] = ratersPostgres.rows;
         // if there are matches (people already are listed to rate for this meta), check the list against the person we are trying to add
         // if they are not already listed, return
         if (dbmatches.length) {
