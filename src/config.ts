@@ -70,7 +70,7 @@ const getConfig = (): ENV => {
         GUILD_ID: process.env.GUILD_ID,
         LOG_CHANNEL_ID: process.env.LOG_CHANNEL_ID,
         PGUSER: process.env.PGUSER,
-        PGPASSWORD: process.env.PGPASSWORD,
+        PGPASSWORD: process.env.PGPASSWORD || '',
         PGHOST: process.env.PGHOST,
         PGPORT: parseInt(process.env.PGPORT || '', 10),
         PGDATABASE: process.env.PGDATABASE,
