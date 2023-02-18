@@ -15,5 +15,12 @@ CREATE TABLE chatot.raters (
     PRIMARY KEY (channelid, meta, gen, userid)
 );
 
+CREATE TABLE chatot.faqs (
+    name text,
+    serverid varchar(20),
+    faq text,
+    PRIMARY KEY (name)
+);
+
 CREATE INDEX chatot_cd_chan_index ON chatot.cooldown (channelid);
 CREATE INDEX chatot_rater_chan_index ON chatot.raters (channelid);

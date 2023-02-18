@@ -28,6 +28,10 @@ try {
   const commandFiles = await readdir(commandsPath);
   // push the commands to the array
   for (const file of commandFiles) {
+    // if the file doesn't end in .js, don't consider it. It's not a command.
+    if (!file.endsWith('.js')) {
+      continue;
+    }
     // get the path to the specific command file
     const filePath = new URL(`commands/${file}`, import.meta.url);
 
