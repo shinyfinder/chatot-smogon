@@ -165,5 +165,6 @@ process.on('SIGTERM', () => {
   void (async () => {
     server.close();
     await pool.end();
+    client.destroy();
   })();
 });
