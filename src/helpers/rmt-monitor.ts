@@ -61,6 +61,8 @@ export async function rmtMonitor(msg: Message) {
         '630478290729041920',
         // rmt2 -- legacy system
         '635257209416187925',
+        // test
+        '1060628096442708068',
     ];
 
     // define the gen abbreviations
@@ -263,16 +265,16 @@ export async function rmtMonitor(msg: Message) {
 
     // ping the relevant parties
     // retrieve the info from the db
-    let ratersdbmatches: { meta: string, userid: string }[] | undefined;
+    let ratersdbmatches: { meta: string, userid: string, ping: string }[] | undefined;
     try {
         // if you're in the OM or ND nonou channels, we need to earch by the meta
         // otherwise, you can search by gen
         if (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028') {
-            const ratersPostgres = await pool.query('SELECT meta, userid FROM chatot.raters WHERE channelID = $1 AND meta = $2', [msg.channelId, identifier]);
+            const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND meta = $2', [msg.channelId, identifier]);
             ratersdbmatches = ratersPostgres.rows;
         }
         else {
-            const ratersPostgres = await pool.query('SELECT meta, userid FROM chatot.raters WHERE channelID = $1 AND gen = $2', [msg.channelId, identifier]);
+            const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND gen = $2', [msg.channelId, identifier]);
             ratersdbmatches = ratersPostgres.rows;
         }
 
@@ -290,11 +292,78 @@ export async function rmtMonitor(msg: Message) {
     const taggablePings: string[] = [];
     for (const element of ratersdbmatches) {
         const id = element.userid;
+
+        // fetch the id to check their online status
+        try {
+            const member = await msg.guild?.members.fetch({ user: id, withPresences: true });
+            /**
+             * Get their status
+             * Because invisible returns null (is this intended?) we need another check to make sure the user is actually in the guild
+             * Let's use the id
+             */
+            // if member.id does not exist, we didn't fetch the member, probably because they aren't in the guild
+            if (!member?.id || member === undefined) {
+                continue;
+            }
+
+            // get their status
+            // options are online, idle, dnd, undefined (technically should be invisible and offline as well but idk if discord is handling those properly)
+            const status = member.presence?.status;
+
+            // get their ping settings from the db
+            const pingConstraint = element.ping;
+
+            // determine whether we should ping them based on their desired settings
+            if (pingConstraint === 'Online') {
+                if (status !== 'online') {
+                    continue;
+                }
+            }
+            else if (pingConstraint === 'Idle') {
+                if (status !== 'idle') {
+                    continue;
+                }
+            }
+            else if (pingConstraint === 'Busy') {
+                if (status !== 'dnd') {
+                    continue;
+                }
+            }
+            else if (pingConstraint === 'Offline') {
+                if (status !== undefined) {
+                    continue;
+                }
+            }
+            else if (pingConstraint === 'Avail') {
+                if (status !== 'online' && status !== 'idle') {
+                    continue;
+                }
+            }
+            else if (pingConstraint === 'Around') {
+                if (status === undefined) {
+                    continue;
+                }
+            }
+            else if (pingConstraint === 'None') {
+                continue;
+            }
+
+
+        }
+        catch (err) {
+            console.error(err);
+            continue;
+        }
         taggablePings.push('<@' + id + '>');
     }
 
     // concat the taggable ids as a single string
     const pingOut = taggablePings.join(', ');
+
+    // return if no one wants to be pinged
+    if (pingOut === '') {
+        return;
+    }
 
     // save the entry to the postgres database
     // if the cooldown is 0, that means we did have this entry yet for the gen/channel combo. So we need to INSERT a new row into the db

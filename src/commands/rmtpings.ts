@@ -21,11 +21,11 @@ export const command: SlashCommand = {
                 { name: 'Online (Green)', value: 'Online' },
                 { name: 'Idle (Yellow)', value: 'Idle' },
                 { name: 'Busy (Red)', value: 'Busy' },
-                { name: 'Offline (Invis)', value: 'Offline' },
+                { name: 'Offline/Invisible', value: 'Offline' },
                 { name: 'Available (Green/Yellow)', value: 'Avail' },
-                { name: 'Unavailable (Red/Invis)', value: 'Unavail' },
                 { name: 'Around (Green/Yellow/Red)', value: 'Around' },
                 { name: 'All', value: 'All' },
+                { name: 'None', value: 'None' },
             )
             .setRequired(true))
         .setDefaultMemberPermissions(0),
