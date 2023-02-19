@@ -12,6 +12,7 @@ CREATE TABLE chatot.raters (
     meta text,
     gen text,
     userid varchar(20),
+    ping text NOT NULL DEFAULT 'All',
     PRIMARY KEY (channelid, meta, gen, userid)
 );
 
