@@ -165,7 +165,7 @@ process.on('unhandledRejection', err => console.error(err));
 process.on('SIGTERM', () => {
   void (async () => {
     server.close();
-    await pool.end();
     client.destroy();
+    await pool.end();
   })();
 });
