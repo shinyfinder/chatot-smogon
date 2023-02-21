@@ -18,7 +18,7 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
 
     // fetch all of the messages from the relevant channel so that we can edit the bot's message
     // load the channel
-    const raterListChannel = await interaction.client.channels.fetch('1065764634562416680');
+    const raterListChannel = await interaction.client.channels.fetch('1024780809200222330');
 
     if (!(raterListChannel?.type === ChannelType.GuildText || raterListChannel?.type === ChannelType.PublicThread)) {
         return;
@@ -34,7 +34,7 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
             // search for the bot's ID and multiple embeds in the message
             // the bot is currently only designed to post multiple embeds in a message in the specified channel for this purpose, so this is probably good enough
             // albeit a bit hard coded
-            if (msg.author.id === '1040375769798557826' && msg.embeds.length >= 3) {
+            if (msg.author.id === '1022962688508313690' && msg.embeds.length >= 3) {
                 postEmbeds = msg.embeds;
                 targetMessage = msg;
             }
