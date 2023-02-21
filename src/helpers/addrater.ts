@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, User } from 'discord.js';
 import { validateMeta } from './validateMeta.js';
 import { pool } from './createPool.js';
+import { updatePublicRatersList } from './updatePublicRatersList.js';
 
 /**
  * Command to add a team rater
@@ -39,7 +40,9 @@ export async function addRater(interaction: ChatInputCommandInteraction, metaIn:
         // if you're still here, then this is a valid case.
         // push it to the db
         await pool.query('INSERT INTO chatot.raters (channelid, meta, gen, userid) VALUES ($1, $2, $3, $4)', [channel, meta, gen, user.id]);
-        await interaction.followUp(`${user.username} added to the list of ${gen} ${meta} raters.`);
+        // update the public list as well
+        await updatePublicRatersList(interaction, meta, gen, user.id, 'add');
+        await interaction.followUp(`${user.username} was added to the list of ${gen} ${meta} raters.`);
         return;
     }
     catch (err) {

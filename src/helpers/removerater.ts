@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, User } from 'discord.js';
 import { validateMeta } from '../helpers/validateMeta.js';
 import { pool } from '../helpers/createPool.js';
+import { updatePublicRatersList } from './updatePublicRatersList.js';
 /**
  * Command to add a team rater
  * @param user Username or ID to add to the list of raters
@@ -36,6 +37,8 @@ export async function removeRater(interaction: ChatInputCommandInteraction, meta
         // if you're still here, then this is a valid case.
         // remove them from the db
         await pool.query('DELETE FROM chatot.raters WHERE meta=$1 AND gen=$2 AND userid=$3', [meta, gen, user.id]);
+        // update the public list as well
+        await updatePublicRatersList(interaction, meta, gen, user.id, 'remove');
         await interaction.followUp(`${user.username} removed from the list of ${gen} ${meta} raters.`);
         return;
     }

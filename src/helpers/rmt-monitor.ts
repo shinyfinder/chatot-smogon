@@ -61,8 +61,6 @@ export async function rmtMonitor(msg: Message) {
         '630478290729041920',
         // rmt2 -- legacy system
         '635257209416187925',
-        // test
-        '1060628096442708068',
     ];
 
     // define the gen abbreviations

@@ -4,10 +4,8 @@ import { pool } from '../helpers/createPool.js';
 
 /**
  * Command to post FAQs to the chat, optionally which one.
- * @param data SlashCommandBuilder() instance from discord.js
- * @returns Replies Pong! in the chat
  *
- * Can be used as a template for future commands
+ * Subcommands are add, remove, and list
  */
 
 export const command: SlashCommand = {
