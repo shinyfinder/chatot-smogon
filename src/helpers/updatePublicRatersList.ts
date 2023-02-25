@@ -18,7 +18,7 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
 
     // fetch all of the messages from the relevant channel so that we can edit the bot's message
     // load the channel
-    const raterListChannel = await interaction.client.channels.fetch('1024780809200222330');
+    const raterListChannel = await interaction.client.channels.fetch('1079156451609686026');
 
     if (!(raterListChannel?.type === ChannelType.GuildText || raterListChannel?.type === ChannelType.PublicThread)) {
         return;
