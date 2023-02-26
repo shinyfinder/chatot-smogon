@@ -38,10 +38,22 @@ export async function addRater(interaction: ChatInputCommandInteraction, metaIn:
         }
 
         // if you're still here, then this is a valid case.
+        // try to find their ping preferences
+        const pingPG = await pool.query('SELECT ping FROM chatot.raters WHERE userid=$1', [user.id]);
+        const pingMatch: { ping: string }[] | [] = pingPG.rows;
+        let pingOut = '';
+        // if they're already a rater for something, use their preferences for this new add
+        // otherwise, default to All
+        if (pingMatch.length) {
+            pingOut = pingMatch[0].ping;
+        }
+        else {
+            pingOut = 'All';
+        }
         // push it to the db
-        await pool.query('INSERT INTO chatot.raters (channelid, meta, gen, userid) VALUES ($1, $2, $3, $4)', [channel, meta, gen, user.id]);
+        await pool.query('INSERT INTO chatot.raters (channelid, meta, gen, userid, ping) VALUES ($1, $2, $3, $4, $5)', [channel, meta, gen, user.id, pingOut]);
         // update the public list as well
-        await updatePublicRatersList(interaction, meta, gen, user.id, 'add');
+        // await updatePublicRatersList(interaction, meta, gen, user.id, 'add');
         await interaction.followUp(`${user.username} was added to the list of ${gen} ${meta} raters.`);
         return;
     }

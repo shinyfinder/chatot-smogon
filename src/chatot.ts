@@ -162,10 +162,4 @@ client.login(config.TOKEN)
 // error handling and graceful shutdown
 process.on('uncaughtException', err => console.error(err));
 process.on('unhandledRejection', err => console.error(err));
-process.on('SIGTERM', () => {
-  void (async () => {
-    server.close();
-    client.destroy();
-    await pool.end();
-  })();
-});
+process.on('SIGTERM', () => process.exit(0));
