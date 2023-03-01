@@ -23,7 +23,7 @@ export const clientEvent: eventHandler = {
             return Promise.resolve();
         }
         // success!
-        console.log(`<5>Ready! Logged in as ${client.user.tag}`);
+        console.log(`<6>Ready! Logged in as ${client.user.tag}`);
         return Promise.resolve();
     },
 };
