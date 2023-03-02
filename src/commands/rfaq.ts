@@ -10,6 +10,7 @@ import type { Pool } from 'pg';
  */
 
 export const command: SlashCommand = {
+    global: true,
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('rfaq')
@@ -89,43 +90,46 @@ export const command: SlashCommand = {
 
             // await their input
             const filter = (modalInteraction: ModalSubmitInteraction) => modalInteraction.customId === 'mymodal';
-            await interaction.awaitModalSubmit({ filter, time: 5 * 60 * 1000 })
-                .then(async (submittedModal) => {
-                    await submittedModal.deferReply({ ephemeral: true });
+            
+            // wait for them to submit the modal
+            const submittedModal = await interaction.awaitModalSubmit({ filter, time: 5 * 60 * 1000 });
 
-                    const txt = submittedModal.fields.getTextInputValue('faqInput');
-                    const name = submittedModal.fields.getTextInputValue('nameInput').toLowerCase();
-                    // query the database for the list of faqs for this server
-                    // let dbmatches: { name: string, faq: string}[] | [];
-                    const dbmatches: { name: string, faq: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
+            // on submit, defer our reply so we can process it
+            await submittedModal.deferReply({ ephemeral: true });
 
-                    if (dbmatches === undefined) {
-                        return;
-                    }
+            // get the info they entered
+            const txt = submittedModal.fields.getTextInputValue('faqInput');
+            const name = submittedModal.fields.getTextInputValue('nameInput').toLowerCase();
+            
+            // query the database for the list of faqs for this server
+            const dbmatches: { name: string, faq: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
 
-                    // check if the identifier already exists
-                    // technically postgres checks for this if name is set to the primary key, but we check anyway to let the user know
-                    if (dbmatches.length) {
-                        const nameExists = dbmatches.some(e => e.name.toLowerCase() === name);
-                        if (nameExists) {
-                            await submittedModal.followUp({ content: 'Identifier by this name already exists. Please specify a new one.', ephemeral: true });
-                            return;
-                        }
-                    }
+            if (dbmatches === undefined) {
+                return;
+            }
 
-                    // append new entry to the faqs for this server
-                    try {
-                        await pool.query('INSERT INTO chatot.faqs (name, serverid, faq) VALUES ($1, $2, $3)', [name, serverID, txt]);
-                        await submittedModal.followUp({ content: `Entry added to the list of FAQs for this server as ${name}`, ephemeral: true });
-                        return;
-                    }
-                    catch (err) {
-                        console.error(err);
-                        await submittedModal.followUp({ content: 'An error occurred writing the database.', ephemeral: true });
-                        return;
-                    }
-                })
-                .catch(err => console.error(err));
+            // check if the identifier already exists
+            // technically postgres checks for this if name is set to the primary key, but we check anyway to let the user know
+            if (dbmatches.length) {
+                const nameExists = dbmatches.some(e => e.name.toLowerCase() === name);
+                if (nameExists) {
+                    await submittedModal.followUp({ content: 'Identifier by this name already exists. Please specify a new one.', ephemeral: true });
+                    return;
+                }
+            }
+
+            // append new entry to the faqs for this server
+            try {
+                await pool.query('INSERT INTO chatot.faqs (name, serverid, faq) VALUES ($1, $2, $3)', [name, serverID, txt]);
+                await submittedModal.followUp({ content: `Entry added to the list of FAQs for this server as ${name}`, ephemeral: true });
+                return;
+            }
+            catch (err) {
+                await submittedModal.followUp('An error occurred updating the db. ');
+                throw err;
+            }
+            
+            
         }
 
         /**
@@ -163,15 +167,8 @@ export const command: SlashCommand = {
             }
 
             // remove the selected entry
-            try {
-                await pool.query('DELETE FROM chatot.faqs WHERE serverid=$1 AND name=$2', [serverID, name]);
-                await interaction.followUp({ content: 'Entry removed from the list of FAQs for this server.', ephemeral: true });
-            }
-            catch (err) {
-                console.error(err);
-                await interaction.followUp({ content: 'An error occurred writing the database.', ephemeral: true });
-            }
-
+            await pool.query('DELETE FROM chatot.faqs WHERE serverid=$1 AND name=$2', [serverID, name]);
+            await interaction.followUp({ content: 'Entry removed from the list of FAQs for this server.', ephemeral: true });
         }
 
         /**
@@ -229,20 +226,24 @@ export const command: SlashCommand = {
 
             // await their input
             const filter = (modalInteraction: ModalSubmitInteraction) => modalInteraction.customId === 'mymodal';
-            await interaction.awaitModalSubmit({ filter, time: 5 * 60 * 1000 })
-                .then(async (submittedModal) => {
-                    await submittedModal.deferReply({ ephemeral: true });
-                    const txt = submittedModal.fields.getTextInputValue('faqInput');
-                    try {
-                        await pool.query('UPDATE chatot.faqs SET faq=$1 WHERE serverid=$2 AND name=$3', [txt, serverID, name]);
-                        await submittedModal.followUp({ content: `Updated FAQ ${name} for this server.`, ephemeral: true });
-                    }
-                    catch (err) {
-                        console.error(err);
-                        await submittedModal.followUp({ content: 'An error occurred writing the database.', ephemeral: true });
-                    }
-                })
-                .catch(err => console.error(err));
+            const submittedModal = await interaction.awaitModalSubmit({ filter, time: 5 * 60 * 1000 });
+
+            // defer the reply to their submission so we can process it
+            await submittedModal.deferReply({ ephemeral: true });
+
+            // get their entered text
+            const txt = submittedModal.fields.getTextInputValue('faqInput');
+            
+            // update the db
+            try {
+                await pool.query('UPDATE chatot.faqs SET faq=$1 WHERE serverid=$2 AND name=$3', [txt, serverID, name]);
+                await submittedModal.followUp({ content: `Updated FAQ ${name} for this server.`, ephemeral: true });
+            }
+            catch (err) {
+                await submittedModal.followUp('An error occurred updating the database');
+                throw err;
+            }
+            
         }
 
         /**

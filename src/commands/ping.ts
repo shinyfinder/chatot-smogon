@@ -9,6 +9,7 @@ import { SlashCommand } from '../types/slash-command-base';
  * Can be used as a template for future commands
  */
 export const command: SlashCommand = {
+    global: true,
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('ping')

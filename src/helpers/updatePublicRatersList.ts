@@ -27,24 +27,20 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
     // fetch the messages from the channel
     let postEmbeds: Embed[] = [];
     let targetMessage: Message | undefined;
-    await raterListChannel.messages.fetch({ limit: 100, cache: false })
+    const messages = await raterListChannel.messages.fetch({ limit: 100, cache: false });
+    
     // then find the id of the message that is from the bot and has the embeds
-    .then(messages => {
-        messages.forEach(msg => {
-            // search for the bot's ID and multiple embeds in the message
-            // the bot is currently only designed to post multiple embeds in a message in the specified channel for this purpose, so this is probably good enough
-            // albeit a bit hard coded
-            if (msg.author.id === '1022962688508313690' && msg.embeds.length >= 3) {
-                postEmbeds = msg.embeds;
-                targetMessage = msg;
-            }
-        });
-    })
-    .catch(err => {
-        console.error(err);
-        return;
+    messages.forEach(msg => {
+        // search for the bot's ID and multiple embeds in the message
+        // the bot is currently only designed to post multiple embeds in a message in the specified channel for this purpose, so this is probably good enough
+        // albeit a bit hard coded
+        if (msg.author.id === '1022962688508313690' && msg.embeds.length >= 3) {
+            postEmbeds = msg.embeds;
+            targetMessage = msg;
+        }
     });
-
+   
+    // else, we didn't find the message, so we have to make a new one   
     const stringArr: string[] = [];
     const raterArr: string[][] = [];
     const genArr: number[] = [];
@@ -70,18 +66,13 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
         gen: string,
         userid: string,
     }
-    let dbmatches: ratersTable[] | [];
-    try {
-        const ratersPostgres = await pool.query('SELECT channelid, meta, gen, userid FROM chatot.raters ORDER BY channelid ASC, meta ASC, gen DESC');
-        dbmatches = ratersPostgres.rows;
-        if (!dbmatches.length) {
-            return;
-        }
-    }
-    catch (err) {
-        console.error(err);
+    
+    const ratersPostgres = await pool.query('SELECT channelid, meta, gen, userid FROM chatot.raters ORDER BY channelid ASC, meta ASC, gen DESC');
+    const dbmatches: ratersTable[] | [] = ratersPostgres.rows;
+    if (!dbmatches.length) {
         return;
     }
+    
 
     // loop over the object
     // the database is organized by channel id, then meta, then gen
@@ -122,11 +113,6 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
     raterArr.push(tempRaterArr);
 
     // combine the ararys into objects for sorting
-    /* interface raterGroup {
-        meta: string,
-        raters: string[],
-        gen: number,
-    }*/
     const raterList: raterGroup[] = [];
 
     for (let i = 0; i < stringArr.length; i++) {
@@ -233,6 +219,7 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
     else {
         await raterListChannel.send({ embeds: embedHolder });
     }
+    
 }
 
 

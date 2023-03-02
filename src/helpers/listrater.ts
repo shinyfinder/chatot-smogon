@@ -21,18 +21,11 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
             gen: string,
             userid: string,
         }
-        let dbmatches: ratersTable[] | [];
-        try {
-            const ratersPostgres = await pool.query('SELECT channelid, meta, gen, userid FROM chatot.raters ORDER BY channelid ASC, meta ASC, gen DESC');
-            dbmatches = ratersPostgres.rows;
-            if (!dbmatches.length) {
-                await interaction.followUp('No raters found');
-                return;
-            }
-        }
-        catch (err) {
-            console.error(err);
-            await interaction.followUp('There was an error polling the database');
+        // query the db
+        const ratersPostgres = await pool.query('SELECT channelid, meta, gen, userid FROM chatot.raters ORDER BY channelid ASC, meta ASC, gen DESC');
+        const dbmatches: ratersTable[] | [] = ratersPostgres.rows;
+        if (!dbmatches.length) {
+            await interaction.followUp('No raters found');
             return;
         }
 
@@ -190,15 +183,9 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
                     }
 
                     // remove the user's reaction so they can react again
-                    // const userReactions = message.reactions.cache.filter(rxn => rxn.users.cache.has(interaction.user.id));
-
                     await reaction.users.fetch();
-                    try {
-                        await reaction.users.remove(interaction.user.id);
-                    }
-                    catch (error) {
-                        console.error(error);
-                    }
+                    await reaction.users.remove(interaction.user.id);
+                    
                 }
             })();
         });
@@ -216,42 +203,35 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
         }
 
         // retrieve the rater list from the db
-        try {
-            const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
-            const dbmatches: { userid: string}[] | [] = ratersPostgres.rows;
-            if (!dbmatches.length) {
-                await interaction.followUp('No raters found');
-                return;
-            }
-            // format the userids as taggable output
-            const taggablePings: string[] = [];
-            for (const element of dbmatches) {
-                const id = element.userid;
-                taggablePings.push('<@' + id + '>');
-            }
-
-            // concat the taggable ids as a single string
-            let pingOut = '';
-            if (!taggablePings.length) {
-                pingOut = 'None';
-            }
-            else {
-                pingOut = taggablePings.join(', ');
-            }
-
-            // build the embed for output
-            const embed = new EmbedBuilder()
-                .setTitle(`Raters for ${gen} ${meta}`)
-                .setDescription(`${pingOut}`);
-
-            // post it to the channel
-            await interaction.followUp({ embeds: [embed] });
+        const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
+        const dbmatches: { userid: string}[] | [] = ratersPostgres.rows;
+        if (!dbmatches.length) {
+            await interaction.followUp('No raters found');
             return;
         }
-        catch (err) {
-            console.error(err);
-            await interaction.followUp({ content: 'An error occurred in polling the database.' });
-            return;
+        // format the userids as taggable output
+        const taggablePings: string[] = [];
+        for (const element of dbmatches) {
+            const id = element.userid;
+            taggablePings.push('<@' + id + '>');
         }
+
+        // concat the taggable ids as a single string
+        let pingOut = '';
+        if (!taggablePings.length) {
+            pingOut = 'None';
+        }
+        else {
+            pingOut = taggablePings.join(', ');
+        }
+
+        // build the embed for output
+        const embed = new EmbedBuilder()
+            .setTitle(`Raters for ${gen} ${meta}`)
+            .setDescription(`${pingOut}`);
+
+        // post it to the channel
+        await interaction.followUp({ embeds: [embed] });
+        return;
     }
 }

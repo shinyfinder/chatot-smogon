@@ -11,6 +11,7 @@ import { SlashCommand } from '../types/slash-command-base';
  *
  */
 export const command: SlashCommand = {
+    global: false,
     // setup the slash command
 	data: new SlashCommandBuilder()
 		.setName('rmt')
@@ -183,55 +184,47 @@ export const command: SlashCommand = {
 
             // call the API to get the messages, 100 at a time (API limit)
             while (msgPointer >= startDateDisc.toString() && !breakflag) {
-                await channel.messages.fetch({ limit: 100, cache: false, before: msgPointer })
+                const messages = await channel.messages.fetch({ limit: 100, cache: false, before: msgPointer });
                 // once a set of 100 has been fetched, parse each message to get the author
-                .then(messages => {
-                    // log some output so you know it's doing something
-                    // console.log(`Received ${messages.size} messages`);
+                // loop through each message
+                messages.forEach(msg => {
+                    // get the snowflake for the last processed message from the list
+                    // this becomes the pointer for the next iteration
+                    msgPointer = msg.id;
 
-                    // loop through each message
-                    messages.forEach(msg => {
-                        // get the snowflake for the last processed message from the list
-                        // this becomes the pointer for the next iteration
-                        msgPointer = msg.id;
-
-                        // if the user is not a comp helper, don't log the message
-                        if (!compHelpers.includes(msg.author.id)) {
-                            return;
-                        }
-
-                        // check if the fetched message is greater than the start date
-                        // if we still have not reached the start date (message newer than inputted start), keep looping
-                        // mesages are fetched newest to oldest
-                        if (Number(msgPointer) >= startDateDisc) {
-                            // extract the ID and account name of the user who sent the message
-                            // also get the character length of the message
-                            ID = msg.author.id;
-                            username = msg.author.username + '#' + msg.author.discriminator;
-                            characters = msg.content.length;
-
-                            // if the username includes a comma, remove it
-                            if (username.includes(',')) {
-                                username = username.replaceAll(',', '');
-                            }
-
-                            // log it to the arrays for further processing
-                            userIDs.push(ID);
-                            users.push(username);
-                            charCount.push(characters);
-                        }
-                    });
-
-                    // once you've processed the set of fetched messages, check how many you processed
-                    // if this is less than the requested limit (100), there are no more messages to fetch
-                    // break the loop
-                    if (messages.size < 100) {
-                        breakflag = true;
+                    // if the user is not a comp helper, don't log the message
+                    if (!compHelpers.includes(msg.author.id)) {
+                        return;
                     }
-                })
 
-                // catch and log any errors
-                .catch(console.error);
+                    // check if the fetched message is greater than the start date
+                    // if we still have not reached the start date (message newer than inputted start), keep looping
+                    // mesages are fetched newest to oldest
+                    if (Number(msgPointer) >= startDateDisc) {
+                        // extract the ID and account name of the user who sent the message
+                        // also get the character length of the message
+                        ID = msg.author.id;
+                        username = msg.author.username + '#' + msg.author.discriminator;
+                        characters = msg.content.length;
+
+                        // if the username includes a comma, remove it
+                        if (username.includes(',')) {
+                            username = username.replaceAll(',', '');
+                        }
+
+                        // log it to the arrays for further processing
+                        userIDs.push(ID);
+                        users.push(username);
+                        charCount.push(characters);
+                    }
+                });
+
+                // once you've processed the set of fetched messages, check how many you processed
+                // if this is less than the requested limit (100), there are no more messages to fetch
+                // break the loop
+                if (messages.size < 100) {
+                    breakflag = true;
+                }
             }
 
         }
@@ -351,8 +344,8 @@ export const command: SlashCommand = {
             return;
         }
         // post it to the channel the interaction occurred and tag the person who initiated
-        interaction.channel.send({ content: `Here is the file, <@${interaction.member.user.id}>`, files: [
+        await interaction.channel.send({ content: `Here is the file, <@${interaction.member.user.id}>`, files: [
             { attachment: buf, name: `${startFilename}-${endFilename}_linecount.csv` },
-        ] }).catch(console.error);
+        ] });
 	},
 };

@@ -234,19 +234,15 @@ export async function rmtMonitor(msg: Message) {
     interface pgres {
         date: Date
     }
-    try {
-        const cooldownPostgres = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, identifier]);
-        // const { rows } = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, identifier]);
-        const dbmatches = cooldownPostgres.rows[0] as pgres;
-        // const dbmatches = rows[0] as pgres | undefined;
-        if (dbmatches !== undefined) {
-            cooldown = new Date(dbmatches.date).valueOf();
-        }
+    
+    const cooldownPostgres = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, identifier]);
+    // const { rows } = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, identifier]);
+    const dbmatches = cooldownPostgres.rows[0] as pgres;
+    // const dbmatches = rows[0] as pgres | undefined;
+    if (dbmatches !== undefined) {
+        cooldown = new Date(dbmatches.date).valueOf();
     }
-    catch (err) {
-        console.error(err);
-        return;
-    }
+
     // cooldown = cooldowns[msg.channelId]?.[genNum];
     // if the CD exists, check if the current time is after the end of the CD
     // if we haven't waited the full cooldown for this tier, return and don't ping
@@ -264,22 +260,16 @@ export async function rmtMonitor(msg: Message) {
     // ping the relevant parties
     // retrieve the info from the db
     let ratersdbmatches: { meta: string, userid: string, ping: string }[] | undefined;
-    try {
-        // if you're in the OM or ND nonou channels, we need to earch by the meta
-        // otherwise, you can search by gen
-        if (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028') {
-            const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND meta = $2', [msg.channelId, identifier]);
-            ratersdbmatches = ratersPostgres.rows;
-        }
-        else {
-            const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND gen = $2', [msg.channelId, identifier]);
-            ratersdbmatches = ratersPostgres.rows;
-        }
-
+    
+    // if you're in the OM or ND nonou channels, we need to earch by the meta
+    // otherwise, you can search by gen
+    if (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028') {
+        const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND meta = $2', [msg.channelId, identifier]);
+        ratersdbmatches = ratersPostgres.rows;
     }
-    catch (err) {
-        console.error(err);
-        return;
+    else {
+        const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND gen = $2', [msg.channelId, identifier]);
+        ratersdbmatches = ratersPostgres.rows;
     }
 
     // if you didn't get a match from the raters db, return because we don't know who to ping
@@ -292,66 +282,59 @@ export async function rmtMonitor(msg: Message) {
         const id = element.userid;
 
         // fetch the id to check their online status
-        try {
-            const member = await msg.guild?.members.fetch({ user: id, withPresences: true });
-            /**
-             * Get their status
-             * Because invisible returns null (is this intended?) we need another check to make sure the user is actually in the guild
-             * Let's use the id
-             */
-            // if member.id does not exist, we didn't fetch the member, probably because they aren't in the guild
-            if (!member?.id || member === undefined) {
-                continue;
-            }
-
-            // get their status
-            // options are online, idle, dnd, undefined (technically should be invisible and offline as well but idk if discord is handling those properly)
-            const status = member.presence?.status;
-
-            // get their ping settings from the db
-            const pingConstraint = element.ping;
-
-            // determine whether we should ping them based on their desired settings
-            if (pingConstraint === 'Online') {
-                if (status !== 'online') {
-                    continue;
-                }
-            }
-            else if (pingConstraint === 'Idle') {
-                if (status !== 'idle') {
-                    continue;
-                }
-            }
-            else if (pingConstraint === 'Busy') {
-                if (status !== 'dnd') {
-                    continue;
-                }
-            }
-            else if (pingConstraint === 'Offline') {
-                if (status !== undefined) {
-                    continue;
-                }
-            }
-            else if (pingConstraint === 'Avail') {
-                if (status !== 'online' && status !== 'idle') {
-                    continue;
-                }
-            }
-            else if (pingConstraint === 'Around') {
-                if (status === undefined) {
-                    continue;
-                }
-            }
-            else if (pingConstraint === 'None') {
-                continue;
-            }
-
-
-        }
-        catch (err) {
-            console.error(err);
+        const member = await msg.guild?.members.fetch({ user: id, withPresences: true });
+        /**
+         * Get their status
+         * Because invisible returns null (is this intended?) we need another check to make sure the user is actually in the guild
+         * Let's use the id
+         */
+        // if member.id does not exist, we didn't fetch the member, probably because they aren't in the guild
+        if (!member?.id || member === undefined) {
             continue;
         }
+
+        // get their status
+        // options are online, idle, dnd, undefined (technically should be invisible and offline as well but idk if discord is handling those properly)
+        const status = member.presence?.status;
+
+        // get their ping settings from the db
+        const pingConstraint = element.ping;
+
+        // determine whether we should ping them based on their desired settings
+        if (pingConstraint === 'Online') {
+            if (status !== 'online') {
+                continue;
+            }
+        }
+        else if (pingConstraint === 'Idle') {
+            if (status !== 'idle') {
+                continue;
+            }
+        }
+        else if (pingConstraint === 'Busy') {
+            if (status !== 'dnd') {
+                continue;
+            }
+        }
+        else if (pingConstraint === 'Offline') {
+            if (status !== undefined) {
+                continue;
+            }
+        }
+        else if (pingConstraint === 'Avail') {
+            if (status !== 'online' && status !== 'idle') {
+                continue;
+            }
+        }
+        else if (pingConstraint === 'Around') {
+            if (status === undefined) {
+                continue;
+            }
+        }
+        else if (pingConstraint === 'None') {
+            continue;
+        }
+
         taggablePings.push('<@' + id + '>');
     }
 
@@ -367,18 +350,12 @@ export async function rmtMonitor(msg: Message) {
     // if the cooldown is 0, that means we did have this entry yet for the gen/channel combo. So we need to INSERT a new row into the db
     // if the cooldown is not 0, then the gen/channel combo did exist. So we need to UPDATE the row in the db
     // the table is setup so that it users the time on the db server for the timestamp by default
-    try {
-        if (cooldown === 0) {
-            await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2)', [msg.channelId, identifier]);
-        }
-        else {
-            await pool.query('UPDATE chatot.cooldown SET date = default WHERE channelid = $1 AND identifier = $2', [msg.channelId, identifier]);
-        }
-
+    if (cooldown === 0) {
+        await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2)', [msg.channelId, identifier]);
     }
-    catch (err) {
-        console.error(err);
-        return;
+    else {
+        await pool.query('UPDATE chatot.cooldown SET date = default WHERE channelid = $1 AND identifier = $2', [msg.channelId, identifier]);
     }
+    // ping them
     await msg.channel.send(`New ${ratersdbmatches[0].meta} RMT ${pingOut}. I won't notify you again for at least 6 hours.`);
 }

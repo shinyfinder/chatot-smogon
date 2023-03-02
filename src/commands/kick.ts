@@ -9,6 +9,7 @@ import { SlashCommand } from '../types/slash-command-base';
  *
  */
 export const command: SlashCommand = {
+    global: true,
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('kick')
@@ -64,7 +65,6 @@ export const command: SlashCommand = {
                 wasDMd = true;
             }
             catch (error) {
-                console.error(error);
                 wasDMd = false;
             }
         }
@@ -73,31 +73,16 @@ export const command: SlashCommand = {
             wasDMd = false;
         }
         // kick the user
-        try {
-            await interaction.guild.members.kick(user, auditEntry);
-            // kicked + DMd
-            if (wasDMd) {
-                await interaction.followUp({ content: `${user.username} has been kicked. I let them know.`, ephemeral: true });
-                return;
-            }
-            // kicked + not DMd
-            else {
-                await interaction.followUp({ content: `${user.username} has been kicked. I did not DM them. Possible reasons are they have DMs turned off, they are not in a server with me, or you did not specify a DM.`, ephemeral: true });
-                return;
-            }
+        await interaction.guild.members.kick(user, auditEntry);
+        // kicked + DMd
+        if (wasDMd) {
+            await interaction.followUp({ content: `${user.username} has been kicked. I let them know.`, ephemeral: true });
+            return;
         }
-        catch (err) {
-            console.error(err);
-            // not kicked + DMd
-            if (wasDMd) {
-                await interaction.followUp({ content: `An error occurred and ${user.username} was not kicked. However, I was able to DM them.`, ephemeral: true });
-                return;
-            }
-            // not kicked + not DMd
-            else {
-                await interaction.followUp({ content: `An error occurred and ${user.username} was not kicked or notified.`, ephemeral: true });
-                return;
-            }
+        // kicked + not DMd
+        else {
+            await interaction.followUp({ content: `${user.username} has been kicked. I did not DM them. Possible reasons are they have DMs turned off, they are not in a server with me, or you did not specify a DM.`, ephemeral: true });
+            return;
         }
     },
 };

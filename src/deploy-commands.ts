@@ -8,68 +8,155 @@
  */
 
 import { readdir } from 'node:fs/promises';
-import { REST, Routes } from 'discord.js';
+import { REST, RESTPostAPIApplicationCommandsJSONBody, RESTGetAPIApplicationGuildCommandResult, Routes } from 'discord.js';
 import config from './config.js';
 import { SlashCommand } from './types/slash-command-base';
+import { errorHandler } from './helpers/errorHandler.js';
 
-// setup a container for the command info to be pushed to discord
-// discord only needs the data entry from the command, formatted as a JSON array
-const commands: unknown[] = [];
+// get the command line arguments
+const args = process.argv.slice(2);
+const flags = process.argv.filter(arg => arg.startsWith('-'));
 
-// locate the command directory
-const commandsPath = new URL('commands', import.meta.url);
+// arguments assume a format of
+// node deploy-commands.js -[guild|global|update|u] cmd1 cmd2 cmd3 ...
+
+// determine the scope of this command
+// define the list of possible scopes
+const possibleScopes = [
+    'guild',
+    'global',
+  ];
+  
+let scope = flags[0];
+if (scope === undefined) {
+    console.error(`Expected scope ${possibleScopes.join(' | ')} but received nothing`);
+    process.exit();
+}
+else {
+    scope = scope.replaceAll('-', '');
+}
+
+if (!possibleScopes.some(s => s === scope)) {
+    console.error(`Expected scope ${possibleScopes.join(' | ')} but received ${scope}`);
+    process.exit();
+}
 
 // get a list of all of the command files
 interface cmdModule {
-  command: SlashCommand;
+    command: SlashCommand;
 }
-
-try {
-  const commandFiles = await readdir(commandsPath);
-  // push the commands to the array
-  for (const file of commandFiles) {
-    // if the file doesn't end in .js, don't consider it. It's not a command.
-    if (!file.endsWith('.js')) {
-      continue;
-    }
-    // get the path to the specific command file
-    const filePath = new URL(`commands/${file}`, import.meta.url);
-
-    // load the module
-    const command = await import(filePath.toString()).then((obj: cmdModule) => {
-      const obj2 = obj.command;
-      return obj2;
-    });
-
-    // push the command data to the array formatted as a JSON
-    // commands.push(JSON.stringify(command.data));
-    commands.push(command.data.toJSON());
-  }
-}
-catch (err) {
-  console.error(err);
-  process.exit();
-}
-
 
 // setup the API call, specifying the API version number and providing the bot's authentication token
 const rest = new REST({ version: '10' }).setToken(config.TOKEN);
 
+try {
+    if (scope === 'guild') {
+        // determine whether they specified commands
+        const targetCommands = args.slice(1);
+        if (targetCommands.length) {
+            // get the list of current commands for the guild specified in .env
+            const currentCommandsAPI = await rest.get(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID)) as RESTGetAPIApplicationGuildCommandResult[];
+            // extract the names of the current commands
+            const currentCommandNames = currentCommandsAPI.map(c => c.name);
 
-/**
- * Push the command data to discord.
- * Commands are either pushed to the guild specified in the .env file, or globally (all servers the bot is in)
- * The only difference between the code sets is whether you provide the guild ID
- */
+            // concat the current names with the specified targets
+            // only take the unique entries in case they use this flag to update an existing command
+            const uniqNames = [...new Set(currentCommandNames.concat(targetCommands))];
+                
+            // append js to the unique names so we can load the files
+            uniqNames.forEach((n, index) => uniqNames[index] = n.concat('.js'));
 
-// guild commands
-rest.put(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID), { body: commands })
-	.then(() => console.log('Successfully registered application commands.'))
-	.catch(console.error);
+            // load the files
+            const guildCommands = await loadFiles(uniqNames, scope);
+            
+            // push them to discord
+            await rest.put(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID), { body: guildCommands });
+            console.log('Successfullly pushed guild commands');
+            process.exit();
+    
+        }
+        else {
+            // deploy all currently registered guild commands to guild in .env
+            
+            // locate the command directory
+            const commandsPath = new URL('commands', import.meta.url);
 
-// global commands
-/*
-rest.put(Routes.applicationGuildCommands(config.CLIENT_ID), { body: commands })
-	.then(() => console.log('Successfully registered application commands.'))
-	.catch(console.error);
-*/
+            // get the list of current commands for the guild specified in .env
+            const currentCommandsAPI = await rest.get(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID)) as RESTGetAPIApplicationGuildCommandResult[];
+            // extract the names of the current commands
+            const currentCommandNames = currentCommandsAPI.map(c => c.name);
+
+            // append js to the end of the name of each command so we can load the local file
+            // if there are currently no guild commands, load all of them because they didn't choose one
+            let commandNameList: string[] = [];
+            if (currentCommandNames.length) {
+                currentCommandNames.forEach((n, index) => currentCommandNames[index] = n.concat('.js'));
+                commandNameList = currentCommandNames;
+            }
+            else {
+                commandNameList = await readdir(commandsPath);
+            }
+            
+            // load the files
+            const guildCommands = await loadFiles(commandNameList, scope);
+            
+            // push it to discord
+            await rest.put(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID), { body: guildCommands });
+            console.log('Successfully registered application commands.');
+            process.exit();
+        
+            
+        }
+    }
+    else if (scope === 'global') {
+        // locate the command directory
+        const commandsPath = new URL('commands', import.meta.url);
+        
+        // load the files in the commands directory
+        const commandFiles = await readdir(commandsPath);
+        
+        // load the files
+        const globalCommands = await loadFiles(commandFiles, scope);
+        
+        // push to discord
+        await rest.put(Routes.applicationCommands(config.CLIENT_ID), { body: globalCommands });
+        console.log('Successfully registered global application commands.');
+        process.exit();
+       
+    }
+}
+catch (err) {
+    errorHandler(err);
+    process.exit();
+}
+
+
+async function loadFiles(nameArr: string[], cmdScope: string) {
+    // check if global or guild
+    // the syntax in the command definitions is guild = true
+    const targetScope = (cmdScope === 'global');
+    const commandArr: RESTPostAPIApplicationCommandsJSONBody[] = [];
+    // push the commands to the array
+    for (const file of nameArr) {
+        // if the file doesn't end in .js, don't consider it. It's not a command.
+        if (!file.endsWith('.js')) {
+          continue;
+        }
+        // get the path to the specific command file
+        const filePath = new URL(`commands/${file}`, import.meta.url);
+
+        // load the module
+        const command = await import(filePath.toString()).then((obj: cmdModule) => {
+            const obj2 = obj.command;
+            return obj2;
+        });
+    
+        // push the command data to the array formatted as a JSON
+        // only return commands that are of the same specified scope
+        if (command.global === targetScope) {
+            commandArr.push(command.data.toJSON());
+        }
+        
+      }
+    return commandArr;
+}

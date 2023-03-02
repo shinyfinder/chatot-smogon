@@ -17,6 +17,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteracti
  */
 
 export interface SlashCommand {
+    global: boolean;
     data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
     autocomplete? (interaction: AutocompleteInteraction): Promise<void>;
     execute (interaction: ChatInputCommandInteraction): Promise<void>;

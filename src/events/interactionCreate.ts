@@ -1,4 +1,4 @@
-import { BaseInteraction } from 'discord.js';
+import { BaseInteraction, DiscordAPIError } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { SlashCommand } from '../types/slash-command-base';
 
@@ -32,16 +32,38 @@ export const clientEvent: eventHandler = {
                 await command.execute(interaction);
             }
             catch (error) {
-                // if there's an error, log it
-                console.error(error);
-                // and let the user know there was a problem
-                // keep errors ephemeral so it doesn't clog the chat and only the person who initiated can see the error
-                try {
-                    await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+                // let the user know there was a problem
+                // try to keep errors ephemeral so it doesn't clog the chat and only the person who initiated can see the error
+                if (error instanceof DiscordAPIError && (error.message === 'Missing Permissions' || error.message === 'Missing Access')) {
+                    // if we already replied, edit our reply
+                    if (interaction.replied) {
+                        await interaction.editReply('I do not have permissions to run that command');
+                    }
+                    // if we haven't replied yet, but we deferred a reply, follow up
+                    else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
+                        await interaction.followUp('I do not have permissions to run that command');
+                    }
+                    // if we haven't defferred or replied, reply
+                    else if (!interaction.replied && interaction.isRepliable()) {
+                        await interaction.reply({ content: 'I do not have permissions to run that command', ephemeral: true });
+                    }
+                    throw error;
                 }
-                catch (err) {
-                    console.error(err);
+                
+                // if we already replied, edit our reply
+                if (interaction.replied) {
+                    await interaction.editReply('There was en error while executing this command');
                 }
+                // if we haven't replied yet, but we deferred a reply, follow up
+                else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
+                    await interaction.followUp('There was an error while executing this command');
+                }
+                // if we haven't defferred or replied, reply
+                else if (!interaction.replied && interaction.isRepliable()) {
+                    await interaction.reply({ content: 'There was an error while executing this command', ephemeral: true });
+                }
+                
+                throw error;
             }
         }
         // autocomplete handler
@@ -53,6 +75,7 @@ export const clientEvent: eventHandler = {
 
             // by here, it's one of this bot's commands, so do it.
             // wrap the execution in a try/catch so that errors are handled and won't cause the bot to crash
+            // eslint-disable-next-line no-useless-catch
             try {
                 // try to execute
                 if (command.autocomplete) {
@@ -61,7 +84,7 @@ export const clientEvent: eventHandler = {
             }
             catch (error) {
                 // if there's an error, log it
-                console.error(error);
+                throw error;
             }
 
         }

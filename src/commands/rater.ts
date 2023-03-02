@@ -18,6 +18,7 @@ import { listRater } from '../helpers/listrater.js';
  * list meta: Lists all raters for the specified meta.
  */
 export const command: SlashCommand = {
+    global: false,
     // setup the slash command builder
     // the rater command groups all add, remove, and list conditions under the same command
     // the command structure is as follows, where <> denote required fields

@@ -18,33 +18,24 @@ export async function removeRater(interaction: ChatInputCommandInteraction, meta
         return;
     }
 
-    // load the rater file
-    // postgres
-    try {
-        // query the db and extract the matches
-        const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
-        const dbmatches: { userid: string }[] | [] = ratersPostgres.rows;
-        // if there are matches (people already are listed to rate for this meta), check the list against the person we are trying to add
-        // if they are not already listed, return
-        if (dbmatches.length) {
-            const alreadyARater = dbmatches.some(e => e.userid === user.id);
-            if (!alreadyARater) {
-                await interaction.followUp({ content: 'User is not a team rater for this meta!' });
-                return;
-            }
+    // query the db and extract the matches
+    const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
+    const dbmatches: { userid: string }[] | [] = ratersPostgres.rows;
+    // if there are matches (people already are listed to rate for this meta), check the list against the person we are trying to add
+    // if they are not already listed, return
+    if (dbmatches.length) {
+        const alreadyARater = dbmatches.some(e => e.userid === user.id);
+        if (!alreadyARater) {
+            await interaction.followUp({ content: 'User is not a team rater for this meta!' });
+            return;
         }
+    }
 
-        // if you're still here, then this is a valid case.
-        // remove them from the db
-        await pool.query('DELETE FROM chatot.raters WHERE meta=$1 AND gen=$2 AND userid=$3', [meta, gen, user.id]);
-        // update the public list as well
-        await updatePublicRatersList(interaction);
-        await interaction.followUp(`${user.username} removed from the list of ${gen} ${meta} raters.`);
-        return;
-    }
-    catch (err) {
-        console.error(err);
-        await interaction.followUp({ content: 'An error occurred and the user was not removed from the database.' });
-        return;
-    }
+    // if you're still here, then this is a valid case.
+    // remove them from the db
+    await pool.query('DELETE FROM chatot.raters WHERE meta=$1 AND gen=$2 AND userid=$3', [meta, gen, user.id]);
+    // update the public list as well
+    await updatePublicRatersList(interaction);
+    await interaction.followUp(`${user.username} removed from the list of ${gen} ${meta} raters.`);
+    return;
 }

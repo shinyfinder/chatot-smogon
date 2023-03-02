@@ -19,14 +19,7 @@ export const clientEvent: eventHandler = {
         if (msg.author.bot || !msg.guild) {
             return;
         }
-        // wrap the execution in a try/catch so that errors are handled and won't cause the bot to crash
-        try {
-            // try to execute
-            await rmtMonitor(msg);
-        }
-        catch (error) {
-            // if there's an error, log it
-            console.error(error);
-        }
+        
+        await rmtMonitor(msg);
     },
 };

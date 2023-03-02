@@ -1,7 +1,7 @@
 import { AuditLogEvent, GuildMember, EmbedBuilder, User, ChannelType } from 'discord.js';
 import { eventHandler } from '../types/event-base';
-import config from '../config.js';
 import { sleep } from '../helpers/sleep.js';
+import { pool } from '../helpers/createPool.js';
 /**
  * Kick handler
  *
@@ -59,7 +59,7 @@ export const clientEvent: eventHandler = {
 
             // make sure executor and target isn't null to make TS happy. It shouldn't be
             if (!executor || !target) {
-                await buildEmbed('Inconclusive. No audit log entry at this time.', null);
+                await buildEmbed('Inconclusive. No audit log entry at this time.', null, member);
                 return;
             }
 
@@ -70,7 +70,7 @@ export const clientEvent: eventHandler = {
 
             // Also run a check to make sure that the log returned was for the same kicked member
             if (target.id === member.id) {
-                await buildEmbed(executor, reason);
+                await buildEmbed(executor, reason, member);
             }
             else {
                 // we don't know what this is, so do nothing
@@ -84,50 +84,58 @@ export const clientEvent: eventHandler = {
              console.error(error);
              return;
         }
-
-        /**
-         * Builds discord embed to log kicks.
-         * @param executor User who initiated the kick
-         * @param reason Provided reason for the kick
-         * @returns void. Posts embed to log channel
-         */
-        async function buildEmbed(executor: User | string, reason: string | null) {
-            // if the executor is a User type, that means we found an audit log entry
-            // we only care about their id, so grab that.
-            // Otherwise output the string we passed
-            let executorOut = '';
-            let executorName = '';
-            if (executor instanceof User) {
-                executorOut = `<@${executor.id}>`;
-                executorName = executor.tag;
-            }
-            else {
-                executorOut = executor;
-                executorName = 'Unknown';
-            }
-
-            // typecheck reason
-            if (reason === null) {
-                reason = 'N/A';
-            }
-            // build the embed for output
-            const embed = new EmbedBuilder()
-                .setColor(0xE67E22)
-                .setTitle('User Kicked')
-                .setDescription(`${member.user.tag} was kicked from the server by ${executorName}.`)
-                .addFields(
-                    { name: 'User', value: `<@${member.id}>` },
-                    { name: 'Kicked by', value: `${executorOut}` },
-                    { name: 'Reason', value: `${reason}` },
-                );
-
-            // log to the logging channel specified in the config file
-            const channel = member.client.channels.cache.get(config.LOG_CHANNEL_ID);
-            if (channel?.type !== ChannelType.GuildText) {
-                return;
-            }
-            await channel.send({ embeds: [embed] });
-        }
-
     },
 };
+
+/**
+ * Builds discord embed to log kicks.
+ * @param executor User who initiated the kick
+ * @param reason Provided reason for the kick
+ * @returns void. Posts embed to log channel
+ */
+async function buildEmbed(executor: User | string, reason: string | null, member: GuildMember) {
+    // if the executor is a User type, that means we found an audit log entry
+    // we only care about their id, so grab that.
+    // Otherwise output the string we passed
+    let executorOut = '';
+    let executorName = '';
+    if (executor instanceof User) {
+        executorOut = `<@${executor.id}>`;
+        executorName = executor.tag;
+    }
+    else {
+        executorOut = executor;
+        executorName = 'Unknown';
+    }
+
+    // typecheck reason
+    if (reason === null) {
+        reason = 'N/A';
+    }
+    // build the embed for output
+    const embed = new EmbedBuilder()
+        .setColor(0xE67E22)
+        .setTitle('User Kicked')
+        .setDescription(`${member.user.tag} was kicked from the server by ${executorName}.`)
+        .addFields(
+            { name: 'User', value: `<@${member.id}>` },
+            { name: 'Kicked by', value: `${executorOut}` },
+            { name: 'Reason', value: `${reason}` },
+        );
+
+    // log to the logging channel, if it exists
+
+    const pgres = await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid=$1', [member.guild.id]);
+    const logchan: { channelid: string }[] | [] = pgres.rows;
+
+    if (logchan.length) {
+        const channel = member.client.channels.cache.get(logchan[0].channelid);
+        if (channel?.type !== ChannelType.GuildText) {
+            return;
+        }
+        await channel.send({ embeds: [embed] });
+    }
+    else {
+        return;
+    }
+}

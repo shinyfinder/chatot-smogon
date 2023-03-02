@@ -11,6 +11,7 @@ import { SlashCommand } from '../types/slash-command-base';
  *
  */
 export const command: SlashCommand = {
+    global: true,
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('ban')
@@ -86,7 +87,6 @@ export const command: SlashCommand = {
                 wasDMd = true;
             }
             catch (error) {
-                console.error(error);
                 wasDMd = false;
             }
         }
@@ -94,36 +94,22 @@ export const command: SlashCommand = {
             wasDMd = false;
         }
         // ban the user and delete any messages, if required
-        try {
-            await interaction.guild.members.ban(user, {
-            reason: auditEntry,
-            deleteMessageSeconds: messages,
-            });
+    
+        await interaction.guild.members.ban(user, {
+        reason: auditEntry,
+        deleteMessageSeconds: messages,
+        });
 
-            // banned + DMd
-            if (wasDMd) {
-                await interaction.followUp(`${user.username} has been banned. I let them know.`);
-                return;
-            }
-            // banned + not DMd
-            else {
-                await interaction.followUp(`${user.username} has been banned. I did not DM them. Possible reasons are they have DMs turned off, they are not in a server with me, or you didn't specify a DM.`);
-                return;
-            }
+        // banned + DMd
+        if (wasDMd) {
+            await interaction.followUp(`${user.username} has been banned. I let them know.`);
+            return;
         }
-        catch (err) {
-            console.error(err);
-            // not banned + DMd
-            if (wasDMd) {
-                await interaction.followUp(`An error occurred and ${user.username} was not banned. However, I was able to DM them.`);
-                return;
-            }
-            // not banned + not DMd
-            else {
-                await interaction.followUp(`An error occurred and ${user.username} was not banned or notified.`);
-                return;
-            }
-
+        // banned + not DMd
+        else {
+            await interaction.followUp(`${user.username} has been banned. I did not DM them. Possible reasons are they have DMs turned off, they are not in a server with me, or you didn't specify a DM.`);
+            return;
         }
+        
     },
 };

@@ -5,12 +5,13 @@
   "main": "dist/chatot.js",
   "type": "module",
   "scripts": {
-    "start": "tsc && node dist/chatot.js",
+    "start": "rm -r dist && tsc --build && node dist/chatot.js",
     "lint": "eslint . --ext .ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "tsc && node dist/deploy-commands.js",
-    "delete": "tsc && node dist/delete-commands.js",
-    "build": "tsc"
+    "deploy": "rm -r dist && tsc --build && node dist/deploy-commands.js",
+    "delete": "rm -r dist && tsc --build && node dist/delete-commands.js",
+    "build-paranoid": "rm -r dist && tsc --build",
+    "build": "tsc --build"
   },
   "author": "",
   "license": "ISC",

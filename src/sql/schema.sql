@@ -23,5 +23,8 @@ CREATE TABLE chatot.faqs (
     PRIMARY KEY (name)
 );
 
-CREATE INDEX chatot_cd_chan_index ON chatot.cooldown (channelid);
-CREATE INDEX chatot_rater_chan_index ON chatot.raters (channelid);
+CREATE TABLE chatot.logchan (
+    serverid varchar(20),
+    channelid varchar(20),
+    PRIMARY KEY (serverid)
+);

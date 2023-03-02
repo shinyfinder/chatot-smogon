@@ -10,6 +10,7 @@ import { SlashCommand } from '../types/slash-command-base';
  * Can be used as a template for future commands
  */
 export const command: SlashCommand = {
+    global: false,
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('rmtpings')
@@ -45,25 +46,19 @@ export const command: SlashCommand = {
 
         // update the value in the raters postgres table
         // the table schema defaults to All for everyone
-        try {
-            // query the raters table for their ID
-            const res = await pool.query('SELECT ping FROM chatot.raters WHERE userid=$1', [uid]);
-            const dbmatches: { ping: string}[] | [] = res.rows;
+        // query the raters table for their ID
+        const res = await pool.query('SELECT ping FROM chatot.raters WHERE userid=$1', [uid]);
+        const dbmatches: { ping: string}[] | [] = res.rows;
 
-            if (dbmatches.length) {
-                await pool.query('UPDATE chatot.raters SET ping=$1 WHERE userid=$2', [status, uid]);
-                await interaction.followUp({ content: 'Your preferences have been updated.', ephemeral: true });
-                return;
-            }
-            else {
-                await interaction.followUp({ content: 'You are not currently setup to rate any teams. You must be added to the lists first before you can update your preferences.', ephemeral: true });
-                return;
-            }
-        }
-        catch (err) {
-            console.error(err);
-            await interaction.followUp({ content: 'An error occurred polling the database.', ephemeral: true });
+        if (dbmatches.length) {
+            await pool.query('UPDATE chatot.raters SET ping=$1 WHERE userid=$2', [status, uid]);
+            await interaction.followUp({ content: 'Your preferences have been updated.', ephemeral: true });
             return;
         }
+        else {
+            await interaction.followUp({ content: 'You are not currently setup to rate any teams. You must be added to the lists first before you can update your preferences.', ephemeral: true });
+            return;
+        }
+        
     },
 };

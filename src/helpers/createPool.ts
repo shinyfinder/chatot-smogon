@@ -10,17 +10,11 @@ export let pool: pkg.Pool;
 
 // connect to the Postgres DB
 export function createPool() {
-    try {
-      return pool = new Pool({
-        user: config.PGUSER,
-        host: config.PGHOST,
-        database: config.PGDATABASE,
-        password: config.PGPASSWORD,
-        port: config.PGPORT,
-      });
-    }
-    catch (error) {
-      console.error(error);
-      process.exit();
-    }
-  }
+  return pool = new Pool({
+    user: config.PGUSER,
+    host: config.PGHOST,
+    database: config.PGDATABASE,
+    password: config.PGPASSWORD,
+    port: config.PGPORT,
+  });
+}
