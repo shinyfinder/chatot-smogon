@@ -14,7 +14,7 @@ interface raterGroup {
  * Most of this logic is from ./listrater
  * Since the names are posted in an embed and not post per meta, we need to rubuild/requery each time
  */
-export async function updatePublicRatersList(interaction: ChatInputCommandInteraction, meta: string, gen: string, userID: string, direction: string) {
+export async function updatePublicRatersList(interaction: ChatInputCommandInteraction) {
 
     // fetch all of the messages from the relevant channel so that we can edit the bot's message
     // load the channel
@@ -45,229 +45,194 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
         return;
     });
 
-    // if we found a message, we just need to edit the content of the embeds
-    // otherwise we need to make a new post with them
-    const newEmbedHolder: EmbedBuilder[] = [];
-    if (postEmbeds.length) {
-        // loop over each of the embeds until we find the field of the one we edited
-        for (let i = 0; i < postEmbeds.length; i++) {
-            const newEmbed = EmbedBuilder.from(postEmbeds[i]);
+    const stringArr: string[] = [];
+    const raterArr: string[][] = [];
+    const genArr: number[] = [];
 
-            // loop over the fields to see if we can find the one we care about
-            const editedField = `${gen} ${meta}`;
-            if (newEmbed.data.fields?.length) {
-                for (let j = 0; j < newEmbed.data.fields?.length; j++) {
-                    if (newEmbed.data.fields[j].name === editedField) {
-                        if (direction === 'add') {
-                            newEmbed.data.fields[j].value += ', <@' + userID + '>';
-                            break;
-                        }
-                        else if (direction === 'remove') {
-                            // split the string into an array of names
-                            const allNames = newEmbed.data.fields[j].value.split(', ');
-                            // remove the raters id
-                            allNames.splice(allNames.indexOf(`<@${userID}>`), 1);
-                            // rejoin
-                            newEmbed.data.fields[j].value = allNames.join(', ');
-                            break;
-                        }
+    // create a map of prefix to gen number for sorting
+    // we put bdsp/lgpe further below because we want less priority on those (lower listed)
+    const genConversion: { [key: string] : number} = {
+        'SV': 9,
+        'SS': 8,
+        'SM': 7,
+        'XY': 6,
+        'BW': 5,
+        'DP': 4,
+        'RS': 3,
+        'GS': 2,
+        'RB': 1,
+    };
 
-                    }
-                }
-            }
-            // push it to the new holder array
-            // the holder includes the edited embed and forwards those that aren't edited
-            // because embeds are immutable, we have to create a new one of each
-            newEmbedHolder.push(newEmbed);
-        }
-
-        // edit the message in the channel
-        if (targetMessage instanceof Message) {
-            await targetMessage.edit({ embeds: newEmbedHolder });
-        }
+    // get the entire raters db
+    interface ratersTable {
+        channelid: string,
+        meta: string,
+        gen: string,
+        userid: string,
     }
-    // else, we didn't find the message, so we have to make a new one
-    else {
-        const stringArr: string[] = [];
-        const raterArr: string[][] = [];
-        const genArr: number[] = [];
-
-        // create a map of prefix to gen number for sorting
-        // we put bdsp/lgpe further below because we want less priority on those (lower listed)
-        const genConversion: { [key: string] : number} = {
-            'SV': 9,
-            'SS': 8,
-            'SM': 7,
-            'XY': 6,
-            'BW': 5,
-            'DP': 4,
-            'RS': 3,
-            'GS': 2,
-            'RB': 1,
-        };
-
-        // get the entire raters db
-        interface ratersTable {
-            channelid: string,
-            meta: string,
-            gen: string,
-            userid: string,
-        }
-        let dbmatches: ratersTable[] | [];
-        try {
-            const ratersPostgres = await pool.query('SELECT channelid, meta, gen, userid FROM chatot.raters ORDER BY channelid ASC, meta ASC, gen DESC');
-            dbmatches = ratersPostgres.rows;
-            if (!dbmatches.length) {
-                return;
-            }
-        }
-        catch (err) {
-            console.error(err);
+    let dbmatches: ratersTable[] | [];
+    try {
+        const ratersPostgres = await pool.query('SELECT channelid, meta, gen, userid FROM chatot.raters ORDER BY channelid ASC, meta ASC, gen DESC');
+        dbmatches = ratersPostgres.rows;
+        if (!dbmatches.length) {
             return;
         }
+    }
+    catch (err) {
+        console.error(err);
+        return;
+    }
 
-        // loop over the object
-        // the database is organized by channel id, then meta, then gen
-        let tempRaterArr: string[] = [];
-        let oldMeta = '';
-        let oldGen = '';
-        for (const dbRow of dbmatches) {
-            // extraxt the data from the row
-            const metaDB = dbRow.meta;
-            const genDB = dbRow.gen;
-            // create a header string based on the gen/meta
-            const stringOut = `${genDB} ${metaDB}`;
-            const genNum = genConversion[genDB];
-            // push the header to the array of headers if it's not already there
-            if (!stringArr.includes(stringOut)) {
-                stringArr.push(stringOut);
-                genArr.push(genNum);
-                // we don't want to push an empty array on the first iteration, so check for the trackers equal to their initial values
-                if (oldGen === '' && oldMeta === '') {
-                    oldMeta = metaDB;
-                    oldGen = genDB;
-                }
-            }
-            // if we are looking at the same combination of gens and metas, push the userid to a temp array
-            if (metaDB === oldMeta && genDB === oldGen) {
-                tempRaterArr.push(dbRow.userid);
-            }
-            // if we've come across a new combo, push the temp array to the main array of raters and reset the temp array and trackers
-            else {
-                raterArr.push(tempRaterArr);
+    // loop over the object
+    // the database is organized by channel id, then meta, then gen
+    let tempRaterArr: string[] = [];
+    let oldMeta = '';
+    let oldGen = '';
+    for (const dbRow of dbmatches) {
+        // extraxt the data from the row
+        const metaDB = dbRow.meta;
+        const genDB = dbRow.gen;
+        // create a header string based on the gen/meta
+        const stringOut = `${genDB} ${metaDB}`;
+        const genNum = genConversion[genDB];
+        // push the header to the array of headers if it's not already there
+        if (!stringArr.includes(stringOut)) {
+            stringArr.push(stringOut);
+            genArr.push(genNum);
+            // we don't want to push an empty array on the first iteration, so check for the trackers equal to their initial values
+            if (oldGen === '' && oldMeta === '') {
                 oldMeta = metaDB;
                 oldGen = genDB;
-                tempRaterArr = [dbRow.userid];
             }
         }
-        // the last row doesn't get appended in the above loop, so do 1 more append to get the last set of raters
-        // alternatively you can setup a counter based on the length of the returned DB to know when you're on the last iteration
-        raterArr.push(tempRaterArr);
-
-        // combine the ararys into objects for sorting
-        /* interface raterGroup {
-            meta: string,
-            raters: string[],
-            gen: number,
-        }*/
-        const raterList: raterGroup[] = [];
-
-        for (let i = 0; i < stringArr.length; i++) {
-            raterList.push({ 'meta': stringArr[i], 'raters': raterArr[i], gen: genArr[i] });
+        // if we are looking at the same combination of gens and metas, push the userid to a temp array
+        if (metaDB === oldMeta && genDB === oldGen) {
+            tempRaterArr.push(dbRow.userid);
         }
-
-        // now that they are grouped together, we can sort them into current gen official, old gen official, and misc groups
-        const currentOfficial: raterGroup[] = [];
-        const oldOfficial: raterGroup[] = [];
-        const misc: raterGroup[] = [];
-        const officialTiers = [
-            'OU',
-            'Ubers',
-            'DOU',
-            'UU',
-            'RU',
-            'NU',
-            'PU',
-            'LC',
-            'Mono',
-        ];
-
-        for (const raterGroups of raterList) {
-            if (raterGroups.meta.includes('NatDex') || raterGroups.meta.includes('LGPE') || raterGroups.meta.includes('BDSP')) {
-                misc.push(raterGroups);
-            }
-            else if (officialTiers.some(str => raterGroups.meta.includes(str)) && raterGroups.meta.includes('SV')) {
-                currentOfficial.push(raterGroups);
-            }
-            else if (officialTiers.some(str => raterGroups.meta.includes(str))) {
-                oldOfficial.push(raterGroups);
-            }
-            else {
-                misc.push(raterGroups);
-            }
+        // if we've come across a new combo, push the temp array to the main array of raters and reset the temp array and trackers
+        else {
+            raterArr.push(tempRaterArr);
+            oldMeta = metaDB;
+            oldGen = genDB;
+            tempRaterArr = [dbRow.userid];
         }
+    }
+    // the last row doesn't get appended in the above loop, so do 1 more append to get the last set of raters
+    // alternatively you can setup a counter based on the length of the returned DB to know when you're on the last iteration
+    raterArr.push(tempRaterArr);
 
-        /**
-         * Sort the arrays
-         */
+    // combine the ararys into objects for sorting
+    /* interface raterGroup {
+        meta: string,
+        raters: string[],
+        gen: number,
+    }*/
+    const raterList: raterGroup[] = [];
+
+    for (let i = 0; i < stringArr.length; i++) {
+        raterList.push({ 'meta': stringArr[i], 'raters': raterArr[i], gen: genArr[i] });
+    }
+
+    // now that they are grouped together, we can sort them into current gen official, old gen official, and misc groups
+    const currentOfficial: raterGroup[] = [];
+    const oldOfficial: raterGroup[] = [];
+    const misc: raterGroup[] = [];
+    const officialTiers = [
+        'OU',
+        'Ubers',
+        'DOU',
+        'UU',
+        'RU',
+        'NU',
+        'PU',
+        'LC',
+        'Mono',
+    ];
+
+    for (const raterGroups of raterList) {
+        if (raterGroups.meta.includes('NatDex') || raterGroups.meta.includes('LGPE') || raterGroups.meta.includes('BDSP')) {
+            misc.push(raterGroups);
+        }
+        else if (officialTiers.some(str => raterGroups.meta.includes(str)) && raterGroups.meta.includes('SV')) {
+            currentOfficial.push(raterGroups);
+        }
+        else if (officialTiers.some(str => raterGroups.meta.includes(str))) {
+            oldOfficial.push(raterGroups);
+        }
+        else {
+            misc.push(raterGroups);
+        }
+    }
+
+    /**
+     * Sort the arrays
+     */
 
 
-        /**
-         * sort by order in officialTiers
-         * a and b are adjacent elements in the currentOfficial array
-         * s is the raterGroup element being passed into the function
-         * c is the element in officalTiers (the substring we are searching for)
-         * i is the index of that substring
-         * So...the following searches through the raterGroup.meta for the substring contained in officialTiers
-         * When it finds a match, it returns the index of the matched substring
-         * By comparing adjacent entries, it can swap entries around until they are in the same order as officialTiers
-         *
-         * Credit: https://stackoverflow.com/questions/34851713/sort-javascript-array-based-on-a-substring-in-the-array-element
-         */
+    /**
+     * sort by order in officialTiers
+     * a and b are adjacent elements in the currentOfficial array
+     * s is the raterGroup element being passed into the function
+     * c is the element in officalTiers (the substring we are searching for)
+     * i is the index of that substring
+     * So...the following searches through the raterGroup.meta for the substring contained in officialTiers
+     * When it finds a match, it returns the index of the matched substring
+     * By comparing adjacent entries, it can swap entries around until they are in the same order as officialTiers
+     *
+     * Credit: https://stackoverflow.com/questions/34851713/sort-javascript-array-based-on-a-substring-in-the-array-element
+     */
 
-        currentOfficial.sort(function(a, b) {
-            function getNumber(s: raterGroup) {
-                let index = -1;
-                officialTiers.some(function(c, i) {
-                    if (~s.meta.indexOf(c)) {
-                        index = i;
-                        return true;
-                    }
-                });
-                return index;
-            }
-            return getNumber(a) - getNumber(b);
-        });
-        // sort by gen
-        oldOfficial.sort((a, b) => b.gen - a.gen);
-        // alphabetical sort
-        misc.sort((a, b) => ((a.meta < b.meta) ? -1 : ((a.meta == b.meta) ? 0 : 1)));
+    currentOfficial.sort(function(a, b) {
+        function getNumber(s: raterGroup) {
+            let index = -1;
+            officialTiers.some(function(c, i) {
+                if (~s.meta.indexOf(c)) {
+                    index = i;
+                    return true;
+                }
+            });
+            return index;
+        }
+        return getNumber(a) - getNumber(b);
+    });
+    // sort by gen
+    oldOfficial.sort((a, b) => b.gen - a.gen);
+    // alphabetical sort
+    misc.sort((a, b) => ((a.meta < b.meta) ? -1 : ((a.meta == b.meta) ? 0 : 1)));
 
-        /**
-         * build the embeds
-         */
-        // set the max number of fields we want per embed
-        const maxFields = 25;
-        const embedHolder: EmbedBuilder[] = [];
+    /**
+     * build the embeds
+     */
+    // set the max number of fields we want per embed
+    const maxFields = 25;
+    const embedHolder: EmbedBuilder[] = [];
 
 
-        // current gen official
-        // find the number of embeds needed to cover this
-        let maxPages = Math.ceil(currentOfficial.length / (maxFields));
-        buildEmbed('Current Gen Official Tiers', currentOfficial, maxPages, embedHolder);
+    // current gen official
+    // find the number of embeds needed to cover this
+    let maxPages = Math.ceil(currentOfficial.length / (maxFields));
+    buildEmbed('Current Gen Official Tiers', currentOfficial, maxPages, embedHolder);
 
-        // old gen official
-        maxPages = Math.ceil(oldOfficial.length / (maxFields));
-        buildEmbed('Old Gen Official Tiers', oldOfficial, maxPages, embedHolder);
+    // old gen official
+    maxPages = Math.ceil(oldOfficial.length / (maxFields));
+    buildEmbed('Old Gen Official Tiers', oldOfficial, maxPages, embedHolder);
 
-        // misc
-        maxPages = Math.ceil(misc.length / (maxFields));
-        buildEmbed('Miscellaneous Tiers', misc, maxPages, embedHolder);
+    // misc
+    maxPages = Math.ceil(misc.length / (maxFields));
+    buildEmbed('Miscellaneous Tiers', misc, maxPages, embedHolder);
 
-        // post it to the channel
-        // await interaction.channel?.send({ embeds: embedHolder });
+    // post it to the channel
+    // if we found a message, we just need to edit the content of the embeds
+    // otherwise we need to make a new post with them
+    if (postEmbeds.length) {
+        // edit the message in the channel
+        if (targetMessage instanceof Message) {
+            await targetMessage.edit({ embeds: embedHolder });
+        }
+    }
+    else {
         await raterListChannel.send({ embeds: embedHolder });
-        }
+    }
 }
 
 

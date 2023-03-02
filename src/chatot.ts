@@ -8,7 +8,7 @@ import type { SlashCommand } from './types/slash-command-base';
 import type { eventHandler } from './types/event-base';
 import { readdir } from 'node:fs/promises';
 import * as net from 'node:net';
-import { createPool, pool } from './helpers/createPool.js';
+import { createPool } from './helpers/createPool.js';
 
 
 /**
@@ -144,16 +144,13 @@ catch (error) {
 createPool();
 
 
-// initialize variable for server on fd 3
-let server: net.Server;
-
 /**
  * Login to Discord with your client's token, or log any errors
  * Then, once the Discord connection is established, create a new net.Server listening on fd 3
  */
 client.login(config.TOKEN)
   .then(() => {
-    server = new net.Server().listen({ fd: 3 });
+    new net.Server().listen({ fd: 3 });
   })
   .catch(e => {
     console.error(e);

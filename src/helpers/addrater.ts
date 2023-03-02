@@ -53,7 +53,7 @@ export async function addRater(interaction: ChatInputCommandInteraction, metaIn:
         // push it to the db
         await pool.query('INSERT INTO chatot.raters (channelid, meta, gen, userid, ping) VALUES ($1, $2, $3, $4, $5)', [channel, meta, gen, user.id, pingOut]);
         // update the public list as well
-        await updatePublicRatersList(interaction, meta, gen, user.id, 'add');
+        await updatePublicRatersList(interaction);
         await interaction.followUp(`${user.username} was added to the list of ${gen} ${meta} raters.`);
         return;
     }

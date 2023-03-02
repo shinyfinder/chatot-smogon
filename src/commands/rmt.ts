@@ -32,13 +32,13 @@ export const command: SlashCommand = {
 	async execute(interaction: ChatInputCommandInteraction) {
         // check to make sure it's actually in a guild and used in the main server
         // this should always happen, since this command is a guild command
-        if (!interaction.guild || !(interaction.guild.id == '192713314399289344' || interaction.guild.id == '1040378543626002442')) {
+        if (!interaction.guild || !(interaction.guild.id == '192713314399289344')) {
             await interaction.reply({ content: 'You must use this command in the Smogon main server!', ephemeral: true });
             return;
         }
 
         // fetch the userlist from the interaction channel
-        const smogon = interaction.client.guilds.cache.get('1040378543626002442');
+        const smogon = interaction.client.guilds.cache.get('192713314399289344');
         if (smogon === undefined) {
             return;
         }
