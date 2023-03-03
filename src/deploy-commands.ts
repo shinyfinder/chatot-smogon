@@ -146,10 +146,7 @@ async function loadFiles(nameArr: string[], cmdScope: string) {
         const filePath = new URL(`commands/${file}`, import.meta.url);
 
         // load the module
-        const command = await import(filePath.toString()).then((obj: cmdModule) => {
-            const obj2 = obj.command;
-            return obj2;
-        });
+        const command = (await import(filePath.toString()) as cmdModule).command;
     
         // push the command data to the array formatted as a JSON
         // only return commands that are of the same specified scope

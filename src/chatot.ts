@@ -78,10 +78,8 @@ try {
         const filePath = new URL(`commands/${file}`, import.meta.url);
 
         // load the module
-        const command = await import(filePath.toString()).then((obj: cmdModule) => {
-            const obj2: SlashCommand = obj.command;
-            return obj2;
-        });
+        const command = (await import(filePath.toString()) as cmdModule).command;
+
         // set it to the client
         client.commands.set(command.data.name, command);
     }
@@ -112,11 +110,10 @@ try {
 
         // get the path to the specific event file
         const eventfilePath = new URL(`events/${eventfile}`, import.meta.url);
+        
         // load the module
-        const event = await import(eventfilePath.toString()).then((obj: eventModule) => {
-            const obj2 = obj.clientEvent;
-            return obj2;
-        });
+        const event = (await import(eventfilePath.toString()) as eventModule).clientEvent;
+
         // load it onto the client
         if (event.once) {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
