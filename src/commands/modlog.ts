@@ -5,7 +5,7 @@ import { pool } from '../helpers/createPool.js';
 /**
  * Command to turn mod logging on or off in the channel this command is used.
  * Only 1 logging channel is allowed per server.
- * Logged actions are ban add/remove, kick, no longer boosting, (un)timeout, and message deleted
+ * Logged actions are ban add/remove, kick, (un)boosting, (un)timeout, and message deleted
  * Subcommands are on and off
  */
 
