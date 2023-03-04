@@ -27,7 +27,6 @@ interface ENV {
     TOKEN: string | undefined;
     CLIENT_ID: string | undefined;
     GUILD_ID: string | undefined;
-    LOG_CHANNEL_ID: string | undefined;
     PGUSER: string | undefined;
     PGPASSWORD: string | undefined;
     PGHOST: string | undefined;
@@ -47,7 +46,6 @@ interface Config {
     TOKEN: string;
     CLIENT_ID: string;
     GUILD_ID: string;
-    LOG_CHANNEL_ID: string;
     PGUSER: string;
     PGPASSWORD: string;
     PGHOST: string;
@@ -68,7 +66,6 @@ const getConfig = (): ENV => {
         TOKEN: process.env.TOKEN,
         CLIENT_ID: process.env.CLIENT_ID,
         GUILD_ID: process.env.GUILD_ID,
-        LOG_CHANNEL_ID: process.env.LOG_CHANNEL_ID,
         PGUSER: process.env.PGUSER,
         PGPASSWORD: process.env.PGPASSWORD || '',
         PGHOST: process.env.PGHOST,
