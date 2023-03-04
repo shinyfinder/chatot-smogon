@@ -6,7 +6,7 @@ This code assumes you have v.16.9.0 or later installed of [NodeJs](https://nodej
 
 `npm install -g pnpm`
 
-1. Obtain a copy of the source code by downloading the [zip](./archive/refs/heads/main.zip) of the repository or, if you have git installed, via the command line in your desired destination folder:
+1. Obtain a copy of the source code by downloading the [zip](https://github.com/shinyfinder/chatot-smogon/archive/refs/heads/main.zip) of the repository or, if you have git installed, via the command line in your desired destination folder:
 
 `git clone https://github.com/shinyfinder/chatot.git`
 
