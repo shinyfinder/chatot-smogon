@@ -87,7 +87,7 @@ export const command: SlashCommand = {
 
             // show the modal to the user
             await interaction.showModal(modal);
-
+            
             // await their input
             const filter = (modalInteraction: ModalSubmitInteraction) => modalInteraction.customId === 'mymodal';
             
@@ -100,6 +100,12 @@ export const command: SlashCommand = {
             // get the info they entered
             const txt = submittedModal.fields.getTextInputValue('faqInput');
             const name = submittedModal.fields.getTextInputValue('nameInput').toLowerCase();
+
+            // make sure the name isn't blank
+            if (!/\S/.test(name)) {
+                await submittedModal.followUp('Name cannot be blank');
+                return;
+            }
             
             // query the database for the list of faqs for this server
             const dbmatches: { name: string, faq: string}[] | [] | undefined = await getdb(interaction, pool, serverID);

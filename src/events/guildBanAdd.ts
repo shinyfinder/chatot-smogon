@@ -32,11 +32,13 @@ export const clientEvent: eventHandler = {
 
         // since we're only banning 1 user at a time, fetch the latest event from the audit log of type ban
         const fetchedLogs = await ban.guild.fetchAuditLogs({
-            limit: 1,
+            limit: 20,
             type: AuditLogEvent.MemberBanAdd,
         });
 
-        // Since there's only 1 audit log entry in this collection, grab the first one
+        // filter out only the entries for this banned user
+        fetchedLogs.entries.sweep(entry => entry.target?.id !== ban.user.id);
+        // get the most recent one
         const banLog = fetchedLogs.entries.first();
 
         // If there's nothing in the audit log, output what we can

@@ -1,4 +1,4 @@
-import { BaseInteraction, DiscordAPIError } from 'discord.js';
+import { BaseInteraction, DiscordAPIError, Collection } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { SlashCommand } from '../types/slash-command-base';
 
@@ -35,9 +35,9 @@ export const clientEvent: eventHandler = {
                 // let the user know there was a problem
                 // try to keep errors ephemeral so it doesn't clog the chat and only the person who initiated can see the error
                 if (error instanceof DiscordAPIError && (error.message === 'Missing Permissions' || error.message === 'Missing Access')) {
-                    // if we already replied, edit our reply
+                    // if we already replied, send a new one
                     if (interaction.replied) {
-                        await interaction.editReply('I do not have permissions to run that command');
+                        await interaction.channel?.send('I do not have permissions to run that command');
                     }
                     // if we haven't replied yet, but we deferred a reply, follow up
                     else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
@@ -49,10 +49,14 @@ export const clientEvent: eventHandler = {
                     }
                     throw error;
                 }
-                
-                // if we already replied, edit our reply
-                if (interaction.replied) {
-                    await interaction.editReply('There was en error while executing this command');
+                // if it's a collector timeout error, just return without letting them know
+                else if ((error instanceof Error && error.message === 'Collector received no interactions before ending with reason: time') || error instanceof Collection && error.size === 0) {
+                    await interaction.channel?.send('Collector timed out without receiving an interation');
+                    throw error;
+                }
+                // if we already replied, send a new one
+                else if (interaction.replied) {
+                    await interaction.channel?.send('There was en error while executing this command');
                 }
                 // if we haven't replied yet, but we deferred a reply, follow up
                 else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
@@ -62,8 +66,11 @@ export const clientEvent: eventHandler = {
                 else if (!interaction.replied && interaction.isRepliable()) {
                     await interaction.reply({ content: 'There was an error while executing this command', ephemeral: true });
                 }
+                else {
+                    throw error;
+                }
                 
-                throw error;
+                
             }
         }
         // autocomplete handler

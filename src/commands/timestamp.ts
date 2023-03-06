@@ -2,9 +2,19 @@ import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 
 /**
- * Command to test the bot is online and working.
- * @param data SlashCommandBuilder() instance from discord.js
- * @returns Replies Pong! in the chat
+ * Command to post a timestamp that shows up relative to the viewer's locale
+ * Hours should be entered in 24 hour format
+ * 
+ * @param month Month of timestamp
+ * @param day Day of timestamp
+ * @param year Year of timestamp
+ * @param hour Hour of timestamp (24 hr format)
+ * @param minute Minute of timestamp
+ * @param second Second of timestamp
+ * @param offset The GMT/UTC offset of the time you have entered
+ * @param format Desired format for the timestamp to show up as
+ * 
+ * @returns Replies with embedded date object and code to post the timestamp elsewhere
  *
  * Can be used as a template for future commands
  */
@@ -56,7 +66,7 @@ export const command: SlashCommand = {
             .setRequired(true))
         .addStringOption(option =>
             option.setName('format')
-            .setDescription('Desired timestamp format (conversion to European formats are automatic')
+            .setDescription('Format datetime shows up as (conversion to European formats are automatic')
             .addChoices(
                 { name: 'Jan 1 2023, 1:23 AM', value: 'f' },
                 { name: '1:23 AM', value: 't' },
