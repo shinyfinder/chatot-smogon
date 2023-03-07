@@ -2,6 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcomman
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 import type { Pool } from 'pg';
+import { addCustoms, editCustom, removeCustom } from '../helpers/manageCustomsCache.js';
 
 /**
  * Command to post FAQs to the chat, optionally which one.
@@ -13,27 +14,27 @@ export const command: SlashCommand = {
     global: true,
     // setup the slash command builder
     data: new SlashCommandBuilder()
-        .setName('rfaq')
-        .setDescription('Replies with the list of FAQs, optionally specifying which')
+        .setName('custom')
+        .setDescription('Manages the custom commands of the server')
         .setDMPermission(false)
         .setDefaultMemberPermissions(0)
         .addSubcommand(new SlashCommandSubcommandBuilder()
                 .setName('add')
-                .setDescription('Adds a FAQ to the list'),
+                .setDescription('Registers a custom prefix command to the bot'),
         )
         .addSubcommand(
             new SlashCommandSubcommandBuilder()
                 .setName('remove')
-                .setDescription('Removes a FAQ from the list')
+                .setDescription('Removes a custom prefix command from the bot')
                 .addStringOption(option =>
                     option.setName('name')
-                    .setDescription('Unique identifier for this faq')
+                    .setDescription('Unique identifier for this command (do not include prefix)')
                     .setRequired(true)),
         )
         .addSubcommand(
             new SlashCommandSubcommandBuilder()
                 .setName('edit')
-                .setDescription('Edits an existing FAQ entry')
+                .setDescription('Edits an existing custom command')
                 .addStringOption(option =>
                     option.setName('name')
                     .setDescription('Unique identifier for the FAQ')
@@ -42,11 +43,7 @@ export const command: SlashCommand = {
         .addSubcommand(
             new SlashCommandSubcommandBuilder()
                 .setName('list')
-                .setDescription('Lists the FAQs, optionally specifying which')
-                .addStringOption(option =>
-                    option.setName('name')
-                    .setDescription('Unique identifier for the FAQ')
-                    .setRequired(false)),
+                .setDescription('Lists the custom commands in the server'),
         ),
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
@@ -56,34 +53,44 @@ export const command: SlashCommand = {
         }
 
         /**
-         * ADD FAQ
-         * Subcommand to add an faq to the list
-         * FAQs are stored separately for each server
+         * ADD CUSTOM COMMAND
+         * Subcommand to add an command to the list
+         * Customs are stored separately for each server
          */
         if (interaction.options.getSubcommand() === 'add') {
             // instantiate a modal for user input
             const modal = new ModalBuilder()
                 .setCustomId('mymodal')
-                .setTitle('Add FAQ');
+                .setTitle('New Custom Command');
 
             // create the text fields for the modal
-            const nameInput = new TextInputBuilder()
-                .setCustomId('nameInput')
-                .setLabel('Unique name of FAQ')
+            const prefixInput = new TextInputBuilder()
+                .setCustomId('prefixInput')
+                .setLabel('Prefix')
+                .setMaxLength(1)
+                .setRequired(true)
                 .setStyle(TextInputStyle.Short);
 
-            const faqInput = new TextInputBuilder()
-            .setCustomId('faqInput')
-            .setLabel('FAQ')
-            .setStyle(TextInputStyle.Paragraph);
+            const nameInput = new TextInputBuilder()
+                .setCustomId('nameInput')
+                .setLabel('Unique name of command')
+                .setStyle(TextInputStyle.Short)
+                .setRequired(true);
+
+            const cmdInput = new TextInputBuilder()
+                .setCustomId('cmdInput')
+                .setLabel('Prints')
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(true);
 
             // add an action row to hold the text inputs
             // an action row can only hold 1 text input, so you need 1 per input
+            const prefixActionRow = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(prefixInput);
             const nameActionRow = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(nameInput);
-            const faqActionRow = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(faqInput);
+            const cmdActionRow = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(cmdInput);
 
             // add the inputs to the modal
-            modal.addComponents(nameActionRow, faqActionRow);
+            modal.addComponents(prefixActionRow, nameActionRow, cmdActionRow);
 
             // show the modal to the user
             await interaction.showModal(modal);
@@ -98,17 +105,24 @@ export const command: SlashCommand = {
             await submittedModal.deferReply({ ephemeral: true });
 
             // get the info they entered
-            const txt = submittedModal.fields.getTextInputValue('faqInput');
+            const txt = submittedModal.fields.getTextInputValue('cmdInput');
             const name = submittedModal.fields.getTextInputValue('nameInput').toLowerCase();
+            const prefix = submittedModal.fields.getTextInputValue('prefixInput');
 
             // make sure the name isn't blank
             if (!/\S/.test(name)) {
                 await submittedModal.followUp('Name cannot be blank');
                 return;
             }
+
+            // make sure the prefix is a special character
+            if (!/^[!@$%&+=._-]+$/.test(prefix)) {
+                await submittedModal.followUp(`Prefix must be one of the following: ${'!@$%&+=._-'}`);
+                return;
+            }
             
             // query the database for the list of faqs for this server
-            const dbmatches: { name: string, faq: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
+            const dbmatches: { cmd: string, txt: string, prefix: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
 
             if (dbmatches === undefined) {
                 return;
@@ -117,7 +131,7 @@ export const command: SlashCommand = {
             // check if the identifier already exists
             // technically postgres checks for this if name is set to the primary key, but we check anyway to let the user know
             if (dbmatches.length) {
-                const nameExists = dbmatches.some(e => e.name.toLowerCase() === name);
+                const nameExists = dbmatches.some(e => e.cmd === name);
                 if (nameExists) {
                     await submittedModal.followUp({ content: 'Identifier by this name already exists. Please specify a new one.', ephemeral: true });
                     return;
@@ -125,23 +139,29 @@ export const command: SlashCommand = {
             }
 
             // append new entry to the faqs for this server
-            try {
-                await pool.query('INSERT INTO chatot.faqs (name, serverid, faq) VALUES ($1, $2, $3)', [name, serverID, txt]);
-                await submittedModal.followUp({ content: `Entry added to the list of FAQs for this server as ${name}`, ephemeral: true });
+            try { 
+                await pool.query('INSERT INTO chatot.customs (serverid, cmd, txt, prefix) VALUES ($1, $2, $3, $4)', [serverID, name, txt, prefix]);
+                await submittedModal.followUp({ content: `Added '${prefix}${name}' to the chat`, ephemeral: true });
+                // update the cached list
+                const newCommnad = {
+                    serverid: serverID,
+                    cmd: name,
+                    txt: txt,
+                    prefix: prefix,
+                };
+                addCustoms(newCommnad);
                 return;
             }
             catch (err) {
-                await submittedModal.followUp('An error occurred updating the db. ');
+                await submittedModal.followUp('An error occurred updating the database');
                 throw err;
             }
-            
             
         }
 
         /**
-         * REMOVE FAQ
-         * Subcommand to remove and faq from the list
-         * FAQs are stored separately for each server
+         * REMOVE CUSTOM
+         * Subcommand to remove a custom command from the list
          */
         else if (interaction.options.getSubcommand() === 'remove') {
             await interaction.deferReply({ ephemeral: true });
@@ -154,32 +174,40 @@ export const command: SlashCommand = {
             }
 
             // query the database for the list of faqs for this server
-            const dbmatches: { name: string, faq: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
+            const dbmatches: { cmd: string, txt: string, prefix: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
             if (dbmatches === undefined) {
                 return;
             }
 
             // check to make sure this entry exists in the database
             if (dbmatches.length) {
-                const nameExists = dbmatches.some(e => e.name.toLowerCase() === name);
+                const nameExists = dbmatches.some(e => e.cmd === name);
                 if (!nameExists) {
-                    await interaction.followUp({ content: 'There are no FAQs by that name for this server', ephemeral: true });
+                    await interaction.followUp({ content: 'There are no custom commands by that name for this server', ephemeral: true });
                     return;
                 }
             }
             else {
-                await interaction.followUp({ content: 'There are no FAQs for this server', ephemeral: true });
+                await interaction.followUp({ content: 'There are no custom commands for this server', ephemeral: true });
                 return;
             }
 
             // remove the selected entry
-            await pool.query('DELETE FROM chatot.faqs WHERE serverid=$1 AND name=$2', [serverID, name]);
-            await interaction.followUp({ content: 'Entry removed from the list of FAQs for this server.', ephemeral: true });
+            await pool.query('DELETE FROM chatot.customs WHERE serverid=$1 AND cmd=$2', [serverID, name]);
+            await interaction.followUp({ content: 'Entry removed from the list of custom commands for this server.', ephemeral: true });
+            // update the cache
+            const oldCustom = {
+                serverid: serverID,
+                cmd: name,
+                txt: dbmatches[0].txt,
+                prefix: dbmatches[0].prefix,
+            };
+            removeCustom(oldCustom);
+            return;
         }
 
         /**
-         * EDIT FAQ
-         * Edits an existing FAQ for the server
+         * EDIT CUSTOM
          */
         else if (interaction.options.getSubcommand() === 'edit') {
             // get the entered text
@@ -190,42 +218,53 @@ export const command: SlashCommand = {
                 return;
             }
 
-            const dbmatches: { name: string, faq: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
+            const dbmatches: { cmd: string, txt: string, prefix: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
 
             if (dbmatches === undefined) {
                 return;
             }
             // check to make sure this entry exists in the database
             if (dbmatches.length) {
-                const nameExists = dbmatches.some(e => e.name.toLowerCase() === name);
+                const nameExists = dbmatches.some(e => e.cmd === name);
                 if (!nameExists) {
-                    await interaction.reply({ content: 'There are no FAQs by that name for this server', ephemeral: true });
+                    await interaction.reply({ content: 'There are no custom commands by that name for this server', ephemeral: true });
                     return;
                 }
             }
             else {
-                await interaction.reply({ content: 'There are no FAQs for this server', ephemeral: true });
+                await interaction.reply({ content: 'There are no custom commands for this server', ephemeral: true });
                 return;
             }
+
+            // get the index of the matches values
+            const index = dbmatches.findIndex(row => row.cmd === name);
 
             // update the selected entry
             // instantiate a modal for user input
             const modal = new ModalBuilder()
                 .setCustomId('mymodal')
-                .setTitle(`Edit FAQ ${name}`);
+                .setTitle(`Edit Command ${name}`);
 
-            const faqInput = new TextInputBuilder()
-            .setCustomId('faqInput')
-            .setLabel('FAQ')
+            
+            const prefixInput = new TextInputBuilder()
+            .setCustomId('prefixInput')
+            .setLabel('Prefix')
+            .setStyle(TextInputStyle.Short)
+            .setValue(dbmatches[index].prefix);
+
+            const cmdInput = new TextInputBuilder()
+            .setCustomId('cmdInput')
+            .setLabel('Prints')
             .setStyle(TextInputStyle.Paragraph)
-            .setValue(dbmatches[0].faq);
+            .setValue(dbmatches[index].txt);
 
             // add an action row to hold the text inputs
             // an action row can only hold 1 text input, so you need 1 per input
-            const faqActionRow = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(faqInput);
+            const prefixActionRow = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(prefixInput);
+            const cmdActionRow = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(cmdInput);
 
             // add the inputs to the modal
-            modal.addComponents(faqActionRow);
+            modal.addComponents(prefixActionRow, cmdActionRow);
 
             // show the modal to the user
             await interaction.showModal(modal);
@@ -238,12 +277,21 @@ export const command: SlashCommand = {
             await submittedModal.deferReply({ ephemeral: true });
 
             // get their entered text
-            const txt = submittedModal.fields.getTextInputValue('faqInput');
+            const prefix = submittedModal.fields.getTextInputValue('prefixInput');
+            const txt = submittedModal.fields.getTextInputValue('cmdInput');
             
             // update the db
             try {
-                await pool.query('UPDATE chatot.faqs SET faq=$1 WHERE serverid=$2 AND name=$3', [txt, serverID, name]);
-                await submittedModal.followUp({ content: `Updated FAQ ${name} for this server.`, ephemeral: true });
+                await pool.query('UPDATE chatot.customs SET txt=$1, prefix=$2 WHERE serverid=$3 AND cmd=$4', [txt, prefix, serverID, name]);
+                await submittedModal.followUp({ content: `Updated custom '${name}' utilizing prefix '${prefix}' for this server.`, ephemeral: true });
+                const newCommnad = {
+                    serverid: serverID,
+                    cmd: name,
+                    txt: txt,
+                    prefix: prefix,
+                };
+                editCustom(newCommnad);
+                return;
             }
             catch (err) {
                 await submittedModal.followUp('An error occurred updating the database');
@@ -253,23 +301,13 @@ export const command: SlashCommand = {
         }
 
         /**
-         * LIST FAQ
-         * Lists all of the FAQs for the server the command was used in
+         * LIST CUSTOM
+         * Lists all of the custom commands for the server the command was used in
          */
         else {
-            // get the entered text
-            const name = interaction.options.getString('name')?.toLowerCase();
-
-            // defer reply
-            // if they specified a specific faq, print it publically to the chat
-            // otherwise, keep the reponse hidden
-            if (name) {
-                await interaction.deferReply();
-            }
-            else {
-                await interaction.deferReply({ ephemeral: true });
-            }
-            const dbmatches: { name: string, faq: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
+            await interaction.deferReply({ ephemeral: true });
+            
+            const dbmatches: { cmd: string, txt: string, prefix: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
 
             // an error occurred and we already let them know
             if (dbmatches === undefined) {
@@ -278,32 +316,21 @@ export const command: SlashCommand = {
 
             // if there are no db entries for this server, return
             if (!dbmatches.length) {
-                await interaction.followUp({ content: 'There are no FAQs for this server' });
+                await interaction.followUp({ content: 'There are no custom commands for this server' });
                 return;
             }
 
             // if they didn't provide a name, list all of them
-            const nameArr: string[] = [];
-            if (name === undefined) {
-                for (const entry of dbmatches) {
-                    nameArr.push(entry.name.toLowerCase());
-                }
-                const strOut = nameArr.join(', ');
-                await interaction.followUp(`Server FAQs: ${strOut}`);
-                return;
+            const cmdArr: string[] = [];
+            
+            for (const entry of dbmatches) {
+                const prefixedCommand = `${entry.prefix}${entry.cmd}`;
+                cmdArr.push(prefixedCommand);
             }
-            // else, list the one they specified
-            else {
-                // try to find the name they specified
-                const obj = dbmatches.find(e => e.name.toLowerCase() === name);
-                if (obj === undefined) {
-                    await interaction.followUp({ content: 'There are no FAQs by that name for this server' });
-                    return;
-                }
-                else {
-                    await interaction.followUp({ content: obj.faq });
-                }
-            }
+            const strOut = cmdArr.join(', ');
+            await interaction.followUp(`Server Custom Commands: ${strOut}`);
+            return;
+            
 
         }
     },
@@ -312,10 +339,10 @@ export const command: SlashCommand = {
 
 async function getdb(interaction: ChatInputCommandInteraction, db: Pool, serverID: string) {
     // query the database for the list of faqs for this server
-    let dbmatches: { name: string, faq: string}[] | [];
+    let dbmatches: { cmd: string, txt: string, prefix: string}[] | [];
     try {
-        const ratersPostgres = await db.query('SELECT name, faq FROM chatot.faqs WHERE serverid = $1', [serverID]);
-        dbmatches = ratersPostgres.rows;
+        const customsPostgres = await db.query('SELECT cmd, txt, prefix FROM chatot.customs WHERE serverid = $1', [serverID]);
+        dbmatches = customsPostgres.rows;
         return dbmatches;
     }
     catch (err) {

@@ -16,11 +16,12 @@ CREATE TABLE chatot.raters (
     PRIMARY KEY (channelid, meta, gen, userid)
 );
 
-CREATE TABLE chatot.faqs (
-    name text,
+CREATE TABLE chatot.customs (
     serverid varchar(20),
-    faq text,
-    PRIMARY KEY (serverid, name)
+    cmd text,
+    txt text,
+    prefix varchar(1) NOT NULL DEFAULT '!',
+    PRIMARY KEY (serverid, cmd)
 );
 
 CREATE TABLE chatot.logchan (

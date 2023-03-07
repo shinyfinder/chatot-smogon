@@ -10,6 +10,7 @@ import { readdir } from 'node:fs/promises';
 import * as net from 'node:net';
 import { createPool } from './helpers/createPool.js';
 import { errorHandler } from './helpers/errorHandler.js';
+import { loadCustoms } from './helpers/manageCustomsCache.js';
 
 /**
  * Load in the environment variables
@@ -132,6 +133,11 @@ try {
      */
     createPool();
 
+
+    /**
+     * Cache the db of custom commands
+     */
+    await loadCustoms();
 
     /**
      * Login to Discord with your client's token, or log any errors
