@@ -20,8 +20,8 @@ export const clientEvent: eventHandler = {
     name: 'messageDelete',
     // execute the code for this event
     async execute(message: Message) {
-        // ignore DMs
-        if (!message.guild) {
+        // ignore DMs and uncached messages
+        if (!message.guild || !message.author) {
             return;
         }
         

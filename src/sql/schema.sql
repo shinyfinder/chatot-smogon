@@ -20,7 +20,7 @@ CREATE TABLE chatot.faqs (
     name text,
     serverid varchar(20),
     faq text,
-    PRIMARY KEY (name)
+    PRIMARY KEY (serverid, name)
 );
 
 CREATE TABLE chatot.logchan (

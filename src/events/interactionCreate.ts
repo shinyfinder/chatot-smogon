@@ -66,10 +66,8 @@ export const clientEvent: eventHandler = {
                 else if (!interaction.replied && interaction.isRepliable()) {
                     await interaction.reply({ content: 'There was an error while executing this command', ephemeral: true });
                 }
-                else {
-                    throw error;
-                }
                 
+                throw error;
                 
             }
         }
