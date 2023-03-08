@@ -23,7 +23,6 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('timestamp')
-        .setDescription('Converts the entered date/time into a discord timestamp. Please use 24 HR format for time')
         .addIntegerOption(option => 
             option.setName('month')
             .setDescription('Date month (number)')
@@ -77,7 +76,7 @@ export const command: SlashCommand = {
                 { name: '1 year ago/from now', value: 'R' },
             )
             .setRequired(true))
-        .setDefaultMemberPermissions(0),
+        .setDescription('Converts the entered date/time into a discord timestamp. Please use 24 HR format for time'),
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

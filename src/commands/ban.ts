@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 
 /**
@@ -44,7 +44,7 @@ export const command: SlashCommand = {
             .setDescription('Optional message to be sent to the user')
             .setRequired(false))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(0),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

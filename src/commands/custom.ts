@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 import type { Pool } from 'pg';
@@ -17,7 +17,7 @@ export const command: SlashCommand = {
         .setName('custom')
         .setDescription('Manages the custom commands of the server')
         .setDMPermission(false)
-        .setDefaultMemberPermissions(0)
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild | PermissionFlagsBits.ManageRoles)
         .addSubcommand(new SlashCommandSubcommandBuilder()
                 .setName('add')
                 .setDescription('Registers a custom prefix command to the bot'),

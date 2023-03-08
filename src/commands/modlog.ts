@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 
@@ -16,7 +16,7 @@ export const command: SlashCommand = {
         .setName('modlog')
         .setDescription('Toggles mod logging in this channel')
         .setDMPermission(false)
-        .setDefaultMemberPermissions(0)
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .addSubcommand(new SlashCommandSubcommandBuilder()
                 .setName('on')
                 .setDescription('Turns on modlogging to this channel'),

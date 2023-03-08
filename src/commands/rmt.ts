@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, Channel, ChannelType } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, Channel, ChannelType, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 
 /**
@@ -26,7 +26,7 @@ export const command: SlashCommand = {
             .setDescription('Search range end date. E.g. Jan 31 2022')
             .setRequired(true))
         // set the user permissions. Int 0 means only server admins can use it
-        .setDefaultMemberPermissions(0)
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .setDMPermission(false),
 
     // execute the code

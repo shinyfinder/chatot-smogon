@@ -13,8 +13,7 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('ping')
-        .setDescription('Replies with Pong!')
-        .setDefaultMemberPermissions(0),
+        .setDescription('Replies with Pong!'),
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

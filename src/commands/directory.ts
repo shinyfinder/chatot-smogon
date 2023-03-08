@@ -9,8 +9,7 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('directory')
-        .setDescription('Replies with the Smogon discord server directory')
-        .setDefaultMemberPermissions(0),
+        .setDescription('Replies with the Smogon discord server directory'),
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { allowedMetas as choices } from '../helpers/constants.js';
 import { addRater } from '../helpers/addrater.js';
@@ -39,7 +39,7 @@ export const command: SlashCommand = {
         .setName('rater')
         .setDescription('Manages the team raters database')
         .setDMPermission(false)
-        .setDefaultMemberPermissions(0)
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
         /**
          * Add TR
          */
