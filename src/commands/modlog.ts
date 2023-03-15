@@ -1,12 +1,10 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 
 /**
- * Command to turn mod logging on or off in the channel this command is used.
- * Only 1 logging channel is allowed per server.
- * Logged actions are ban add/remove, kick, (un)boosting, (un)timeout, and message deleted
- * Subcommands are on and off
+ * Retrieves the list of modlog actions for a given user
+ * Logged actions are ban add/remove, kick, and (un)timeout
  */
 
 export const command: SlashCommand = {
@@ -14,77 +12,70 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('modlog')
-        .setDescription('Toggles mod logging in this channel')
+        .setDescription('Retrieves the modlog for a given user (punishment receiver)')
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
-        .addSubcommand(new SlashCommandSubcommandBuilder()
-                .setName('on')
-                .setDescription('Turns on modlogging to this channel'),
+        .addUserOption(option =>
+            option.setName('user')
+            .setDescription('Username (id) to lookup actions against in this server')
+            .setRequired(true),
         )
-        .addSubcommand(
-            new SlashCommandSubcommandBuilder()
-                .setName('off')
-                .setDescription('Turns off modlogging in the server'),
-        ),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
-        const channelid = interaction.channelId;
+        // get the id of the server this command was used in and the supplied user
         const serverid = interaction.guildId;
+        const user = interaction.options.getUser('user');
 
         // typecheck
-        if (serverid === null) {
+        if (serverid === null || user === null) {
             return;
         }
+        // defer reply to give us time to poll the db
         await interaction.deferReply();
-        // query the database for the list of logging channels
-        // the PK is serverid, so there can only be 1 result, if any
-        const ratersPostgres = await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid = $1', [serverid]);
-        const logchans: { channelid: string}[] | [] = ratersPostgres.rows;
 
+        // query the db
+        interface pgres {
+            executor: string,
+            action: string,
+            date: string,
+            reason: string,
+        }
+
+        const modlogPostgres = await pool.query('SELECT executor, action, date, reason FROM chatot.modlog WHERE serverid = $1 AND target = $2', [serverid, user.id]);
+        const dbmatches = modlogPostgres.rows as pgres[] | [];
         
-        /**
-         * MODLOG ON
-         */
-        if (interaction.options.getSubcommand() === 'on') {
-            // if there is already a row in the table, mod log is on somewhere
-            if (logchans.length) {
-                // check if the logging channel is already set to this channel
-                if (logchans[0].channelid === channelid) {
-                    await interaction.followUp({ content: 'Logging is already set to this channel.' });
-                    return;
-                }
-                // else, update it to be this channel
-                else {
-                    await pool.query('UPDATE chatot.logchan SET channelid=$1 WHERE serverid=$2', [channelid, serverid]);
-                    await interaction.followUp({ content: 'Logging set to this channel.' });
-                    return;
-                }
-            }
-            // if you didn't find a result, insert a new row to turn on logging
-            else {
-                await pool.query('INSERT INTO chatot.logchan (serverid, channelid) VALUES ($1, $2)', [serverid, channelid]);
-                await interaction.followUp({ content: 'Logging set to this channel.' });
-                return;
-            }
+        if (!dbmatches.length) {
+            await interaction.followUp('No modlog for this user found');
+            return;
+        }
+        // sort the array by timestamp
+        // most recent first
+        dbmatches.sort((a, b) => new Date(b.date).valueOf() - new Date(a.date).valueOf());
+
+        // formulate output
+        const strOut = [];
+        for (const row of dbmatches) {
+            // convert the date to a discord timestamp
+            const ts = Math.floor(new Date(row.date).valueOf() / 1000);
+
+            // get the executor name
+            const execUser = await interaction.client.users.fetch(row.executor);
+
+            // make the output string
+            const str = `<t:${ts}> - ${row.action} by ${execUser.tag} - ${row.reason}`;
+            strOut.push(str);
         }
 
-        /**
-         * MODLOG OFF
-         */
-        else if (interaction.options.getSubcommand() === 'off') {
-            // if there is already a row in the table, mod log is on somewhere
-            if (logchans.length) {
-                await pool.query('DELETE FROM chatot.logchan WHERE serverid=$1', [serverid]);
-                await interaction.followUp({ content: 'Logging turned off in this server.' });
-                return;
-            }
-            // if you didn't find a result, let them know
-            else {
-                await interaction.followUp({ content: 'Logging is not currently enabled in this server' });
-                return;
-            }
+        // build embed
+        const embed = new EmbedBuilder()
+            .setTitle(`Modlog for ${user.tag}`)
+            .setDescription(strOut.join('\n\n'));
+        
+        // post the embed
+        await interaction.followUp({ embeds: [embed] });
+        return;
 
-        }
+
     },
 
 };

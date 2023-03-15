@@ -29,3 +29,13 @@ CREATE TABLE chatot.logchan (
     channelid varchar(20),
     PRIMARY KEY (serverid)
 );
+
+CREATE TABLE chatot.modlog (
+    serverid varchar(20),
+    executor varchar(20),
+    target varchar(20),
+    action text,
+    date timestamptz NOT NULL DEFAULT now(),
+    reason text,
+    PRIMARY KEY (serverid, executor, target, action, date, reason)
+);

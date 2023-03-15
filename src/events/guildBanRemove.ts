@@ -80,13 +80,16 @@ async function buildEmbed(executor: User | string, reason: string | null, ban: G
     // Otherwise output the string we passed
     let executorOut = '';
     let executorName = '';
+    let executorID = '';
     if (executor instanceof User) {
         executorOut = `<@${executor.id}>`;
         executorName = executor.tag;
+        executorID = executor.id;
     }
     else {
         executorOut = executor;
         executorName = 'Unknown';
+        executorID = 'N/A';
     }
 
     // typecheck reason
@@ -103,6 +106,10 @@ async function buildEmbed(executor: User | string, reason: string | null, ban: G
             { name: 'Unbanned by', value: `${executorOut}` },
             { name: 'Reason', value: `${reason}` },
         );
+
+    
+    // save to modlog for the server
+    await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [ban.guild.id, executorID, ban.user.id, 'Unban', reason]);
 
     // log to the logging channel, if it exists
     const pgres = await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid=$1', [ban.guild.id]);
