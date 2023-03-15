@@ -2,6 +2,8 @@ import { AuditLogEvent, Message, EmbedBuilder, User, ChannelType } from 'discord
 import { eventHandler } from '../types/event-base.js';
 import { sleep } from '../helpers/sleep.js';
 import { pool } from '../helpers/createPool.js';
+import config from '../config.js';
+
 /**
  * messageDelete handler
  *
@@ -21,7 +23,7 @@ export const clientEvent: eventHandler = {
     // execute the code for this event
     async execute(message: Message) {
         // ignore DMs and uncached messages
-        if (!message.guild || !message.author) {
+        if (!message.guild || !message.author || message.author.id === config.CLIENT_ID) {
             return;
         }
         

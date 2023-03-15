@@ -2,6 +2,8 @@ import { AuditLogEvent, GuildMember, EmbedBuilder, User, ChannelType } from 'dis
 import { eventHandler } from '../types/event-base';
 import { sleep } from '../helpers/sleep.js';
 import { pool } from '../helpers/createPool.js';
+import config from '../config.js';
+
 /**
  * Kick handler
  *
@@ -18,8 +20,8 @@ export const clientEvent: eventHandler = {
     name: 'guildMemberRemove',
     // execute the code for this event
     async execute(member: GuildMember) {
-        // ignore DMs
-        if (!member.guild) {
+        // ignore DMs and modding of the bot
+        if (!member.guild || member.user.id === config.CLIENT_ID) {
             return;
         }
 

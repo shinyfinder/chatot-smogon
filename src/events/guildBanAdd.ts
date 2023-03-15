@@ -2,6 +2,7 @@ import { AuditLogEvent, GuildBan, EmbedBuilder, User, ChannelType } from 'discor
 import { eventHandler } from '../types/event-base';
 import { sleep } from '../helpers/sleep.js';
 import { pool } from '../helpers/createPool.js';
+import config from '../config.js';
 
 /**
  * Ban handler
@@ -19,8 +20,8 @@ export const clientEvent: eventHandler = {
     name: 'guildBanAdd',
     // execute the code for this event
     async execute(ban: GuildBan) {
-        // ignore DMs
-        if (!ban.guild) {
+        // ignore DMs and return if the bot is the one getting modded
+        if (!ban.guild || ban.user.id === config.CLIENT_ID) {
             return;
         }
 

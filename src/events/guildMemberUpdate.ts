@@ -2,6 +2,8 @@ import { AuditLogEvent, GuildMember, EmbedBuilder, User, ChannelType } from 'dis
 import { eventHandler } from '../types/event-base';
 import { sleep } from '../helpers/sleep.js';
 import { pool } from '../helpers/createPool.js';
+import config from '../config.js';
+
 /**
  * Update member handler
  *
@@ -20,8 +22,8 @@ export const clientEvent: eventHandler = {
     name: 'guildMemberUpdate',
     // execute the code for this event
     async execute(oldMember: GuildMember, newMember: GuildMember) {
-        // ignore DMs
-        if (!newMember.guild) {
+        // ignore DMs and events pertaining to the bot
+        if (!newMember.guild || newMember.user.id === config.CLIENT_ID) {
             return;
         }
         

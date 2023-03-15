@@ -174,6 +174,7 @@ export async function rmtMonitor(msg: Message) {
         // only try to parse if it's in the OM or ND non-ou channels
         // om
         if (meta !== undefined && msg.channelId === '1059657287293222912') {
+            meta = meta.toLowerCase();
             if (meta == 'godly gift' || meta == 'gg') {
                 identifier = 'GG';
             }

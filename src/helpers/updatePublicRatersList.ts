@@ -1,6 +1,6 @@
 import { pool } from './createPool.js';
 import { ChatInputCommandInteraction, EmbedBuilder, ChannelType, Embed, Message } from 'discord.js';
-
+import config from '../config.js';
 
 interface raterGroup {
     meta: string,
@@ -34,7 +34,7 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
         // search for the bot's ID and multiple embeds in the message
         // the bot is currently only designed to post multiple embeds in a message in the specified channel for this purpose, so this is probably good enough
         // albeit a bit hard coded
-        if (msg.author.id === '1022962688508313690' && msg.embeds.length >= 3) {
+        if (msg.author.id === config.CLIENT_ID && msg.embeds.length >= 3) {
             postEmbeds = msg.embeds;
             targetMessage = msg;
         }
