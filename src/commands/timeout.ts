@@ -15,7 +15,7 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('timeout')
-        .setDescription('Bans a user from the server.')
+        .setDescription('Times out a user from the server.')
         .addUserOption(option =>
             option.setName('user')
             .setDescription('The user to be timed out (can accept IDs)')
@@ -80,7 +80,7 @@ export const command: SlashCommand = {
         let wasDMd = false;
         if (dm !== null) {
             try {
-                await interaction.client.users.send(user, `You have been timed out from ${interaction.guild.name} for the following reason:\n\n${dm}.`);
+                await interaction.client.users.send(user, `You have been timed out from ${interaction.guild.name} for the following reason:\n\n${dm}`);
                 wasDMd = true;
             }
             catch (error) {
