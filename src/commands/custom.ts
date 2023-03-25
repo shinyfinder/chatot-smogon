@@ -3,10 +3,12 @@ import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 import type { Pool } from 'pg';
 import { addCustoms, editCustom, removeCustom } from '../helpers/manageCustomsCache.js';
+import { getRandInt } from '../helpers/getRandInt.js';
 
 /**
- * Command to post FAQs to the chat, optionally which one.
- *
+ * Command to create a custom prefix command in the server
+ * Commands can be prefixed from a set number of special charaters and invoked with, for example,
+ * ![custon command name]
  * Subcommands are add, remove, and list
  */
 
@@ -58,9 +60,12 @@ export const command: SlashCommand = {
          * Customs are stored separately for each server
          */
         if (interaction.options.getSubcommand() === 'add') {
+            // get rand int to uniquely id the modal
+            const randInt = getRandInt(0, 65535);
+
             // instantiate a modal for user input
             const modal = new ModalBuilder()
-                .setCustomId('mymodal')
+                .setCustomId(`mymodal${randInt}`)
                 .setTitle('New Custom Command');
 
             // create the text fields for the modal
@@ -96,7 +101,7 @@ export const command: SlashCommand = {
             await interaction.showModal(modal);
             
             // await their input
-            const filter = (modalInteraction: ModalSubmitInteraction) => modalInteraction.customId === 'mymodal';
+            const filter = (modalInteraction: ModalSubmitInteraction) => modalInteraction.customId === `mymodal${randInt}` && modalInteraction.user.id === interaction.user.id;
             
             // wait for them to submit the modal
             const submittedModal = await interaction.awaitModalSubmit({ filter, time: 5 * 60 * 1000 });
@@ -240,9 +245,12 @@ export const command: SlashCommand = {
             const index = dbmatches.findIndex(row => row.cmd === name);
 
             // update the selected entry
+            // get a random int to uniquely id the modal
+            const randInt = getRandInt(0, 65535);
+
             // instantiate a modal for user input
             const modal = new ModalBuilder()
-                .setCustomId('mymodal')
+                .setCustomId(`mymodal${randInt}`)
                 .setTitle(`Edit Command ${name}`);
 
             
@@ -270,7 +278,7 @@ export const command: SlashCommand = {
             await interaction.showModal(modal);
 
             // await their input
-            const filter = (modalInteraction: ModalSubmitInteraction) => modalInteraction.customId === 'mymodal';
+            const filter = (modalInteraction: ModalSubmitInteraction) => modalInteraction.customId === `mymodal${randInt}` && modalInteraction.user.id === interaction.user.id;
             const submittedModal = await interaction.awaitModalSubmit({ filter, time: 5 * 60 * 1000 });
 
             // defer the reply to their submission so we can process it

@@ -10,7 +10,7 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('servers')
-        .setDescription('Lists in the servers the bot is in')
+        .setDescription('Lists the servers the bot is in')
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
     // execute our desired task

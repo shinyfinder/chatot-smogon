@@ -50,7 +50,10 @@ export const clientEvent: eventHandler = {
                     throw error;
                 }
                 // if it's a collector timeout error, just return without letting them know
-                else if ((error instanceof Error && error.message === 'Collector received no interactions before ending with reason: time') || error instanceof Collection && error.size === 0) {
+                 else if (error instanceof Error && error.message === 'Collector received no interactions before ending with reason: time') {
+                    throw error;
+                }
+                else if (error instanceof Collection && error.size === 0) {
                     await interaction.channel?.send('Collector timed out without receiving an interation');
                     throw error;
                 }
@@ -62,7 +65,7 @@ export const clientEvent: eventHandler = {
                 else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
                     await interaction.followUp('There was an error while executing this command');
                 }
-                // if we haven't defferred or replied, reply
+                // if we haven't deferred or replied, reply
                 else if (!interaction.replied && interaction.isRepliable()) {
                     await interaction.reply({ content: 'There was an error while executing this command', ephemeral: true });
                 }

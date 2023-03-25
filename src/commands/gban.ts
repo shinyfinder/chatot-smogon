@@ -1,4 +1,5 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction, Message } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction, Message, DiscordAPIError } from 'discord.js';
+import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
 
 /**
@@ -35,7 +36,7 @@ export const command: SlashCommand = {
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         // make sure this command is used in a the main smogon server
-        if (!interaction.guild || !(interaction.guild.id == '192713314399289344')) {
+        if (!interaction.guild || !(interaction.guild.id === '192713314399289344' || interaction.guild.id === '1040378543626002442')) {
             await interaction.reply({ content: 'You must use this command in the Smogon main server!', ephemeral: true });
             return;
         }
@@ -73,6 +74,10 @@ export const command: SlashCommand = {
             if (confirmMsgContent === 'yes' || confirmMsgContent === 'y') {
                 // get the list of guild IDs the bot is in
                 const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
+
+                // create a flag for failed ban attempts
+                let failedBans = false;
+
                 // loop over the list of ids and ban the user from them
                 for (const id of guildIds) {
                     const guild = interaction.client.guilds.cache.get(id);
@@ -82,18 +87,37 @@ export const command: SlashCommand = {
 
                     // ban the user and don't delete any messages
                     // I think this defaults to 0 deleted, but I'd rather be safe
-                    await guild.members.ban(user, {
-                        reason: auditEntry,
-                        deleteMessageSeconds: 0,
-                    });
+                    // try catch the bans in case one of the servers removed ban access from the bot
+                    try {
+                        await guild.members.ban(user, {
+                            reason: auditEntry,
+                            deleteMessageSeconds: 0,
+                        });
+                    }
+                    catch (err) {
+                        failedBans = true;
+                        // catch the errors and alert staff so they know which ones the user wasn't banned from
+                        // continue, instead of throwing, so that we can ban from as many servers as we can
+                        await interaction.channel?.send(`I am unable to ban the user from guild ${guild.name}`);
+                        continue;
+                        
+                    }
 
                 }
 
-                await interaction.channel?.send('User has been banned from every server I am in.');
-                return;
+                // let them know you're done and whether you had issues along the way
+                if (failedBans) {
+                    await interaction.channel?.send('I attempted to ban the user from every server I am in, but I had issues in some.');
+                    return;
+                }
+                else {
+                    await interaction.channel?.send('I have banned the user from every server I am in.');
+                    return;
+                }
+                
             } 
             else {
-                await interaction.channel?.send('Globan ban exited');
+                await interaction.channel?.send('Global ban exited');
                 return;
             }
 
@@ -105,8 +129,10 @@ export const command: SlashCommand = {
          */
         else if (interaction.options.getSubcommand() === 'group') {
             // instantiate a modal for user input
+            // get a random int to uniquely identifiy the modal
+            const randInt = getRandInt(0, 65535);
             const modal = new ModalBuilder()
-                .setCustomId('gbanmodal')
+                .setCustomId(`gbanmodal${randInt}`)
                 .setTitle('Global Ban Users');
 
             // create the text fields for the modal
@@ -136,7 +162,7 @@ export const command: SlashCommand = {
             await interaction.showModal(modal);
 
             // await their input
-            const modalFilter = (modalInteraction: ModalSubmitInteraction) => modalInteraction.customId === 'gbanmodal';
+            const modalFilter = (modalInteraction: ModalSubmitInteraction) => modalInteraction.customId === `gbanmodal${randInt}` && modalInteraction.user.id === interaction.user.id;
             
             // wait for them to submit the modal
             const submittedModal = await interaction.awaitModalSubmit({ filter: modalFilter, time: 5 * 60 * 1000 });
@@ -176,6 +202,10 @@ export const command: SlashCommand = {
             if (confirmMsgContent === 'yes' || confirmMsgContent === 'y') {
                 // get the list of guild IDs the bot is in
                 const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
+
+                // create a flag to check for failed ban attempts
+                let failedBans = false;
+
                 // loop over the list of ids and ban the user(s) from them
                 for (const id of guildIds) {
                     // loop over the list of provided ids
@@ -190,18 +220,43 @@ export const command: SlashCommand = {
 
                         // ban the user and don't delete any messages
                         // I think this defaults to 0 deleted, but I'd rather be safe
-                        await guild.members.ban(uid, {
-                            reason: auditEntry,
-                            deleteMessageSeconds: 0,
-                        });
+                        try {
+                            // get the member in the guild
+                            await guild.members.ban(uid, {
+                                reason: auditEntry,
+                                deleteMessageSeconds: 0,
+                            });
+                        }
+                        catch (err) {
+                            failedBans = true;
+                            if (err instanceof DiscordAPIError && err.message === 'Unknown User') {
+                                await interaction.channel?.send(`Unable to fetch user with id ${uid}. Cancelling.`);
+                                return;
+                            }
+                            else {
+                                // catch the errors and alert staff so they know which ones the user wasn't banned from
+                                // continue, instead of throwing, so that we can ban from as many servers as we can
+                                await interaction.channel?.send(`I am unable to ban the user from guild ${guild.name}`);
+                                continue;
+                            }
+                            
+                        }
                         
                     }
                     
 
                 }
                 
-                await interaction.channel?.send('I banned the provided id(s) from every server I am in.');
-                return;
+                // let the user know you're done, and indicate whether all bans were successful. 
+                if (failedBans) {
+                    await interaction.channel?.send('I attempted to ban the provided id(s) from every server I am in, but there were some issues in some.');
+                    return;
+                }
+                else {
+                    await interaction.channel?.send('I have banned the provided id(s) from every server I am in.');
+                    return;
+                }
+                
             }
             else {
                 await interaction.channel?.send('Global ban exited');
