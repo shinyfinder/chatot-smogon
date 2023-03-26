@@ -36,7 +36,7 @@ export const command: SlashCommand = {
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         // make sure this command is used in a the main smogon server
-        if (!interaction.guild || !(interaction.guild.id === '192713314399289344' || interaction.guild.id === '1040378543626002442')) {
+        if (!interaction.guild || !(interaction.guild.id === '192713314399289344')) {
             await interaction.reply({ content: 'You must use this command in the Smogon main server!', ephemeral: true });
             return;
         }

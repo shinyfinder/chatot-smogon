@@ -92,7 +92,7 @@ export function validateMeta(meta: string, genIn: string): [boolean, string, str
             metaOut = 'NatDex Mono';
             break;
         case '1v1':
-            channel = '1059673638145622096';
+            channel = '1089349311080439882';
             metaOut = '1v1';
             break;
         case 'ag':
