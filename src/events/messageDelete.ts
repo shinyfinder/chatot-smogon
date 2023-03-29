@@ -26,6 +26,16 @@ export const clientEvent: eventHandler = {
         if (!message.guild || !message.author || message.author.id === config.CLIENT_ID) {
             return;
         }
+
+        // determine if the channel is private (prob staff) so we can ignore it
+        const channel = message.client.channels.cache.get(message.channelId);
+        if (channel === undefined || !(channel.type === ChannelType.GuildText || channel.type === ChannelType.PublicThread)) {
+            return;
+        }
+        const everyone = message.guild.roles.everyone;
+        if (!channel.permissionsFor(everyone).has('ViewChannel')) {
+            return;
+        }
         
         // get the current timestamp of when this event was triggered, in ms since the epoch
         const currentTime = Date.now();
