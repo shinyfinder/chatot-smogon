@@ -12,6 +12,7 @@ import { SlashCommand } from '../types/slash-command-base';
  */
 export const command: SlashCommand = {
     global: false,
+    guilds: ['192713314399289344'],
     // setup the slash command
 	data: new SlashCommandBuilder()
 		.setName('rmt')
@@ -61,14 +62,9 @@ export const command: SlashCommand = {
         const compHelpers = roleFetch.members.map(m => m.user.id);
 
 		// extract the start and end dates from the input
-        const startEntry = interaction.options.getString('start');
-        const endEntry = interaction.options.getString('end');
+        const startEntry = interaction.options.getString('start', true);
+        const endEntry = interaction.options.getString('end', true);
 
-        // type check the inputs to make sure they aren't null
-        // this probably won't happen anyway because they're required fields
-        if (startEntry === null || endEntry === null) {
-            return;
-        }
         // try to parse the inputs as dates
         const startDateIn = new Date(startEntry);
         const endDateIn = new Date(endEntry);

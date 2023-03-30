@@ -10,6 +10,7 @@ import { SlashCommand } from '../types/slash-command-base';
  */
 export const command: SlashCommand = {
     global: true,
+    guilds: [],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('ping')

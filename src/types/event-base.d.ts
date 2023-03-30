@@ -8,11 +8,11 @@
  *
  * Execute takes a number of arguments, which varies based on which event is used.
  *
- * @returns Promise<void>
+ * @returns void | Promise<void>
  */
 export interface eventHandler {
     name: string;
     once?: boolean;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    execute(...args: any): Promise<void>;
+    execute(...args: any): void | Promise<void>;
 }

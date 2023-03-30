@@ -11,6 +11,7 @@ import { SlashCommand } from '../types/slash-command-base';
  */
 export const command: SlashCommand = {
     global: false,
+    guilds: ['192713314399289344'],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('gban')
@@ -47,14 +48,8 @@ export const command: SlashCommand = {
          */
         if (interaction.options.getSubcommand() === 'user') {
             // get the inputs
-            const user = interaction.options.getUser('user');
+            const user = interaction.options.getUser('user', true);
             let auditEntry = interaction.options.getString('reason');
-
-            // check for null user to make TS happy
-            // this should never be null since it is a required field
-            if (user === null) {
-                return;
-            }
 
             // if no reason is provided, state so for the audit log
             if (auditEntry === null) {

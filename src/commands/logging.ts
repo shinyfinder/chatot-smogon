@@ -11,6 +11,7 @@ import { pool } from '../helpers/createPool.js';
 
 export const command: SlashCommand = {
     global: true,
+    guilds: [],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('logging')

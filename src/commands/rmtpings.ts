@@ -11,6 +11,7 @@ import { SlashCommand } from '../types/slash-command-base';
  */
 export const command: SlashCommand = {
     global: false,
+    guilds: ['192713314399289344'],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('rmtpings')
@@ -35,14 +36,9 @@ export const command: SlashCommand = {
     async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply({ ephemeral: true });
         // get their selection
-        const status = interaction.options.getString('status');
+        const status = interaction.options.getString('status', true);
         // and the id of the person who used the command
         const uid = interaction.user.id;
-
-        // typecheck
-        if (status === null) {
-            return;
-        }
 
         // update the value in the raters postgres table
         // the table schema defaults to All for everyone

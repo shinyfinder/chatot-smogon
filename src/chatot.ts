@@ -11,7 +11,8 @@ import * as net from 'node:net';
 import { createPool } from './helpers/createPool.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
-
+import { states, hashCommands } from './helpers/hashCommands.js';
+import { deployCommands } from './helpers/deployCommands.js';
 /**
  * Load in the environment variables
  * This is abstracted into a separate file to allow for any number of inputs (token, client id, and guild id are required)
@@ -81,6 +82,8 @@ try {
         // load the module
         const command = (await import(filePath.toString()) as cmdModule).command;
 
+        // hash the payload
+        hashCommands(command);
         // set it to the client
         client.commands.set(command.data.name, command);
     }
@@ -133,6 +136,11 @@ try {
      */
     createPool();
 
+
+    /**
+     * Update (deploy) any commands as necessary
+     */
+    await deployCommands(states);
 
     /**
      * Cache the db of custom commands

@@ -19,6 +19,7 @@ import { listRater } from '../helpers/listrater.js';
  */
 export const command: SlashCommand = {
     global: false,
+    guilds: ['192713314399289344'],
     // setup the slash command builder
     // the rater command groups all add, remove, and list conditions under the same command
     // the command structure is as follows, where <> denote required fields
@@ -172,30 +173,19 @@ export const command: SlashCommand = {
         if (interaction.options.getSubcommand() === 'add') {
             // get the user inputs
             // get the inputs
-            const metaIn = interaction.options.getString('meta')?.toLowerCase();
-            const gen = interaction.options.getString('generation');
-            const user = interaction.options.getUser('user');
-
-             // check for null user and meta to make TS happy
-            // this should never be null since it is a required field
-            if (user === null || metaIn === undefined || gen === null) {
-                return;
-            }
+            const metaIn = interaction.options.getString('meta', true).toLowerCase();
+            const gen = interaction.options.getString('generation', true);
+            const user = interaction.options.getUser('user', true);
 
             await addRater(interaction, metaIn, gen, user);
             return;
         }
         else if (interaction.options.getSubcommand() === 'remove') {
             // get the inputs
-            const metaIn = interaction.options.getString('meta')?.toLowerCase();
-            const gen = interaction.options.getString('generation');
-            const user = interaction.options.getUser('user');
+            const metaIn = interaction.options.getString('meta', true).toLowerCase();
+            const gen = interaction.options.getString('generation', true);
+            const user = interaction.options.getUser('user', true);
 
-            // check for null user and meta to make TS happy
-            // this should never be null since it is a required field
-            if (user === null || metaIn === undefined || gen === null) {
-                return;
-            }
             await removeRater(interaction, metaIn, gen, user);
             return;
         }
@@ -205,12 +195,8 @@ export const command: SlashCommand = {
         }
         else if (interaction.options.getSubcommand() === 'meta') {
             // get the inputs
-            const metaIn = interaction.options.getString('meta')?.toLowerCase();
-            const gen = interaction.options.getString('generation');
-
-            if (metaIn === undefined || gen === null) {
-                return;
-            }
+            const metaIn = interaction.options.getString('meta', true).toLowerCase();
+            const gen = interaction.options.getString('generation', true);
 
             await listRater(interaction, metaIn, gen);
             return;

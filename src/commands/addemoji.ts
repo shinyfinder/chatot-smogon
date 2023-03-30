@@ -9,6 +9,7 @@ import { SlashCommand } from '../types/slash-command-base';
 
 export const command: SlashCommand = {
     global: true,
+    guilds: [],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('addemoji')
@@ -33,13 +34,8 @@ export const command: SlashCommand = {
         }
 
         // get the entered input
-        const url = interaction.options.getString('url');
-        const name = interaction.options.getString('name');
-
-        // typecheck
-        if (url === null || name == null) {
-            return;
-        }
+        const url = interaction.options.getString('url', true);
+        const name = interaction.options.getString('name', true);
 
         // add the emoji
         try {

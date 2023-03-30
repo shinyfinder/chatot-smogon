@@ -14,6 +14,7 @@ import { getRandInt } from '../helpers/getRandInt.js';
 
 export const command: SlashCommand = {
     global: true,
+    guilds: [],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('custom')
@@ -171,12 +172,7 @@ export const command: SlashCommand = {
         else if (interaction.options.getSubcommand() === 'remove') {
             await interaction.deferReply({ ephemeral: true });
             // get the entered text
-            const name = interaction.options.getString('name')?.toLowerCase();
-
-            // type check the entered text
-            if (name === undefined) {
-                return;
-            }
+            const name = interaction.options.getString('name', true).toLowerCase();
 
             // query the database for the list of faqs for this server
             const dbmatches: { cmd: string, txt: string, prefix: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
@@ -216,12 +212,7 @@ export const command: SlashCommand = {
          */
         else if (interaction.options.getSubcommand() === 'edit') {
             // get the entered text
-            const name = interaction.options.getString('name')?.toLowerCase();
-
-            // type check the entered text
-            if (name === undefined) {
-                return;
-            }
+            const name = interaction.options.getString('name', true).toLowerCase();
 
             const dbmatches: { cmd: string, txt: string, prefix: string}[] | [] | undefined = await getdb(interaction, pool, serverID);
 

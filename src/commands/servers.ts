@@ -7,6 +7,7 @@ import { SlashCommand } from '../types/slash-command-base';
  */
 export const command: SlashCommand = {
     global: false,
+    guilds: ['192713314399289344'],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('servers')

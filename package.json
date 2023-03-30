@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "start": "rm -r dist && tsc --build && node dist/chatot.js",
+    "start": "node dist/chatot.js",
     "lint": "eslint . --ext .ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build-paranoid": "rm -r dist && tsc --build",

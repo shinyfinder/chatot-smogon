@@ -9,6 +9,7 @@ import { pool } from '../helpers/createPool.js';
 
 export const command: SlashCommand = {
     global: true,
+    guilds: [],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('modlog')
@@ -24,10 +25,10 @@ export const command: SlashCommand = {
     async execute(interaction: ChatInputCommandInteraction) {
         // get the id of the server this command was used in and the supplied user
         const serverid = interaction.guildId;
-        const user = interaction.options.getUser('user');
+        const user = interaction.options.getUser('user', true);
 
         // typecheck
-        if (serverid === null || user === null) {
+        if (serverid === null) {
             return;
         }
         // defer reply to give us time to poll the db

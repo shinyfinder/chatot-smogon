@@ -20,6 +20,7 @@ import { SlashCommand } from '../types/slash-command-base';
  */
 export const command: SlashCommand = {
     global: true,
+    guilds: [],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('timestamp')
@@ -81,23 +82,14 @@ export const command: SlashCommand = {
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         // get the entered info
-        const mon = interaction.options.getInteger('month')?.toLocaleString('en-US', { minimumIntegerDigits: 2 });
-        const day = interaction.options.getInteger('day')?.toLocaleString('en-US', { minimumIntegerDigits: 2 });
-        const year = interaction.options.getInteger('year')?.toString();
-        const hour = interaction.options.getInteger('hour')?.toLocaleString('en-US', { minimumIntegerDigits: 2 });
-        const min = interaction.options.getInteger('minute')?.toLocaleString('en-US', { minimumIntegerDigits: 2 });
-        const sec = interaction.options.getInteger('second')?.toLocaleString('en-US', { minimumIntegerDigits: 2 });
-        let offset = interaction.options.getNumber('offset');
-        const format = interaction.options.getString('format');
-
-        // typecheck
-        if (mon === undefined || day === undefined || year === undefined || hour === undefined || min === undefined || sec === undefined || format === null) {
-            return;
-        }
-
-        if (offset === null) {
-            offset = 0.0;
-        }
+        const mon = interaction.options.getInteger('month', true).toLocaleString('en-US', { minimumIntegerDigits: 2 });
+        const day = interaction.options.getInteger('day', true).toLocaleString('en-US', { minimumIntegerDigits: 2 });
+        const year = interaction.options.getInteger('year', true).toString();
+        const hour = interaction.options.getInteger('hour', true).toLocaleString('en-US', { minimumIntegerDigits: 2 });
+        const min = interaction.options.getInteger('minute', true).toLocaleString('en-US', { minimumIntegerDigits: 2 });
+        const sec = interaction.options.getInteger('second', true).toLocaleString('en-US', { minimumIntegerDigits: 2 });
+        const offset = interaction.options.getNumber('offset', true);
+        const format = interaction.options.getString('format', true);
 
         // format the entered text as a date with the specified offset
         // get the fraction of the offset
