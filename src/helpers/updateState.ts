@@ -65,7 +65,7 @@ export async function updateState(client: Client) {
  * @returns Promise<void>
  */
 async function deployCommands(client: Client, target: string) {
-    const rest = new REST().setToken(config.TOKEN);
+    const rest = new REST({ version: '10' }).setToken(config.TOKEN);
 
     // global
     if (target === 'global') {
