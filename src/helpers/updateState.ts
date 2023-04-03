@@ -78,7 +78,6 @@ async function deployCommands(client: Client, target: string) {
 
     // guild
     else {
-        // if we're in dev mode, interject our 
         // get all of the commands targeting this id
         const guilds = client.commands.filter(c => !c.global && c.guilds.includes(target));
 
