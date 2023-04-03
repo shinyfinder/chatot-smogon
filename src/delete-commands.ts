@@ -15,7 +15,7 @@ import config from './config.js';
 import { errorHandler } from './helpers/errorHandler.js';
 
 // setup the API call, specifying the API version number and providing the bot's authentication token
-const rest = new REST({ version: config.API_VER }).setToken(config.TOKEN);
+const rest = new REST({ version: '10' }).setToken(config.TOKEN);
 
 // get the command line arguments
 const args = process.argv.slice(2);

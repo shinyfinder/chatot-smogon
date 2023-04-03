@@ -32,7 +32,6 @@ interface ENV {
     PGHOST: string | undefined;
     PGPORT: number | undefined;
     PGDATABASE: string | undefined;
-    API_VER: string | undefined;
     // ...
 }
 
@@ -52,7 +51,6 @@ interface Config {
     PGHOST: string;
     PGPORT: number;
     PGDATABASE: string;
-    API_VER: string;
     // ...
 }
 
@@ -73,7 +71,6 @@ const getConfig = (): ENV => {
         PGHOST: process.env.PGHOST,
         PGPORT: parseInt(process.env.PGPORT || '', 10),
         PGDATABASE: process.env.PGDATABASE,
-        API_VER: process.env.API_VER,
         // ...
     };
 };

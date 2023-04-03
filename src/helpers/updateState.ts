@@ -26,15 +26,10 @@ export async function updateState(client: Client) {
     for (const state of states) {
         const oldHash = dbmatches.filter(old => old.target === state.target);
 
-        // update the hash of everything
-        // this doesn't need a call to the discord API
-        if (state.target === 'all') {
-            await pool.query('INSERT INTO chatot.states (target, hash) VALUES ($1, $2) ON CONFLICT (target) DO UPDATE SET hash=EXCLUDED.hash', [state.target, state.hash]);
-        }
         // if the old hash is not the same as the new one, update discord and the db
         // we can get away with indexing 0 because there can only be at most 1 entry
         // 2914 is the hash of '[]'
-        else if (oldHash[0]?.hash !== state.hash) {
+        if (oldHash[0]?.hash !== state.hash && state.target !== 'all') {
             // update discord
             await deployCommands(client, state.target);
 
@@ -49,6 +44,14 @@ export async function updateState(client: Client) {
 
         }
     }
+
+    // update the hash of everything
+    // this doesn't need a call to the discord API
+    // we need to do this last because if the above fails, we won't trigger an update again
+    // get the state entry corresponding to all
+    const newAllState = states.filter(s => s.target === 'all')[0];
+    await pool.query('INSERT INTO chatot.states (target, hash) VALUES ($1, $2) ON CONFLICT (target) DO UPDATE SET hash=EXCLUDED.hash', [newAllState.target, newAllState.hash]);
+    
     
     return;
 }
@@ -62,7 +65,7 @@ export async function updateState(client: Client) {
  * @returns Promise<void>
  */
 async function deployCommands(client: Client, target: string) {
-    const rest = new REST({ version: config.API_VER }).setToken(config.TOKEN);
+    const rest = new REST().setToken(config.TOKEN);
 
     // global
     if (target === 'global') {
