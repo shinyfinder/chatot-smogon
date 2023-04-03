@@ -40,14 +40,6 @@ CREATE TABLE chatot.modlog (
     PRIMARY KEY (serverid, executor, target, action, date, reason)
 );
 
-CREATE TABLE chatot.cmdstate (
-    name text,
-    global BOOLEAN,
-    guilds text[],
-    hash integer,
-    PRIMARY KEY (name)
-);
-
 CREATE TABLE chatot.states (
     target text,
     hash integer,
