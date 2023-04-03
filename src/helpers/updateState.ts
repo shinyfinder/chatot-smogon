@@ -58,7 +58,7 @@ export async function updateState(client: Client) {
  * Deploys the commands to discord.
  * The PUT endpoint is used to wipe the deployed commands and insert/update the new definitions
  * @param client Mutated discord.js client containing the commands
- * @param target Target guild ID as 'string', 'global', or 'all'
+ * @param target Target guild ID as string or 'global'
  * @returns Promise<void>
  */
 async function deployCommands(client: Client, target: string) {
