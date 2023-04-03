@@ -1,4 +1,3 @@
-import { SlashCommand } from './slash-command-base';
 import { RESTPostAPIApplicationCommandsJSONBody } from 'discord.js';
 
 /**
@@ -17,18 +16,6 @@ export type IJSONBody = RESTPostAPIApplicationCommandsJSONBody & {global: boolea
  * Interface that contains the command definitions (not API payload) and hash values
  */
 export interface IState {
-    command: SlashCommand,
-    hash: number,
-}
-
-
-/**
- * Interface for the state database query
- */
-
-export interface IStateRes {
-    name: string,
-    global: boolean,
-    guilds: string[],
+    target: string,
     hash: number,
 }

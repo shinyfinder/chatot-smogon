@@ -79,7 +79,7 @@ interface cmdModule {
 }
 
 // setup the API call, specifying the API version number and providing the bot's authentication token
-const rest = new REST({ version: '10' }).setToken(config.TOKEN);
+const rest = new REST({ version: config.API_VER }).setToken(config.TOKEN);
 
 for (let i = 0; i < flags.length; i++) {
     try {

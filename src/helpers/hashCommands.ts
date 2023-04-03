@@ -1,48 +1,105 @@
-import type { SlashCommand } from '../types/slash-command-base';
-import type { IJSONBody, IState } from '../types/state';
+import type { IState } from '../types/state';
+import { Client } from 'discord.js';
+import { computeHash } from './computeHash.js';
 import config from '../config.js';
 
-export const states: IState[] = [];
-/**
- * Creates a 32-bit hash from a string
- * @param {SlashCommand} cmd  Slash command object
- */
-export function hashCommands(cmd: SlashCommand) {
-    // get the data JSON that is sent to discord
-    // and turn it into a string for hashing
-    const cmdData = cmd.data.toJSON();
-    
-    // if we're in dev mode, overwrite the command defs with the dev guild
-    if (config.CLIENT_ID === '1040375769798557826' && cmd.global === false) {
-        cmd.guilds = [config.GUILD_ID];
-    }
-    // ignore any guild defs for global commands
-    else if (cmd.global) {
-        cmd.guilds = [];
-    }
-    
-    // extract the bits we want to hash into a separate object
-    const hashObj = cmdData as IJSONBody;
-    hashObj.global = cmd.global;
-    hashObj.guilds = cmd.guilds;
+// export const states: IState[] = [];
 
-    // convert to string
-    const cmdDef = JSON.stringify(cmdData);
+export function hashCommands(client: Client, dbmatches: IState[] | []) {
+    const states: IState[] = [];
 
-    // JS implementation of Java str hash
-    let hash = 0;
-    for (let i = 0; i < cmdDef.length; i++) {
-        const chr = cmdDef.charCodeAt(i);
-        hash = (hash << 5) - hash + chr;
-        // convert to 32bit int
-        hash |= 0;
+    /**
+     * Compute the hash of all commands
+     * This is done so that we can try to shortcircuit the startup process
+     */
+    // create an array of objects containing the definitions
+    // this includes the global flag, the list of guilds, and the command defs sent to discord
+    const allHashObj = client.commands.map(cdef => ({
+        global: cdef.global,
+        guilds: cdef.guilds,
+        data: cdef.data,
+    }));
+
+    // find the hash of everything
+    const allHash = computeHash(JSON.stringify(allHashObj));
+    // get the old hash from the db
+    const allOldHash = dbmatches.filter(old => old.target === 'all')[0];
+
+    // if they're the same, there's nothing to deploy
+    if (allOldHash?.hash === allHash) {
+        return states;
+    }
+    // if they're different, compute the other hashes so that we know what needs to be updated
+    // also queue the new everything hash for update
+    else {
+        states.push({ target: 'all', hash: allHash });
+    }
+
+
+    /**
+     * Compute the guild hashes 
+     * Only the guilds that currently have commands deployed 
+     * or will have commands deployed are considered
+     * This is a hash of the command definitions to be sent to discord
+     */
+    // get the list of current guild and global commands
+    const currentGuildCommands = client.commands.filter(cmd => !cmd.global);
+    const currentGlobalCommands = client.commands.filter(cmd => cmd.global);
+
+    // get the current list of affected guild IDs for the guild commands
+    let currentGuildIDs = currentGuildCommands.map(c => c.guilds).flat();
+
+    // if we're in dev mode, overwrite the list of unique IDs and the command defs with the one for the dev server
+    if (config.CLIENT_ID === '1040375769798557826') {
+        currentGuildIDs = [config.GUILD_ID];
+        currentGuildCommands.forEach(cmd => cmd.guilds = currentGuildIDs);
+    }
+
+    // get the old list of IDs
+    let oldGuildIDs: string[] = [];
+    // if you got results on the query...
+    if (dbmatches.length) {
+        // filter out the globals and everything hash
+        const oldGuildCommands = dbmatches.filter(old => old.target !== 'global' && old.target !== 'all');
+        // and get the ids
+        oldGuildIDs = oldGuildCommands.map(row => row.target);
+    }
+
+    // concat the 2, taking the unique values
+    const affectedIDs = currentGuildIDs.concat(oldGuildIDs);
+    const uniqIDs = [...new Set(affectedIDs)];
+
+    // loop over the unique list of guild IDs and compute the hash for each one
+    // this will tell us if there's a pending update for this guild
+    for (const id of uniqIDs) {
+        // get the current list targeting this guild
+        const targetCommands = currentGuildCommands.filter(cmd => cmd.guilds.includes(id));
+
+        // extract the info to be sent to discord so we can hash it
+        const targetBodies = targetCommands.map(slash => slash.data.toJSON());
+
+        // find the hash  
+        const hash = computeHash(JSON.stringify(targetBodies));
+
+        // store it in the object
+        states.push(
+            { target: id, hash: hash },
+        );
     }
     
-    // create the obj to define the state
-    const state = {
-        command: cmd,
-        hash: hash,
-    };
-    // mutate the array
-    states.push(state);
+
+    /**
+     * Compute the global hash
+     * This is a hash of the global command definitions sent to discord
+     */
+    // compute the hash for the globals
+    const currentGlobalBodies = currentGlobalCommands.map(slash => slash.data.toJSON());
+    const hash = computeHash(JSON.stringify(currentGlobalBodies));
+
+    // store it in the object
+    states.push(
+        { target: 'global', hash: hash },
+    );
+   
+    return states;
 }

@@ -47,3 +47,14 @@ CREATE TABLE chatot.cmdstate (
     hash integer,
     PRIMARY KEY (name)
 );
+
+CREATE TABLE chatot.states (
+    target text,
+    hash integer,
+    PRIMARY KEY (target)
+);
+
+CREATE TABLE chatot.keepalives (
+    id varchar(20),
+    PRIMARY KEY (id)
+);

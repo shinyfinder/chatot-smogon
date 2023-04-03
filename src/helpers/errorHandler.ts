@@ -3,7 +3,14 @@ import { DiscordAPIError, Collection } from 'discord.js';
 export function errorHandler(err: unknown) {
     // if it's a missing permission error, don't log to console
     if (err instanceof DiscordAPIError) {
-        if (err.message === 'Missing Permissions' || err.message === 'Missing Access' || err.message.includes('exceeds maximum size')) {
+        const swallowedErrors = [
+            'Missing Permissions',
+            'Missing Access',
+            'exceeds maximum size',
+            'Thread is locked',
+        ];
+
+        if (swallowedErrors.some(str => err.message.includes(str))) {
             return;
         }
     }

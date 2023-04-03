@@ -1,4 +1,5 @@
 import { Collection } from 'discord.js';
+import { SlashCommand } from './slash-command-base';
 /**
  * Extends the discord.js client definition to include a command list.
  * This allows us to dynamically build our command list and attach it to the client instance, allowing the command list to be accessed anywhere (i.e. interaction.client.commands)
@@ -6,6 +7,6 @@ import { Collection } from 'discord.js';
 
 declare module 'discord.js' {
     export interface Client {
-        commands: Collection<unknown, unknown>
+        commands: Collection<string, SlashCommand>
     }
 }
