@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, DiscordAPIError } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 
 /**
@@ -38,16 +38,7 @@ export const command: SlashCommand = {
         const name = interaction.options.getString('name', true);
 
         // add the emoji
-        try {
-            await interaction.guild.emojis.create({ attachment: url, name: name });
-        }
-        catch (err) {
-            if (err instanceof DiscordAPIError && err.message.includes('exceeds maximum size')) {
-                await interaction.reply({ content: 'Filesize too large.' });
-            }
-            throw err;
-        }
-        
+        await interaction.guild.emojis.create({ attachment: url, name: name });
 
         // let them know it was added
         await interaction.reply({ content: `Created a new emoji with name ${name}`, ephemeral: true });

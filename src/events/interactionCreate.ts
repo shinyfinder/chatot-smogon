@@ -34,18 +34,18 @@ export const clientEvent: eventHandler = {
             catch (error) {
                 // let the user know there was a problem
                 // try to keep errors ephemeral so it doesn't clog the chat and only the person who initiated can see the error
-                if (error instanceof DiscordAPIError && (error.message === 'Missing Permissions' || error.message === 'Missing Access')) {
+                if (error instanceof DiscordAPIError) {
                     // if we already replied, send a new one
                     if (interaction.replied) {
-                        await interaction.channel?.send('I do not have permissions to run that command');
+                        await interaction.channel?.send(`Error: ${error.message}`);
                     }
                     // if we haven't replied yet, but we deferred a reply, follow up
                     else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
-                        await interaction.followUp('I do not have permissions to run that command');
+                        await interaction.followUp(`Error: ${error.message}`);
                     }
-                    // if we haven't defferred or replied, reply
+                    // if we haven't deferred or replied, reply
                     else if (!interaction.replied && interaction.isRepliable()) {
-                        await interaction.reply({ content: 'I do not have permissions to run that command', ephemeral: true });
+                        await interaction.reply({ content: `Error: ${error.message}`, ephemeral: true });
                     }
                     throw error;
                 }

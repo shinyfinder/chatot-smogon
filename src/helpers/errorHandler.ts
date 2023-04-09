@@ -8,6 +8,7 @@ export function errorHandler(err: unknown) {
             'Missing Access',
             'exceeds maximum size',
             'Thread is locked',
+            'Thread is archived',
         ];
 
         if (swallowedErrors.some(str => err.message.includes(str))) {
