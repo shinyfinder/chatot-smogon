@@ -35,17 +35,25 @@ export const clientEvent: eventHandler = {
                 // let the user know there was a problem
                 // try to keep errors ephemeral so it doesn't clog the chat and only the person who initiated can see the error
                 if (error instanceof DiscordAPIError) {
+                    let msgout = '';
+
+                    if (error.message.includes('IMAGE_INVALID')) {
+                        msgout = `Error: ${error.message}. \n\nIf you are creating an emoji, make sure you are using the proper image format (jpg, png, gif) and copied the correct link. On Discord, select "Copy Link" **not** "Copy Message Link." From Google, select "Copy Image Link."`;
+                    }
+                    else {
+                        msgout = `Error: ${error.message}`;
+                    }
                     // if we already replied, send a new one
                     if (interaction.replied) {
-                        await interaction.channel?.send(`Error: ${error.message}`);
+                        await interaction.channel?.send(msgout);
                     }
                     // if we haven't replied yet, but we deferred a reply, follow up
                     else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
-                        await interaction.followUp(`Error: ${error.message}`);
+                        await interaction.followUp(msgout);
                     }
                     // if we haven't deferred or replied, reply
                     else if (!interaction.replied && interaction.isRepliable()) {
-                        await interaction.reply({ content: `Error: ${error.message}`, ephemeral: true });
+                        await interaction.reply({ content: msgout, ephemeral: true });
                     }
                     throw error;
                 }

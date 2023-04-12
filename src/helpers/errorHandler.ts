@@ -9,6 +9,7 @@ export function errorHandler(err: unknown) {
             'exceeds maximum size',
             'Thread is locked',
             'Thread is archived',
+            'IMAGE_INVALID',
         ];
 
         if (swallowedErrors.some(str => err.message.includes(str))) {
