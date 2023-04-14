@@ -50,3 +50,12 @@ CREATE TABLE chatot.keepalives (
     id varchar(20),
     PRIMARY KEY (id)
 );
+
+CREATE TABLE chatot.reactroles (
+    serverid varchar(20),
+    channelid varchar(20),
+    messageid varchar(20),
+    roleid text,
+    emoji text DEFAULT '-',
+    PRIMARY KEY (serverid, emoji)
+);

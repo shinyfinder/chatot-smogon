@@ -40,6 +40,9 @@ export const clientEvent: eventHandler = {
                     if (error.message.includes('IMAGE_INVALID')) {
                         msgout = `Error: ${error.message}. \n\nIf you are creating an emoji, make sure you are using the proper image format (jpg, png, gif) and copied the correct link. On Discord, select "Copy Link" **not** "Copy Message Link." From Google, select "Copy Image Link."`;
                     }
+                    else if (error.message.includes('Unknown Emoji')) {
+                        msgout = `Error: ${error.message}. \n\nI did not recognize that emoji. Make sure it's spelled correctly and available in this guild`;
+                    }
                     else {
                         msgout = `Error: ${error.message}`;
                     }

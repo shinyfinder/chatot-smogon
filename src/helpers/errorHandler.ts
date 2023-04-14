@@ -10,6 +10,7 @@ export function errorHandler(err: unknown) {
             'Thread is locked',
             'Thread is archived',
             'IMAGE_INVALID',
+            'Unknown Emoji',
         ];
 
         if (swallowedErrors.some(str => err.message.includes(str))) {

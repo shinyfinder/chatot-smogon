@@ -1,6 +1,6 @@
 /**
  * Main launch file for the app
- * This file has 4 main sections: create the client with the intents, load the commands, setup the event handler, and login
+ * This file has 5 main sections: create the client with the intents, load the commands, setup the event handler, connect to db, and login
  */
 
 import { Client, GatewayIntentBits, Collection, Partials } from 'discord.js';
@@ -12,6 +12,8 @@ import { createPool } from './helpers/createPool.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
+import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
+
 /**
  * Load in the environment variables
  * This is abstracted into a separate file to allow for any number of inputs (token, client id, and guild id are required)
@@ -39,7 +41,6 @@ const client = new Client({
     partials: [
         Partials.GuildMember,
         Partials.Message,
-        Partials.Reaction,
     ],
 });
 
@@ -144,11 +145,22 @@ try {
      */
     await loadCustoms();
 
+
     /**
      * Login to Discord with your client's token, or log any errors
      * Then, once the Discord connection is established, create a new net.Server listening on fd 3
      */
     await client.login(config.TOKEN);
+
+    /**
+     * Cache the monitored messages for role reactions
+     */
+
+    await loadRRMessages(client);
+
+    /**
+     * Everything is done, so create a new net.Server listending on fd 3
+     */
     new net.Server().listen({ fd: 3 });
 }
 catch (error) {
