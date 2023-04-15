@@ -338,15 +338,7 @@ export const command: SlashCommand = {
 
 async function getdb(interaction: ChatInputCommandInteraction, db: Pool, serverID: string) {
     // query the database for the list of faqs for this server
-    let dbmatches: { cmd: string, txt: string, prefix: string}[] | [];
-    try {
-        const customsPostgres = await db.query('SELECT cmd, txt, prefix FROM chatot.customs WHERE serverid = $1', [serverID]);
-        dbmatches = customsPostgres.rows;
-        return dbmatches;
-    }
-    catch (err) {
-        console.error(err);
-        await interaction.followUp({ content: 'An error occurred polling the database.', ephemeral: true });
-        return undefined;
-    }
+    const customsPostgres = await db.query('SELECT cmd, txt, prefix FROM chatot.customs WHERE serverid = $1', [serverID]);
+    const dbmatches: { cmd: string, txt: string, prefix: string}[] | [] = customsPostgres.rows;
+    return dbmatches;
 }

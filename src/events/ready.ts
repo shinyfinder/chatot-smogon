@@ -19,8 +19,7 @@ export const clientEvent: eventHandler = {
         // console.log('Logging in...');
         // if there wasn an issue logging in. let the user know
         if (!client.user || !client.application) {
-            console.error('There was an issue during start up');
-            return;
+            throw new Error('There was an issue during start up');
         }
         // success!
         console.log(`<6>Ready! Logged in as ${client.user.tag}`);
