@@ -21,43 +21,31 @@ If you download the zip, extract the file into your desired directory.
 Additions to the environment variables will need to be reflected in [config.ts](.blob/main/src/config.ts). These values are accessed within the bot as `config.VARIABLE_NAME`.
 
 # Using the bot
-This bot uses slash commands (a subset of application commands). By default, the commands are registered to the guild (server) ID in your `.env` only. To register your commands, run the following line in the terminal:
+This bot uses slash commands (a subset of application commands). Deployment of these commands is handled during startup of the bot witihn the `/src/helpers/updateState.ts` file. This script detects any changes in your command definitions and (re)deploys them as appropriate. The deployment scope is defined within the command definitions themselves with the following flags:
 
 ```
-pnpm run build
-node dist/deploy-commands.js -guild
+global: <boolean>
+guilds: <string[]>
 ```
+Setting the global flag to `true` will cause the command to be deployed globally (i.e. to every server the bot is in). Setting the global flag to `false` and providing a list of server IDs as strings within the guilds array will instead deploy the command as a guild command (i.e. only to that guild) to the listed servers. Note that if the bot is in dev mode (its client id is equal to a value specifed in `/src/helpers/hashCommands.ts`), the specified guild array will be overwritten with the dev guild id specifed in the `.env`. 
 
-If starting from scratch, you will need to run this command before first launch and whenever you add/edit command definitions (the fields of the SlashCommandBuilder; editing the execute section of the command does not require you to redeploy). If you wish to register your commands globally (for use in any server your bot is in, not just the one in your `.env`), use the global flag.
+Start the bot from the terminal with the following:
 
-`node dist/deploy-commands.js -global`
-
-If you want to delete a command from the guild specified in your `.env` file, run the following:
-
-`node dist/delete-commands.js -guild`
-
-The deploy and delete commands use command line arguments to specify their scope. Their usage assumes the syntax.
-
-`node path/to/script.js -[guild|global] ?[cmdName1 cmdName2 ...]`
-
-Providing an optional command name after the -guild scope pushes/deletes the specified command(s) to the guild specified in your `.env`, or in the case of global commands, in every guild. For example,
-
-`node dist/deploy-commands.js -guild ping`
-
-Will push the command named `ping` to the guild specified in your `.env`.
-
-Once your commands have been registered, start the bot from the terminal with the following:
-
-`pnpm start`
+```
+pnpm build
+pnpm start
+```
 
 You should see that the bot is now online in Discord. To confirm it is responding to commands, post the following within Discord:
 
 `/ping`
 
-The bot should respond with "Pong!". Remember that you must first deploy the commands before they can be used.
+The bot should respond with "Pong!".
 
 # Further Reading
 Please refer to the Discord documentation for further information on [adding](https://discordjs.guide/creating-your-bot/creating-commands.html), [using](https://discordjs.guide/interactions/slash-commands.html), and [deleting](https://discordjs.guide/creating-your-bot/deleting-commands.html) slash commands. For more in-depth information, see the devloper documentation on [application commands](https://discord.com/developers/docs/interactions/application-commands).
+
+Please see the [wiki](https://github.com/shinyfinder/chatot-smogon/wiki) for detailed information regarding setup and usage of the bot.
 
 # License
 This software is distributed under the [MIT license](./blob/main/LICENSE).
