@@ -25,67 +25,58 @@ export const clientEvent: eventHandler = {
             return;
         }
 
-        // wrap the execution in a try/catch so that errors are handled and won't cause the bot to crash
-        try {
-            // get the current time
-            const currentTime = Date.now();
+        // get the current time
+        const currentTime = Date.now();
 
-            // wait a bit for the audit log to populate
-            await sleep(10000);
+        // wait a bit for the audit log to populate
+        await sleep(10000);
 
-            // since we're only kicking 1 user at a time, fetch the latest event from the audit log of type kick
-            const fetchedLogs = await member.guild.fetchAuditLogs({
-                limit: 1,
-                type: AuditLogEvent.MemberKick,
-            });
+        // since we're only kicking 1 user at a time, fetch the latest event from the audit log of type kick
+        const fetchedLogs = await member.guild.fetchAuditLogs({
+            limit: 1,
+            type: AuditLogEvent.MemberKick,
+        });
 
-            // Since there's only 1 audit log entry in this collection, grab the first one
-            const kickLog = fetchedLogs.entries.first();
+        // Since there's only 1 audit log entry in this collection, grab the first one
+        const kickLog = fetchedLogs.entries.first();
 
-            // If there's nothing in the audit log, return
-            if (!kickLog) {
-                // await buildEmbed('Self', null);
-                return;
-            }
-
-            // check to see if it's an old audit log entry
-            // if it's too old, return
-            const auditTime = kickLog.createdTimestamp;
-            if (Math.abs(currentTime - auditTime) > 30000) {
-                return;
-            }
-
-            // Now grab the user object of the person who kicked the member
-            // Also grab the target of this action to double-check things
-            const { executor, target, reason } = kickLog;
-
-            // make sure executor and target isn't null to make TS happy. It shouldn't be
-            if (!executor || !target) {
-                await buildEmbed('Inconclusive. No audit log entry at this time.', null, member);
-                return;
-            }
-
-            // if the executor is the same as the person who left, they left on their own, so don't log it.
-            if (target.id === executor.id) {
-                return;
-            }
-
-            // Also run a check to make sure that the log returned was for the same kicked member
-            if (target.id === member.id) {
-                await buildEmbed(executor, reason, member);
-            }
-            else {
-                // we don't know what this is, so do nothing
-                return;
-            }
-
+        // If there's nothing in the audit log, return
+        if (!kickLog) {
+            // await buildEmbed('Self', null);
+            return;
         }
 
-        catch (error) {
-             // if there's an error, log it
-             console.error(error);
-             return;
+        // check to see if it's an old audit log entry
+        // if it's too old, return
+        const auditTime = kickLog.createdTimestamp;
+        if (Math.abs(currentTime - auditTime) > 30000) {
+            return;
         }
+
+        // Now grab the user object of the person who kicked the member
+        // Also grab the target of this action to double-check things
+        const { executor, target, reason } = kickLog;
+
+        // make sure executor and target isn't null to make TS happy. It shouldn't be
+        if (!executor || !target) {
+            await buildEmbed('Inconclusive. No audit log entry at this time.', null, member);
+            return;
+        }
+
+        // if the executor is the same as the person who left, they left on their own, so don't log it.
+        if (target.id === executor.id) {
+            return;
+        }
+
+        // Also run a check to make sure that the log returned was for the same kicked member
+        if (target.id === member.id) {
+            await buildEmbed(executor, reason, member);
+        }
+        else {
+            // we don't know what this is, so do nothing
+            return;
+        }
+
     },
 };
 

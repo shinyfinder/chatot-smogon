@@ -239,23 +239,17 @@ async function buildEmbed(executor: User | string, reason: string | null, durati
     await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [newMember.guild.id, executorID, newMember.user.id, modAction, reason]);
 
     // log to the logging channel specified in the config file
-    try {
-        const pgres = await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid=$1', [newMember.guild.id]);
-        const logchan: { channelid: string }[] | [] = pgres.rows;
+    const pgres = await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid=$1', [newMember.guild.id]);
+    const logchan: { channelid: string }[] | [] = pgres.rows;
 
-        if (logchan.length) {
-            const channel = newMember.client.channels.cache.get(logchan[0].channelid);
-            if (channel?.type !== ChannelType.GuildText) {
-                return;
-            }
-            await channel.send({ embeds: [embed] });
-        }
-        else {
+    if (logchan.length) {
+        const channel = newMember.client.channels.cache.get(logchan[0].channelid);
+        if (channel?.type !== ChannelType.GuildText) {
             return;
         }
+        await channel.send({ embeds: [embed] });
     }
-    catch (err) {
-        console.error(err);
+    else {
         return;
     }
 }
