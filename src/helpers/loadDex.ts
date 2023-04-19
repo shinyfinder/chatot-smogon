@@ -10,14 +10,7 @@ interface dexdb {
 export let dexNames: string[];
 
 /**
- * Caches the messages users react to in order to receive their roles.
- * Because the bot may have restarted since the messages were initialized, we need to recache them.
- * If partials are not used, the bot does not listen for reactions on uncached messages.
- * 
- * Once the messages are cached, this returns an array containing the message IDs so we can quickly filter
- * out reactions on messages we don't care about without having to poll the db.
- * @param client Bot client
- * @returns Array containing react role message ids
+ * Loads the names of Pokemon from the dex db
  */
 export async function loadDexNames() {
     // poll the db
