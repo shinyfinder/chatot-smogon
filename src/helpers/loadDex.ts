@@ -14,7 +14,7 @@ export let dexNames: string[];
  */
 export async function loadDexNames() {
     // poll the db
-    const dexPostgres = await pool.query('SELECT alias FROM dex.pokemon');
+    const dexPostgres = await pool.query('SELECT DISTINCT alias FROM dex.pokemon');
     const dbmatches: dexdb[] | [] = dexPostgres.rows;
 
     // save a cache of the pokemon names so we can autocomplete it
