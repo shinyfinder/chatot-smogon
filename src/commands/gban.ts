@@ -65,8 +65,12 @@ export const command: SlashCommand = {
                 return;
             }
             const confirmMsgContent = confirmMsg.first()?.content?.toLowerCase();
+            const failedGuilds: string[] = [];
 
             if (confirmMsgContent === 'yes' || confirmMsgContent === 'y') {
+                // confirm we got the message
+                await interaction.channel?.send('Grabbing my banhammer...');
+
                 // get the list of guild IDs the bot is in
                 const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
 
@@ -91,9 +95,9 @@ export const command: SlashCommand = {
                     }
                     catch (err) {
                         failedBans = true;
+                        failedGuilds.push(guild.name);
                         // catch the errors and alert staff so they know which ones the user wasn't banned from
                         // continue, instead of throwing, so that we can ban from as many servers as we can
-                        await interaction.channel?.send(`I am unable to ban the user from guild ${guild.name}`);
                         continue;
                         
                     }
@@ -102,7 +106,7 @@ export const command: SlashCommand = {
 
                 // let them know you're done and whether you had issues along the way
                 if (failedBans) {
-                    await interaction.channel?.send('I attempted to ban the user from every server I am in, but I had issues in some.');
+                    await interaction.channel?.send(`I attempted to ban the user from every server I am in, but I had issues in:\n\n${failedGuilds.join(', ')}`);
                     return;
                 }
                 else {
@@ -193,8 +197,12 @@ export const command: SlashCommand = {
                 return;
             }
             const confirmMsgContent = confirmMsg.first()?.content?.toLowerCase();
+            const failedGuilds: string[] = [];
 
             if (confirmMsgContent === 'yes' || confirmMsgContent === 'y') {
+                // confirm we got the message
+                await interaction.channel?.send('Grabbing my banhammer...');
+
                 // get the list of guild IDs the bot is in
                 const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
 
@@ -231,7 +239,8 @@ export const command: SlashCommand = {
                             else {
                                 // catch the errors and alert staff so they know which ones the user wasn't banned from
                                 // continue, instead of throwing, so that we can ban from as many servers as we can
-                                await interaction.channel?.send(`I am unable to ban the user from guild ${guild.name}`);
+                                // await interaction.channel?.send(`I am unable to ban the user from guild ${guild.name}`);
+                                failedGuilds.push(guild.name);
                                 continue;
                             }
                             
@@ -244,7 +253,9 @@ export const command: SlashCommand = {
                 
                 // let the user know you're done, and indicate whether all bans were successful. 
                 if (failedBans) {
-                    await interaction.channel?.send('I attempted to ban the provided id(s) from every server I am in, but there were some issues in some.');
+                    // get the unique guild names
+                    const uniqFailedGuilds = [...new Set(failedGuilds)];
+                    await interaction.channel?.send(`I attempted to ban the provided id(s) from every server I am in, but I had some issues in:\n\n${uniqFailedGuilds.join(', ')}`);
                     return;
                 }
                 else {

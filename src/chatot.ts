@@ -12,6 +12,7 @@ import { createPool } from './helpers/createPool.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
+import { loadDexNames } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 
 /**
@@ -145,15 +146,20 @@ try {
      */
     await loadCustoms();
 
+    /**
+     * Cache the db of pokemon names (aliases)
+     */
+    await loadDexNames();
+
 
     /**
      * Login to Discord with your client's token, or log any errors
-     * Then, once the Discord connection is established, create a new net.Server listening on fd 3
      */
     await client.login(config.TOKEN);
 
     /**
      * Cache the monitored messages for role reactions
+     * Has to be done after login since we are fetching messages
      */
 
     await loadRRMessages(client);

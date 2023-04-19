@@ -6,7 +6,6 @@ import { eventHandler } from '../types/event-base';
  * When the app has initialized, this code is run.
  * It is run once to log that the bot is up and running.
  *
- * Because our template requires a promise, return a dummy promise resolution
  */
 
 export const clientEvent: eventHandler = {
@@ -19,7 +18,7 @@ export const clientEvent: eventHandler = {
         // console.log('Logging in...');
         // if there wasn an issue logging in. let the user know
         if (!client.user || !client.application) {
-            throw new Error('There was an issue during start up');
+            throw new Error('There was an issue logging in');
         }
         // success!
         console.log(`<6>Ready! Logged in as ${client.user.tag}`);

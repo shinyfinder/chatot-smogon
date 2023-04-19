@@ -52,7 +52,7 @@ export async function rrRemove(dbmatches: IReactRole[] | [], interaction: ChatIn
         }
         
         // remove the line containing this emoji with regex
-        const regex = new RegExp(`^.*${emojiID}.*`, 'gm');
+        const regex = new RegExp(`^.*${emojiID}.*\n?`, 'gm');
         const newDesc = embed.description.replace(regex, '');
 
         // create a new embed with the template of the old one since embeds are immutable
@@ -76,7 +76,7 @@ export async function rrRemove(dbmatches: IReactRole[] | [], interaction: ChatIn
         // format is <:name_goes_here123:1234567>
         const reactionID = emojiID.match(/\d*(?=>)/);
         if (reactionID === null) {
-            await interaction.followUp('I did no understand that input');
+            await interaction.followUp('I did not understand that input');
             return;
         }
         // then try to fetch the emoji using the ID
