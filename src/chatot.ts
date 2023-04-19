@@ -9,7 +9,6 @@ import type { eventHandler } from './types/event-base';
 import { readdir } from 'node:fs/promises';
 import * as net from 'node:net';
 import { createPool } from './helpers/createPool.js';
-import { errorHandler } from './helpers/errorHandler.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
 import { loadDexNames } from './helpers/loadDex.js';
@@ -46,8 +45,6 @@ const client = new Client({
 });
 
 // error handling and graceful shutdown
-process.on('uncaughtException', err => console.error(err));
-process.on('unhandledRejection', err => console.error(err));
 process.on('SIGTERM', () => process.exit(0));
 
 
@@ -166,8 +163,4 @@ await loadRRMessages(client);
 /**
  * Everything is done, so create a new net.Server listending on fd 3
  */
-new net.Server().listen({ fd: 3 });
-
-
-    // errorHandler(error);
-    // process.exit();
+const server = new net.Server().listen({ fd: 3 });
