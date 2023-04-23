@@ -1,5 +1,6 @@
 import { Client } from 'discord.js';
 import { pool } from './createPool.js';
+import { errorHandler } from './errorHandler.js';
 
 /**
  * Helper file to instantiate the connection to the postgres pool
@@ -40,14 +41,23 @@ export async function loadRRMessages(client: Client) {
 
         // fetch the channel
         // I'm pretty sure this draws from the cache if it exists there
-        const chan = await server.channels.fetch(msg.channelid);
+        // Also wrap the following 2 calls in a try/catch block so we don't cause the bot to crash if it doesn't have access
+        try {
+            const chan = await server.channels.fetch(msg.channelid);
 
-        if (chan === null || !chan.isTextBased()) {
+            if (chan === null || !chan.isTextBased()) {
+                continue;
+            }
+
+            // fetch the message so it is cached
+            await chan.messages.fetch(msg.messageid);
+        }
+        catch (err) {
+            // route it through our error handler to at least give it a shot of printing
+            errorHandler(err);
             continue;
         }
-
-        // fetch the message so it is cached
-        await chan.messages.fetch(msg.messageid);
+        
     }
 
     // save a cache of the message IDs so we can compare new reactions against it without having to poll the db
