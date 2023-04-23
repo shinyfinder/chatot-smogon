@@ -59,3 +59,10 @@ CREATE TABLE chatot.reactroles (
     emoji text DEFAULT '-',
     PRIMARY KEY (serverid, emoji)
 );
+
+CREATE TABLE chatot.dexdefaults (
+    serverid varchar(20),
+    format text,
+    gen text,
+    PRIMARY KEY (serverid)
+);

@@ -11,7 +11,7 @@ import * as net from 'node:net';
 import { createPool } from './helpers/createPool.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
-import { loadDexNames } from './helpers/loadDex.js';
+import { loadDex } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 
 /**
@@ -145,7 +145,7 @@ await loadCustoms();
 /**
  * Cache the db of pokemon names (aliases)
  */
-await loadDexNames();
+await loadDex();
 
 
 /**
@@ -162,5 +162,8 @@ await loadRRMessages(client);
 
 /**
  * Everything is done, so create a new net.Server listending on fd 3
+ * Only do this in production so we can test in dev mode
  */
-const server = new net.Server().listen({ fd: 3 });
+if (config.CLIENT_ID !== '1040375769798557826') {
+    const server = new net.Server().listen({ fd: 3 });
+}

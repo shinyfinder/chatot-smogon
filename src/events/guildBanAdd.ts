@@ -133,7 +133,22 @@ async function buildEmbed(executor: User | string, reason: string | null, ban: G
         }
         await channel.send({ embeds: [embed] });
     }
-    else {
-        return;
+    
+    /**
+     * Main discord uses a separate channel to specifically log punishments.
+     * If this action occurred in main, echo to that channel as well.
+     */
+    /*
+    if (ban.guild.id === '192713314399289344') {
+        // get the log-punishements channel
+        const punishChan = ban.client.channels.cache.get('768187740956917821');
+        // typecheck to make TS happy
+        if (punishChan?.type !== ChannelType.GuildText) {
+            return;
+        }
+        // echo to the other chan
+        await punishChan.send(`${ban.user.id} / ${ban.user.tag} / ban / ${reason}`);
     }
+    */
+   return;
 }

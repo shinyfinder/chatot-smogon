@@ -20,6 +20,18 @@ CREATE TABLE gens (
     build_id cms.buildid NOT NULL REFERENCES cms.builds ON DELETE CASCADE
 );
 
+-- gen_id | alias | shorthand |      name      | order |               build_id               
+-- --------+-------+-----------+----------------+-------+--------------------------------------
+ -- rb     | rb    | RB        | Red/Blue       |     0 | 13861cab-0ef3-46c4-b1a3-739d50dfa555
+ -- gs     | gs    | GS        | Gold/Silver    |     1 | 13861cab-0ef3-46c4-b1a3-739d50dfa555
+ -- rs     | rs    | RS        | Ruby/Sapphire  |     2 | 13861cab-0ef3-46c4-b1a3-739d50dfa555
+ -- dp     | dp    | DP        | Diamond/Pearl  |     3 | 13861cab-0ef3-46c4-b1a3-739d50dfa555
+ -- bw     | bw    | BW        | Black/White    |     4 | 13861cab-0ef3-46c4-b1a3-739d50dfa555
+ -- xy     | xy    | XY        | X/Y            |     5 | 13861cab-0ef3-46c4-b1a3-739d50dfa555
+ -- sm     | sm    | SM        | Sun/Moon       |     6 | 13861cab-0ef3-46c4-b1a3-739d50dfa555
+ -- ss     | ss    | SS        | Sword/Shield   |     7 | 13861cab-0ef3-46c4-b1a3-739d50dfa555
+ -- sv     | sv    | SV        | Scarlet/Violet |     8 | 13861cab-0ef3-46c4-b1a3-739d50dfa555
+
 --##############################################################################
 --## Languages
 --##############################################################################
