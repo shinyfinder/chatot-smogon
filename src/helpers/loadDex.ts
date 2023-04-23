@@ -6,7 +6,7 @@ import { pool } from './createPool.js';
 export interface IDexDB {
     alias: string,
     gen_id: string,
-    isNonstandard: string,
+    isnonstandard: string,
 }
 
 export let dexdb: IDexDB[] | [];

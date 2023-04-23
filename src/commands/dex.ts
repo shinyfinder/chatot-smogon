@@ -126,16 +126,16 @@ export const command: SlashCommand = {
             // if they set the format to cap, get the latest cap entry
             if (format === 'cap') {
                 // get all of the entries related to cap
-                dbFilterFormat = dbFilterMon.filter(poke => poke.isNonstandard.toLowerCase() === 'cap');
+                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard.toLowerCase() === 'cap');
             }
             // if it's any of the natdex formats
             else if (format.includes('national-dex')) {
                 // get all of the entries related to natdex
-                dbFilterFormat = dbFilterMon.filter(poke => poke.isNonstandard.toLowerCase() === 'natdex');
+                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard.toLowerCase() === 'natdex');
             }
             // if they specified a format that's not cap or natdex
             else if (format !== '') {
-                dbFilterFormat = dbFilterMon.filter(poke => poke.isNonstandard.toLowerCase() === 'standard');
+                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard.toLowerCase() === 'standard');
             }
             // they didn't specify anything and didn't set a default, so just get the last one (which'd be the latest gen)
             else {
