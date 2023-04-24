@@ -138,7 +138,7 @@ async function buildEmbed(executor: User | string, reason: string | null, ban: G
      * Main discord uses a separate channel to specifically log punishments.
      * If this action occurred in main, echo to that channel as well.
      */
-    /*
+    
     if (ban.guild.id === '192713314399289344') {
         // get the log-punishements channel
         const punishChan = ban.client.channels.cache.get('768187740956917821');
@@ -149,6 +149,6 @@ async function buildEmbed(executor: User | string, reason: string | null, ban: G
         // echo to the other chan
         await punishChan.send(`${ban.user.id} / ${ban.user.tag} / ban / ${reason}`);
     }
-    */
+    
    return;
 }

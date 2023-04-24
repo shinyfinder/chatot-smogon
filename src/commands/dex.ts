@@ -47,8 +47,23 @@ export const command: SlashCommand = {
         const focusedOption = interaction.options.getFocused(true);
 
         if (focusedOption.name === 'pokemon') {
+            const enteredText = focusedOption.value.toLowerCase();
+            const filteredOut: {name: string, value: string }[] = [];
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
+            for (const pair of dexNames) {
+                if (filteredOut.length < 25) {
+                    if (pair.value.includes(enteredText)) {
+                        filteredOut.push(pair);
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+
+            await interaction.respond(filteredOut);
+            /*
             const filtered = dexNames.filter(choice => choice.toLowerCase().includes(focusedOption.value.toLowerCase()));
 
             // discord has a max length of 25 options
@@ -64,6 +79,7 @@ export const command: SlashCommand = {
             await interaction.respond(
                 filteredOut.map(choice => ({ name: choice, value: choice })),
             );
+            */
         }
     },
     // execute our desired task
@@ -81,7 +97,7 @@ export const command: SlashCommand = {
         let format = interaction.options.getString('format');
 
         // make sure they entered proper text
-        const validName = dexNames.some(n => n.toLowerCase() === mon);
+        const validName = dexNames.some(n => n.value === mon);
         if (!validName) {
             await interaction.followUp('Invalid Pokemon name. Please choose one from the list');
             return;

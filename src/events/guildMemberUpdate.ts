@@ -254,17 +254,17 @@ async function buildEmbed(executor: User | string, reason: string | null, durati
      * Main discord uses a separate channel to specifically log punishments.
      * If this action occurred in main, echo to that channel as well.
      */
-    /*
-    if (newMember.guild.id === '1040378543626002442' && duration !== 'Removed') {
+    
+    if (newMember.guild.id === '192713314399289344' && duration !== 'Removed') {
         // get the log-punishements channel
-        const punishChan = newMember.client.channels.cache.get('1099433349610741860');
+        const punishChan = newMember.client.channels.cache.get('768187740956917821');
         // typecheck to make TS happy
         if (punishChan?.type !== ChannelType.GuildText) {
             return;
         }
-
+        // echo to the other chan
         await punishChan.send(`${newMember.user.id} / ${newMember.user.tag} / timeout for ${duration} / ${reason}`);
     }
-    */
+    
    return;
 }

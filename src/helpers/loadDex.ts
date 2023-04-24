@@ -11,7 +11,7 @@ export interface IDexDB {
 
 export let dexdb: IDexDB[] | [];
 
-export let dexNames: string[];
+export let dexNames: { name: string, value: string }[];
 /**
  * Queries the info we need from the dex table
  */
@@ -27,9 +27,11 @@ export async function loadDex() {
     dexdb = dexPostgres.rows;
 
     // map just the names so we can use them for autocomplete
-    dexNames = dexdb.map(row => row.alias);
+    let uniqDexNames = dexdb.map(row => row.alias);
     // get the unique values
-    dexNames = [...new Set(dexNames)];
+    uniqDexNames = [...new Set(uniqDexNames)];
+
+    dexNames = uniqDexNames.map(n => ({ name: n, value: n.toLowerCase() }));
 
     return;
     

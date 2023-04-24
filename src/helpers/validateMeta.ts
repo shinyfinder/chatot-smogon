@@ -1,4 +1,4 @@
-import { allowedMetas } from './constants.js';
+import { allowedMetasObj } from './constants.js';
 /**
  * Validates the input when adding/removing team raters
  * Also maps the meta and provided gen to a number and channel
@@ -7,15 +7,18 @@ import { allowedMetas } from './constants.js';
  * @returns Arr - Returns whether is a valid/tracked meta and, if valid, the meta in expected case, relevant channel, and gen the rater belongs to. If invalid, return false and list of valid metas
  */
 export function validateMeta(meta: string, genIn: string): [boolean, string, string] {
+    
     // check for proper input
+    /*
     const allowedLower: string[] = [];
     for (let i = 0; i < allowedMetas.length; i++) {
         allowedLower.push(allowedMetas[i].toLowerCase());
     }
+    */
 
     // check the provided input against the allowed metas
-    if (!allowedLower.includes(meta)) {
-        const allowedMetaList = allowedMetas.join('\n');
+    if (allowedMetasObj.filter(obj => obj.value === meta).length === 0) {
+        const allowedMetaList = allowedMetasObj.map(m => m.name).join('\n');
         return [false, allowedMetaList, ''];
     }
 

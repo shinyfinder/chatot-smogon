@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { allowedMetas as choices } from '../helpers/constants.js';
+import { allowedMetasObj } from '../helpers/constants.js';
 import { addRater } from '../helpers/addrater.js';
 import { removeRater } from '../helpers/removerater.js';
 import { listRater } from '../helpers/listrater.js';
@@ -147,8 +147,27 @@ export const command: SlashCommand = {
         const focusedOption = interaction.options.getFocused(true);
 
         if (focusedOption.name === 'meta') {
+            const enteredText = focusedOption.value.toLowerCase();
+
+            const filteredOut: {name: string, value: string }[] = [];
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
+            for (const pair of allowedMetasObj) {
+                if (filteredOut.length < 25) {
+                    if (pair.value.includes(enteredText)) {
+                        filteredOut.push(pair);
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+
+            await interaction.respond(filteredOut);
+
+            // filter the options shown to the user based on what they've typed in
+            // everything is cast to lower case to handle differences in case
+            /*
             const filtered = choices.filter(choice => choice.toLowerCase().includes(focusedOption.value.toLowerCase()));
 
             // discord has a max length of 25 options
@@ -164,6 +183,7 @@ export const command: SlashCommand = {
             await interaction.respond(
                 filteredOut.map(choice => ({ name: choice, value: choice })),
             );
+            */
         }
     },
     // execute our desired task

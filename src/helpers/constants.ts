@@ -6,7 +6,7 @@
 /**
  * List of allowable metas to add/remove/list a team rater for
  */
-export const allowedMetas = [
+const allowedMetas = [
     'OU',
     'Ubers',
     'DOU',
@@ -37,3 +37,5 @@ export const allowedMetas = [
     'VGC',
     'BSS',
 ];
+
+export const allowedMetasObj = allowedMetas.map(meta => ({ name: meta, value: meta.toLowerCase() }));
