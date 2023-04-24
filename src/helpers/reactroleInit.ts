@@ -29,7 +29,23 @@ export async function rrInit(msgID: string | null, interaction: ChatInputCommand
         const embed = new EmbedBuilder()
             .setTitle('React Roles')
             .setDescription('Choose your roles by reacting with the following:\n\u200B\n');
-        
+
+        // check channel perms
+        /*
+        const rrChan = await interaction.client.channels.fetch(interaction.channelId);
+        if (!(rrChan?.type === ChannelType.GuildText || rrChan?.type === ChannelType.PublicThread)) {
+            await interaction.followUp('Invalid channel type. Reaction role messages should be in a public channel');
+            return;
+        }
+
+        const hasPerms = rrChan.permissionsFor(config.CLIENT_ID)?.has([PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ViewChannel]);
+
+        if (!hasPerms) {
+            await interaction.followUp('I am missing required permissions to effectively monitor reaction roles');
+            return;
+        }
+        */
+                
         const msg = await interaction.channel.send({ embeds: [embed] });
         // store it in the db
         await pool.query('INSERT INTO chatot.reactroles (serverid, channelid, messageid, roleid) VALUES ($1, $2, $3, $4)', [msg?.guildId, msg?.channelId, msg?.id, 'bot']);

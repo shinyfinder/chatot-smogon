@@ -97,6 +97,7 @@ export const command: SlashCommand = {
         let format = interaction.options.getString('format');
 
         // make sure they entered proper text
+        // the value is the alias
         const validName = dexNames.some(n => n.value === mon);
         if (!validName) {
             await interaction.followUp('Invalid Pokemon name. Please choose one from the list');
@@ -122,6 +123,9 @@ export const command: SlashCommand = {
                 }
                 
             }
+            else {
+                format = format.toLowerCase();
+            }
             // check for gen
             // we use a default gen later on, so leave null if no default
             if (gen === null) {
@@ -130,6 +134,9 @@ export const command: SlashCommand = {
                 }
             }
         }
+        else {
+            format = format.toLowerCase();
+        }
        
 
         /**
@@ -137,21 +144,21 @@ export const command: SlashCommand = {
          */
         if (gen === null) {
             // filter the db to only the mon they specified
-            const dbFilterMon = dexdb.filter(poke => poke.alias.toLowerCase() === mon);
+            const dbFilterMon = dexdb.filter(poke => poke.alias === mon);
             let dbFilterFormat: IDexDB[];
             // if they set the format to cap, get the latest cap entry
             if (format === 'cap') {
                 // get all of the entries related to cap
-                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard.toLowerCase() === 'cap');
+                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard === 'CAP');
             }
             // if it's any of the natdex formats
             else if (format.includes('national-dex')) {
                 // get all of the entries related to natdex
-                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard.toLowerCase() === 'natdex');
+                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard === 'NatDex');
             }
             // if they specified a format that's not cap or natdex
             else if (format !== '') {
-                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard.toLowerCase() === 'standard');
+                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard === 'Standard');
             }
             // they didn't specify anything and didn't set a default, so just get the last one (which'd be the latest gen)
             else {
