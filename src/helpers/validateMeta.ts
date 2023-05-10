@@ -150,6 +150,10 @@ export function validateMeta(meta: string, genIn: string): [boolean, string, str
             channel = '1060690402711183370';
             metaOut = 'BSS';
             break;
+        case 'ph':
+            channel = '1059657287293222912';
+            metaOut = 'PH';
+            break;
         default:
             return [false, '', ''];
     }

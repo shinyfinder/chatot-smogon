@@ -202,7 +202,7 @@ export const command: SlashCommand = {
                         // extract the ID and account name of the user who sent the message
                         // also get the character length of the message
                         ID = msg.author.id;
-                        username = msg.author.username + '#' + msg.author.discriminator;
+                        username = msg.author.tag;
                         characters = msg.content.length;
 
                         // if the username includes a comma, remove it

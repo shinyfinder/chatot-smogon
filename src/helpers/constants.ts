@@ -36,6 +36,7 @@ const allowedMetas = [
     'NFE',
     'VGC',
     'BSS',
+    'PH',
 ];
 
 export const allowedMetasObj = allowedMetas.map(meta => ({ name: meta, value: meta.toLowerCase() }));
