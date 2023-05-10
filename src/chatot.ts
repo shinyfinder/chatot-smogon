@@ -66,7 +66,9 @@ interface cmdModule {
 }
 
 const commandFiles = await readdir(commandsPath);
-// loop over the array of commands and set them to the collection as (name, command) pairs
+const modulePromiseArr: Promise<SlashCommand | eventHandler>[] = [];
+
+// assign dynamically loading all of the local command files to an array so we can load them in parallel
 for (const file of commandFiles) {
     // if the file doesn't end in .js, don't consider it. It's not a command.
     if (!file.endsWith('.js')) {
@@ -76,11 +78,8 @@ for (const file of commandFiles) {
     // get the path to the specific command file
     const filePath = new URL(`commands/${file}`, import.meta.url);
 
-    // load the module
-    const command = (await import(filePath.toString()) as cmdModule).command;
-
-    // set it to the client
-    client.commands.set(command.data.name, command);
+    // add loading the module to the awaitable array
+    modulePromiseArr.push(loadModule(filePath.toString(), 'command'));
 }
 
 
@@ -110,21 +109,32 @@ for (const eventfile of eventFiles) {
     // get the path to the specific event file
     const eventfilePath = new URL(`events/${eventfile}`, import.meta.url);
     
-    // load the module
-    const event = (await import(eventfilePath.toString()) as eventModule).clientEvent;
+   // add loading the module to the awaitable array
+   modulePromiseArr.push(loadModule(eventfilePath.toString(), 'event'));
+}
 
-    // load it onto the client
-    if (event.once) {
+// await loading of the command and event files in parallel
+const localMods = await Promise.all(modulePromiseArr);
+
+// assign the commands and events to the client
+for (const mod of localMods) {
+    // typecheck mod to make sure we use the proper method to add it to the client
+    // because global is unique to commands, we can use it as a discriminator
+    if ('global' in mod) {
+        client.commands.set(mod.data.name, mod);
+    }
+    // otherwise, it's an event
+    // so add the event handler based on whether it's once or every time
+    else if (mod.once) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        client.once(event.name, (...args) => event.execute(...args));
+        client.once(mod.name, (...args) => mod.execute(...args));
     }
     // else (event.once is not set or set to false), trigger whenever the event occurs
     else {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        client.on(event.name, (...args) => event.execute(...args));
+        client.on(mod.name, (...args) => mod.execute(...args));
     }
 }
-
 
 /**
  * Connect to the postgres DB
@@ -132,20 +142,12 @@ for (const eventfile of eventFiles) {
 createPool();
 
 /**
- * Update the command state, deploying/removing commands as necessary
+ * Cache the info from the db so we don't overload postgres with queries
+ * This includes updating the command state and deploying the commands,
+ * loading the list of custom commands,
+ * and loading the Pokemon names from the dex
  */
-await updateState(client);
-
-
-/**
- * Cache the db of custom commands
- */
-await loadCustoms();
-
-/**
- * Cache the db of pokemon names (aliases)
- */
-await loadDex();
+await Promise.all([updateState(client), loadCustoms(), loadDex()]);
 
 
 /**
@@ -166,4 +168,19 @@ await loadRRMessages(client);
  */
 if (config.CLIENT_ID !== '1040375769798557826') {
     const server = new net.Server().listen({ fd: 3 });
+}
+
+
+/**
+ * Dynamically Loads a local module
+ */
+async function loadModule(path: string, type: string) {
+    let mod;
+    if (type === 'command') {
+        mod = (await import(path) as cmdModule).command;
+    }
+    else {
+        mod = (await import(path) as eventModule).clientEvent;
+    }
+    return mod;
 }
