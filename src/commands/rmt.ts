@@ -41,6 +41,7 @@ export const command: SlashCommand = {
 
         // fetch the userlist from the interaction channel
         const smogon = interaction.client.guilds.cache.get('192713314399289344');
+
         if (smogon === undefined) {
             return;
         }
@@ -50,7 +51,7 @@ export const command: SlashCommand = {
         // filter the users by the desired role
         // here the id is the role id for comp helpers
         const roleFetch = interaction.guild.roles.cache.get('630430864634937354');
-
+        
 
         // typecheck roleFetch to make sure you got the data
         if (roleFetch === undefined) {
@@ -160,14 +161,14 @@ export const command: SlashCommand = {
 
         // variable preallocation for getting the users who posted messages in the RMT channels
         const users: string[] = [], userIDs: string[] = [], charCount: number[] = [];
-        let ID = '', msgPointer = '', channel: Channel | undefined, username = '';
+        let ID = '', msgPointer = '', channel: Channel | null, username = '';
         let breakflag = false;
         let characters = 0;
 
         // loop over the different channels
         for (let i = 0; i < channelIDs.length; i++) {
             // load the channel
-            channel = interaction.client.channels.cache.get(channelIDs[i]);
+            channel = await interaction.client.channels.fetch(channelIDs[i]);
 
             if (!(channel?.type === ChannelType.GuildText || channel?.type === ChannelType.PublicThread)) {
                 await interaction.followUp({ content: 'There was an error fetching the channels in the API, please retry', ephemeral: true });
