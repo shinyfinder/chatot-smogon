@@ -18,7 +18,7 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
 
     // fetch all of the messages from the relevant channel so that we can edit the bot's message
     // load the channel
-    const raterListChannel = await interaction.client.channels.fetch('1079156451609686026');
+    const raterListChannel = await interaction.client.channels.fetch('1065764634562416680');
     
     if (!(raterListChannel?.type === ChannelType.GuildText || raterListChannel?.type === ChannelType.PublicThread)) {
         return;
@@ -84,7 +84,7 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
         const metaDB = dbRow.meta;
         const genDB = dbRow.gen;
         // create a header string based on the gen/meta
-        const stringOut = `${genDB} ${metaDB}`;
+        const stringOut = `${genDB === 'XY' ? 'ORAS' : genDB} ${metaDB}`;
         const genNum = genConversion[genDB];
         // push the header to the array of headers if it's not already there
         if (!stringArr.includes(stringOut)) {

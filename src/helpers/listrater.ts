@@ -39,7 +39,7 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
             const metaDB = dbRow.meta;
             const genDB = dbRow.gen;
             // create a header string based on the gen/meta
-            const stringOut = `${genDB} ${metaDB}`;
+            const stringOut = `${genDB === 'XY' ? 'ORAS' : genDB} ${metaDB}`;
 
             // push the header to the array of headers if it's not already there
             if (!stringArr.includes(stringOut)) {
@@ -227,7 +227,7 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
 
         // build the embed for output
         const embed = new EmbedBuilder()
-            .setTitle(`Raters for ${gen} ${meta}`)
+            .setTitle(`Raters for ${gen === 'XY' ? 'ORAS' : gen} ${meta}`)
             .setDescription(`${pingOut}`);
 
         // post it to the channel
