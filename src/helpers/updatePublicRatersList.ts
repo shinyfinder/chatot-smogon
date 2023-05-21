@@ -1,5 +1,5 @@
 import { pool } from './createPool.js';
-import { ChatInputCommandInteraction, EmbedBuilder, ChannelType, Embed, Message } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, ChannelType, Embed, Message, Channel } from 'discord.js';
 import config from '../config.js';
 
 interface raterGroup {
@@ -18,7 +18,15 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
 
     // fetch all of the messages from the relevant channel so that we can edit the bot's message
     // load the channel
-    const raterListChannel = await interaction.client.channels.fetch('1079156451609686026');
+    let raterListChannel: Channel | null;
+    // dev mode gate
+    if (config.MODE === 'dev') {
+        raterListChannel = await interaction.client.channels.fetch('1065764634562416680');
+    }
+    else {
+        raterListChannel = await interaction.client.channels.fetch('1079156451609686026');
+    }
+    // 
     
     if (!(raterListChannel?.type === ChannelType.GuildText || raterListChannel?.type === ChannelType.PublicThread)) {
         return;

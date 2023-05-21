@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction, Message, DiscordAPIError } from 'discord.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
+import config from '../config.js';
 
 /**
  * Command to ban a user from every server the bot is in
@@ -37,7 +38,8 @@ export const command: SlashCommand = {
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         // make sure this command is used in a the main smogon server
-        if (!interaction.guild || !(interaction.guild.id === '192713314399289344')) {
+        const allowedGuildID = config.MODE === 'dev' ? '1040378543626002442' : '192713314399289344';
+        if (!interaction.guild || !(interaction.guild.id === allowedGuildID)) {
             await interaction.reply({ content: 'You must use this command in the Smogon main server!', ephemeral: true });
             return;
         }
@@ -58,7 +60,7 @@ export const command: SlashCommand = {
 
             
             // prompt the user to confirm
-            await interaction.reply(`You are about to ban ${user.username} from every server I am in. Are you sure? (y/n)`);
+            await interaction.reply(`You are about to ban ${user.tag} from every server I am in. Are you sure? (y/n)`);
             const filter = (m: Message) => interaction.user.id === m.author.id;
             const confirmMsg = await interaction.channel?.awaitMessages({ filter, time: 60 * 1000, max: 1, errors: ['time'] });
             if (confirmMsg === undefined) {

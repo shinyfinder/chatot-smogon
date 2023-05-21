@@ -51,6 +51,7 @@ interface Config {
     PGHOST: string;
     PGPORT: number;
     PGDATABASE: string;
+    MODE: string;
     // ...
 }
 
@@ -101,7 +102,11 @@ const getSanitzedConfig = (config: ENV): Config => {
 // load the env variables from .env into our object config: ENV
 const config = getConfig();
 
-// check for undefined entries and expose the typed object to the client
+// check for undefined entries
 const sanitizedConfig = getSanitzedConfig(config);
 
+// assign the run mode
+sanitizedConfig.MODE = sanitizedConfig.CLIENT_ID === '1040375769798557826' ? 'dev' : 'production';
+
+// expose the typed object to the client
 export default sanitizedConfig;

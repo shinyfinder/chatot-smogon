@@ -166,7 +166,7 @@ await loadRRMessages(client);
  * Everything is done, so create a new net.Server listending on fd 3
  * Only do this in production so we can test in dev mode
  */
-if (config.CLIENT_ID !== '1040375769798557826') {
+if (config.MODE === 'production') {
     const server = new net.Server().listen({ fd: 3 });
 }
 
