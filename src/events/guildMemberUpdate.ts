@@ -27,6 +27,17 @@ export const clientEvent: eventHandler = {
             return;
         }
         
+        // check if they changed pending states
+        // if so, give them the unverified role
+        // TODO: check db for verified
+        if (!oldMember.pending && newMember.pending) {
+            const role = newMember.guild.roles.cache.get('bot-unverified');
+            if (role) {
+                await newMember.roles.add(role);
+                return;
+            }
+        }
+
         // wait a bit for the audit log to update
         await sleep(10000);
 
