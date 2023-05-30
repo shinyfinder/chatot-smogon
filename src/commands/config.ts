@@ -7,7 +7,7 @@ import { pool } from '../helpers/createPool.js';
  * 
  */
 export const command: SlashCommand = {
-    global: false,
+    global: true,
     guilds: [],
     // setup the slash command builder
     data: new SlashCommandBuilder()
@@ -30,6 +30,7 @@ export const command: SlashCommand = {
                 option.setName('accountage')
                 .setDescription('Minimum account age in days')
                 .setMinValue(0)
+                .setMaxValue(2147483647)
                 .setRequired(false))
             .addBooleanOption(option =>
                 option.setName('turnoff')

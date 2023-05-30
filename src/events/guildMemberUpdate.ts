@@ -3,6 +3,7 @@ import { eventHandler } from '../types/event-base';
 import { sleep } from '../helpers/sleep.js';
 import { pool } from '../helpers/createPool.js';
 import config from '../config.js';
+import { checkVerified } from '../helpers/checkVerified.js';
 
 /**
  * Update member handler
@@ -28,14 +29,10 @@ export const clientEvent: eventHandler = {
         }
         
         // check if they changed pending states
-        // if so, give them the unverified role
-        // TODO: check db for verified
-        if (!oldMember.pending && newMember.pending) {
-            const role = newMember.guild.roles.cache.get('bot-unverified');
-            if (role) {
-                await newMember.roles.add(role);
-                return;
-            }
+        // if so, try to give them the unverified role
+        if (oldMember.pending && !newMember.pending) {
+            await checkVerified(newMember);
+            return;
         }
 
         // wait a bit for the audit log to update

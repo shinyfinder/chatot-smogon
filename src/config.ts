@@ -32,6 +32,11 @@ interface ENV {
     PGHOST: string | undefined;
     PGPORT: number | undefined;
     PGDATABASE: string | undefined;
+    SQLUSER: string | undefined;
+    SQLPASSWORD: string | undefined;
+    SQLHOST: string | undefined;
+    SQLPORT: number | undefined;
+    SQLDATABASE: string | undefined;
     // ...
 }
 
@@ -52,6 +57,11 @@ interface Config {
     PGPORT: number;
     PGDATABASE: string;
     MODE: string;
+    SQLUSER: string;
+    SQLPASSWORD: string;
+    SQLHOST: string;
+    SQLPORT: number;
+    SQLDATABASE: string;
     // ...
 }
 
@@ -72,6 +82,11 @@ const getConfig = (): ENV => {
         PGHOST: process.env.PGHOST,
         PGPORT: parseInt(process.env.PGPORT || '', 10),
         PGDATABASE: process.env.PGDATABASE,
+        SQLUSER: process.env.SQLUSER,
+        SQLPASSWORD: process.env.SQLPASSWORD || '',
+        SQLHOST: process.env.SQLHOST,
+        SQLPORT: parseInt(process.env.SQLPORT || '', 10),
+        SQLDATABASE: process.env.SQLDATABASE,
         // ...
     };
 };
