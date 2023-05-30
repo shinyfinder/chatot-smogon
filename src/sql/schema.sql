@@ -66,3 +66,16 @@ CREATE TABLE chatot.dexdefaults (
     gen text,
     PRIMARY KEY (serverid)
 );
+
+CREATE TABLE chatot.identities (
+    discordid varchar(20),
+    forumid integer,
+    PRIMARY KEY (discordid)
+);
+
+CREATE TABLE chatot.verifyreqs (
+    serverid varchar(20),
+    roleid varchar(20),
+    age integer,
+    PRIMARY KEY (serverid)
+);

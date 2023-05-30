@@ -3,6 +3,7 @@ import { eventHandler } from '../types/event-base';
 import { sleep } from '../helpers/sleep.js';
 import { pool } from '../helpers/createPool.js';
 import config from '../config.js';
+import { checkVerified } from '../helpers/checkVerified.js';
 
 /**
  * Update member handler
@@ -27,6 +28,13 @@ export const clientEvent: eventHandler = {
             return;
         }
         
+        // check if they changed pending states
+        // if so, try to give them the unverified role
+        if (oldMember.pending && !newMember.pending) {
+            await checkVerified(newMember);
+            return;
+        }
+
         // wait a bit for the audit log to update
         await sleep(10000);
 
