@@ -124,7 +124,7 @@ export const command: SlashCommand = {
         }
 
         // let them know success
-        await interaction.followUp('Discord and forum profiles linked! You have been given access to this server. Please enjoy your stay.');
+        await interaction.followUp('Discord and forum profiles linked!');
         return;
 
     },
