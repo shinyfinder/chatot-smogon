@@ -11,3 +11,4 @@ SQLPASSWORD = "mysqlpw"
 SQLHOST = "localhost"
 SQLPORT = 3306
 SQLDATABASE = "mysqldb"
+SQLSOCKETPATH = ""
