@@ -26,6 +26,7 @@ export function createPool() {
         password: config.SQLPASSWORD,
         database: config.SQLDATABASE,
         port: config.SQLPORT,
+        socketPath: config.SQLSOCKETPATH,
     });
 
     return;

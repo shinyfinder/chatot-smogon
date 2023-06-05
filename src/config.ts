@@ -37,6 +37,7 @@ interface ENV {
     SQLHOST: string | undefined;
     SQLPORT: number | undefined;
     SQLDATABASE: string | undefined;
+    SQLSOCKETPATH: string | undefined;
     // ...
 }
 
@@ -62,6 +63,7 @@ interface Config {
     SQLHOST: string;
     SQLPORT: number;
     SQLDATABASE: string;
+    SQLSOCKETPATH: string;
     // ...
 }
 
@@ -84,9 +86,10 @@ const getConfig = (): ENV => {
         PGDATABASE: process.env.PGDATABASE,
         SQLUSER: process.env.SQLUSER,
         SQLPASSWORD: process.env.SQLPASSWORD || '',
-        SQLHOST: process.env.SQLHOST,
+        SQLHOST: process.env.SQLHOST || '',
         SQLPORT: parseInt(process.env.SQLPORT || '', 10),
         SQLDATABASE: process.env.SQLDATABASE,
+        SQLSOCKETPATH: process.env.SQLSOCKETPATH || '',
         // ...
     };
 };
