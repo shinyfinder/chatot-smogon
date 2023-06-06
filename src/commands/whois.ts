@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { pool } from '../helpers/createPool.js';
+import { pool, sqlPool } from '../helpers/createPool.js';
 /**
  * Command to lookup information about a user
  * @param user Userid or forum profile URL to lookup
@@ -15,7 +15,7 @@ export const command: SlashCommand = {
         .setDescription('Looks up a user\'s discord-forum connection')
         .addStringOption(option =>
             option.setName('user')
-            .setDescription('Discord user ID or forum profile URL')
+            .setDescription('Discord user ID or forum profile URL/username')
             .setRequired(true))
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
@@ -51,14 +51,29 @@ export const command: SlashCommand = {
                 await interaction.followUp('No connection found.');
             }
         }
-        // nonnumeric = url
+        // nonnumeric = url or username
         else {
             // extract their profile id from the provided url
-            const forumid = user.match(/(?<=[./])\d+/g)?.pop();
+            let forumid: string | number | undefined = user.match(/^(?:https?:\/\/)?(?:www\.)?smogon\.com\/forums\/members\/(?:(.*?)\.)?(\d+)\/?$/)?.pop();
 
+            // if forumid is undefined, assume they entered a username
             if (forumid === undefined) {
-                await interaction.followUp('Unrecognized profile URL');
-                return;
+                // query the xf tables to get their id
+                // we don't store usernames because of namechanges
+                const [sqlMatch] = await sqlPool.execute('SELECT user_id FROM xenforo.xf_user WHERE username = BINARY ?', [user]);
+
+                // cast to meaningful array
+                const idArr = sqlMatch as { user_id: number }[] | [];
+
+                // if we didn't get a match, let them know
+                if (idArr.length) {
+                    forumid = idArr[0].user_id;
+                }
+                else {
+                    await interaction.followUp('Profile not found. Please provide the URL or exact username of your forum profile.');
+                    return;
+                }
+                
             }
 
             // query the db for the provided input
