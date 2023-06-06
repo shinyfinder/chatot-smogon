@@ -82,11 +82,14 @@ export const command: SlashCommand = {
             }
 
             // make sure the provided name is the same as the person using this command
-            if (!userData[0].field_value.includes('#') && userData[0].field_value + '#0' !== interaction.user.tag) {
-                await interaction.followUp('Your forum account does not have your Discord tag in your Identities. Did you enter your username correctly on your profile in the appropriate field? <https://www.smogon.com/forums/account/account-details>');
-                return;
+            let discordFieldUsername = userData[0].field_value;
+            // if they didn't provide a #1234, assume they're on the new system
+            // for now, the system appends #0 to users
+            if (!discordFieldUsername.includes('#')) {
+                discordFieldUsername += '#0';
             }
-            else if (userData[0].field_value !== interaction.user.tag) {
+
+            if (discordFieldUsername !== interaction.user.tag) {
                 await interaction.followUp('Your forum account does not have your Discord tag in your Identities. Did you enter your username correctly on your profile in the appropriate field? <https://www.smogon.com/forums/account/account-details>');
                 return;
             }
