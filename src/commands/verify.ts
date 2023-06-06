@@ -82,8 +82,12 @@ export const command: SlashCommand = {
             }
 
             // make sure the provided name is the same as the person using this command
-            if (userData[0].field_value !== interaction.user.tag) {
-                await interaction.followUp('Your forum account does not have your Discord tag in your Identities. Did you enter your username correctly?');
+            if (interaction.user.discriminator === '0' && userData[0].field_value + '#0' !== interaction.user.tag) {
+                await interaction.followUp('Your forum account does not have your Discord tag in your Identities. Did you enter your username correctly on your profile in the appropriate field? <https://www.smogon.com/forums/account/account-details>');
+                return;
+            }
+            else if (userData[0].field_value !== interaction.user.tag) {
+                await interaction.followUp('Your forum account does not have your Discord tag in your Identities. Did you enter your username correctly on your profile in the appropriate field? <https://www.smogon.com/forums/account/account-details>');
                 return;
             }
 
