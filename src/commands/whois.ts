@@ -60,7 +60,7 @@ export const command: SlashCommand = {
             if (forumid === undefined) {
                 // query the xf tables to get their id
                 // we don't store usernames because of namechanges
-                const [sqlMatch] = await sqlPool.execute('SELECT user_id FROM xenforo.xf_user WHERE username = BINARY ?', [user]);
+                const [sqlMatch] = await sqlPool.execute('SELECT user_id FROM xenforo.xf_user WHERE username = ?', [user]);
 
                 // cast to meaningful array
                 const idArr = sqlMatch as { user_id: number }[] | [];

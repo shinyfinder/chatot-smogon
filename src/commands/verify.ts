@@ -69,7 +69,7 @@ export const command: SlashCommand = {
                     SELECT xenforo.xf_user.user_id, field_value, register_date
                     FROM xenforo.xf_user 
                     INNER JOIN xenforo.xf_user_field_value ON xenforo.xf_user.user_id = xenforo.xf_user_field_value.user_id 
-                    WHERE xenforo.xf_user.username = BINARY ? AND field_id = "discord"`, [profileURL]);
+                    WHERE xenforo.xf_user.username = ? AND field_id = "discord"`, [profileURL]);
 
                 // cast the result as a meaningful array
                 userData = sqlMatch as { user_id: number, field_value: string, register_date: number }[] | [];
