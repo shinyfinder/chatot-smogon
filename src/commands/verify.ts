@@ -104,8 +104,8 @@ export const command: SlashCommand = {
         
         // remove their role
         // but first check if verification is used in the server
-        const reqPG = await pool.query('SELECT roleid, age FROM chatot.verifyreqs WHERE serverid=$1', [interaction.guild.id]);
-        const reqMatches: { roleid: string, age: number }[] | [] = reqPG.rows;
+        const reqPG = await pool.query('SELECT roleid, age, method FROM chatot.verifyreqs WHERE serverid=$1', [interaction.guild.id]);
+        const reqMatches: { roleid: string, age: number, method: string }[] | [] = reqPG.rows;
 
         if (reqMatches.length) {
             // check their account age if necessary
@@ -141,14 +141,14 @@ export const command: SlashCommand = {
                 const daysRegistered = Math.floor(((Date.now() / 1000) - joinDate) / 86400);
 
                 // compare against the server req
-                // if their account isn't old enough, give them the role
+                // if their account isn't old enough, don't change their role state
                 if (daysRegistered < reqMatches[0].age) {
                     await interaction.followUp(`Your Discord and forum profiles were linked; however, your account was created too recently for this server's verification requirements. Please run the \`verify\` command again in this server in **${reqMatches[0].age - daysRegistered} days**.`);
                     return;
                 }
             }
 
-            // get the unverified role and member object of the user who initiated the command
+            // get the role and member object of the user who initiated the command
             const role = interaction.guild.roles.cache.get(reqMatches[0].roleid);
             const member = await interaction.guild.members.fetch(interaction.user.id);
             // typecheck to make sure the API resolved
@@ -157,9 +157,16 @@ export const command: SlashCommand = {
             }
 
             // remove if present on member
-            if (member.roles.cache.some(r => r.id === role.id)) {
-                await member.roles.remove(role);
+            if (reqMatches[0].method === 'remove') {
+                if (member.roles.cache.some(r => r.id === role.id)) {
+                    await member.roles.remove(role);
+                }
             }
+            // add it to the member
+            else if (reqMatches[0].method === 'add') {
+                await member.roles.add(role);
+            }
+            
 
         }
 

@@ -23,8 +23,16 @@ export const command: SlashCommand = {
             .setName('verify')
             .setDescription('Configures the server verification requirements')
             .addRoleOption(option => 
-                option.setName('unverifiedrole')
-                .setDescription('Role the user is given ')
+                option.setName('role')
+                .setDescription('Role given to or removed from verified users')
+                .setRequired(true))
+            .addStringOption(option =>
+                option.setName('method')
+                .setDescription('Upon verification, this role is...')
+                .addChoices(
+                    { name: 'Added', value: 'add' },
+                    { name: 'Removed', value: 'remove' },
+                )
                 .setRequired(true))
             .addIntegerOption(option =>
                 option.setName('accountage')
@@ -48,7 +56,8 @@ export const command: SlashCommand = {
         
         if (interaction.options.getSubcommand() === 'verify') {
             // retrieve the user input
-            const role = interaction.options.getRole('unverifiedrole', true);
+            const role = interaction.options.getRole('role', true);
+            const method = interaction.options.getString('method', true);
             const age = interaction.options.getInteger('accountage') ?? 0;
             const turnoff = interaction.options.getBoolean('turnoff');
 
@@ -66,9 +75,9 @@ export const command: SlashCommand = {
                 await interaction.followUp('Ok, I will no longer assign a role to new members');
             }
             else {
-                await pool.query('INSERT INTO chatot.verifyreqs (serverid, roleid, age) VALUES ($1, $2, $3) ON CONFLICT (serverid) DO UPDATE SET serverid=EXCLUDED.serverid, roleid=EXCLUDED.roleid, age=EXCLUDED.age', [interaction.guildId, role.id, age]);
+                await pool.query('INSERT INTO chatot.verifyreqs (serverid, roleid, age, method) VALUES ($1, $2, $3, $4) ON CONFLICT (serverid) DO UPDATE SET serverid=EXCLUDED.serverid, roleid=EXCLUDED.roleid, age=EXCLUDED.age, method=EXCLUDED.method', [interaction.guildId, role.id, age, method]);
                 // success!
-                await interaction.followUp(`Ok, I will assign role **${role.name}** to new members without a forum account older than **${age}** days.`);
+                await interaction.followUp(`Ok, I will **${method}** role **${role.name}** on new members with a forum account older than **${age}** days.`);
             }
             return;
         }

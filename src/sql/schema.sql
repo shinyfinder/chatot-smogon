@@ -77,5 +77,6 @@ CREATE TABLE chatot.verifyreqs (
     serverid varchar(20),
     roleid varchar(20),
     age integer,
+    method text NOT NULL DEFAULT 'remove',
     PRIMARY KEY (serverid)
 );
