@@ -35,7 +35,7 @@ export async function removeRater(interaction: ChatInputCommandInteraction, meta
     // remove them from the db
     await pool.query('DELETE FROM chatot.raters WHERE meta=$1 AND gen=$2 AND userid=$3', [meta, gen, user.id]);
     // update the public list as well
-    await updatePublicRatersList(interaction);
+    await updatePublicRatersList(interaction.client, meta, gen);
     await interaction.followUp(`${user.username} removed from the list of ${gen === 'XY' ? 'ORAS' : gen} ${meta} raters.`);
     return;
 }

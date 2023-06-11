@@ -1,5 +1,5 @@
 import { pool } from './createPool.js';
-import { ChatInputCommandInteraction, EmbedBuilder, ChannelType, Embed, Message, Channel } from 'discord.js';
+import { EmbedBuilder, ChannelType, Embed, Message, Channel, User, Client } from 'discord.js';
 import config from '../config.js';
 
 interface raterGroup {
@@ -14,17 +14,16 @@ interface raterGroup {
  * Most of this logic is from ./listrater
  * Since the names are posted in an embed and not post per meta, we need to rubuild/requery each time
  */
-export async function updatePublicRatersList(interaction: ChatInputCommandInteraction) {
-
+export async function updatePublicRatersList(client: Client, editMeta?: string, editGen?: string) {
     // fetch all of the messages from the relevant channel so that we can edit the bot's message
     // load the channel
     let raterListChannel: Channel | null;
     // dev mode gate
     if (config.MODE === 'dev') {
-        raterListChannel = await interaction.client.channels.fetch('1065764634562416680');
+        raterListChannel = await client.channels.fetch('1065764634562416680');
     }
     else {
-        raterListChannel = await interaction.client.channels.fetch('1079156451609686026');
+        raterListChannel = await client.channels.fetch('1079156451609686026');
     }
     // 
     
@@ -201,19 +200,22 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
     const maxFields = 25;
     const embedHolder: EmbedBuilder[] = [];
 
+    // find the user who was added/removed
+    let editHeader = '';
+    if (editGen && editMeta) {
+        editHeader = `${editGen === 'XY' ? 'ORAS' : editGen} ${editMeta}`;
+    }
+        
 
     // current gen official
     // find the number of embeds needed to cover this
-    let maxPages = Math.ceil(currentOfficial.length / (maxFields));
-    buildEmbed('Current Gen Official Tiers', currentOfficial, maxPages, embedHolder);
+    await buildEmbed('Current Gen Official Tiers', currentOfficial, embedHolder, maxFields, client, editHeader, postEmbeds);
 
     // old gen official
-    maxPages = Math.ceil(oldOfficial.length / (maxFields));
-    buildEmbed('Old Gen Official Tiers', oldOfficial, maxPages, embedHolder);
+    await buildEmbed('Old Gen Official Tiers', oldOfficial, embedHolder, maxFields, client, editHeader, postEmbeds);
 
     // misc
-    maxPages = Math.ceil(misc.length / (maxFields));
-    buildEmbed('Miscellaneous Tiers', misc, maxPages, embedHolder);
+    await buildEmbed('Miscellaneous Tiers', misc, embedHolder, maxFields, client, editHeader, postEmbeds);
 
     // post it to the channel
     // if we found a message, we just need to edit the content of the embeds
@@ -231,34 +233,91 @@ export async function updatePublicRatersList(interaction: ChatInputCommandIntera
 }
 
 
-function buildEmbed(title: string, obj: raterGroup[], maxPages: number, holder: EmbedBuilder[]) {
+async function buildEmbed(title: string, obj: raterGroup[], holder: EmbedBuilder[], maxFields: number, client: Client, editHeader: string, postEmbeds: Embed[]) {
+    // determine how many embeds we need for this meta group
+    const maxPages = Math.ceil(obj.length / (maxFields));
+
     for (let k = 0; k < maxPages; k++) {
+        const embedPageRaters = obj.slice(k * maxFields, k * maxFields + maxFields);
         // instantiate the embed object
         const embed = new EmbedBuilder().setTitle(title);
         // loop through each set of raters for this grouping of metas
-        for (const raterGroups of obj) {
+        for (const raterGroups of embedPageRaters) {
+            const userPromiseArr: Promise<User>[] = [];
             // extract the name of the meta
             const fieldName = raterGroups.meta;
 
-            // format the raters as a string of taggable ids
-            const taggablePings: string[] = [];
-            let pingOut = '';
-            for (const id of raterGroups.raters) {
-                taggablePings.push('<@' + id + '>');
+            // try to find the field name in the old embeds
+            let inOldEmbeds = false;
+
+            // try to reuse the old embeds if we added/removed someone
+            if (editHeader !== '') {
+                for (const oldEmbed of postEmbeds) {
+                    // see if the embed contains the same field (meta)
+                    const oldFieldMatch = oldEmbed.fields.findIndex(field => field.name === fieldName);
+    
+                    // if it does and it's not the one that was edited, use the old values
+                    if (oldFieldMatch !== -1 && fieldName !== editHeader) {
+                        embed.addFields({ name: oldEmbed.fields[oldFieldMatch].name, value: oldEmbed.fields[oldFieldMatch].value });
+                        inOldEmbeds = true;
+                        break;
+                    }
+                    // else move on to the next old embed
+                    else {
+                        continue;
+                    }
+                }
             }
-            // if there are no raters stored for this meta, just say 'none' for output
-            if (!taggablePings.length) {
-                pingOut = 'None';
-            }
-            else {
-                pingOut = taggablePings.join(', ');
+            
+
+            // if you get all the way through the old embeds and you never found a valid old match, make a new field
+            if (!inOldEmbeds) {
+                // format the raters as a string of taggable ids
+                const taggablePings: string[] = [];
+                let pingOut = '';
+                
+                for (const id of raterGroups.raters) {
+                    // get the user
+                    userPromiseArr.push(fetchUser(id, client));
+                }
+                // await all of the user fetches
+                const userArr: User[] = await Promise.all(userPromiseArr);
+                for (const user of userArr) {
+                    taggablePings.push(`<@${user.id}> (${user.username})`);
+                }
+                
+                /*
+                for (const id of raterGroups.raters) {
+                    taggablePings.push(`<@${id}>`);
+                }
+                */
+                // if there are no raters stored for this meta, just say 'none' for output
+                if (!taggablePings.length) {
+                    pingOut = 'None';
+                }
+                else {
+                    pingOut = taggablePings.join('\n');
+                }
+
+                // create the embed field
+                embed.addFields({ name: fieldName, value: pingOut });
             }
 
-            // create the embed field
-            embed.addFields({ name: fieldName, value: pingOut });
+            
         }
         // add the embed to the array to be posted later
         holder.push(embed);
     }
     return holder;
+}
+
+/**
+ * Fetches a User object from the Discord API given their id
+ * @param id discord user id
+ * @param client base client object for the process
+ * @returns discord User object
+ */
+async function fetchUser(id: string, client: Client) {
+   const user = await client.users.fetch(id);
+   return user;
 }

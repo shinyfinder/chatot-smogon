@@ -13,6 +13,8 @@ import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
 import { loadDex } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
+import { errorHandler } from './helpers/errorHandler.js';
+import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
 
 /**
  * Load in the environment variables
@@ -161,6 +163,10 @@ await client.login(config.TOKEN);
  */
 
 await loadRRMessages(client);
+
+// schedule a timer to post updates the public rater list every so often (in ms)
+setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)), 1000 * 60 * 60 * 24);
+
 
 /**
  * Everything is done, so create a new net.Server listending on fd 3
