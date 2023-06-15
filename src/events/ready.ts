@@ -1,5 +1,6 @@
 import { Client } from 'discord.js';
 import { eventHandler } from '../types/event-base';
+import { stripDiscrim } from '../helpers/stripDiscrim.js';
 /**
  * on Ready handler
  *
@@ -21,7 +22,7 @@ export const clientEvent: eventHandler = {
             throw new Error('There was an issue logging in');
         }
         // success!
-        console.log(`<6>Ready! Logged in as ${client.user.tag}`);
+        console.log(`<6>Ready! Logged in as ${stripDiscrim(client.user)}`);
         return;
     },
 };

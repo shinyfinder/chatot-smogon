@@ -1,9 +1,8 @@
-import { AuditLogEvent, Message, EmbedBuilder, User, ChannelType } from 'discord.js';
+import { AuditLogEvent, Message } from 'discord.js';
 import { eventHandler } from '../types/event-base.js';
 import { sleep } from '../helpers/sleep.js';
 import { pool } from '../helpers/createPool.js';
-import config from '../config.js';
-
+import { buildEmbed, buildMsgDeleteEmbedParams, postLogEvent } from '../helpers/logging.js';
 /**
  * messageDelete handler
  *
@@ -23,18 +22,29 @@ export const clientEvent: eventHandler = {
     // execute the code for this event
     async execute(message: Message) {
         // ignore DMs and uncached messages
-        if (!message.guild || !message.author || message.author.id === config.CLIENT_ID) {
+        if (!message.guild || !message.author) {
             return;
         }
 
-        // determine if the channel is private (prob staff) so we can ignore it
-        const channel = message.client.channels.cache.get(message.channelId);
-        if (channel === undefined || !(channel.type === ChannelType.GuildText || channel.type === ChannelType.PublicThread)) {
+        // determine if the channel is ignored from logging in the server by first querying the db
+        const ignorePG = await pool.query('SELECT ignoreid, deletescope from chatot.logprefs WHERE serverid=$1', [message.guildId]);
+        const dbmatches: { ignoreid: string, deletescope: string }[] | [] = ignorePG.rows;
+
+        // check if the channel is ignored
+        const isIgnored = dbmatches.some(row => row.ignoreid === message.channelId);
+
+        // if it is, return because we don't want to log it
+        if (isIgnored) {
             return;
         }
-        const everyone = message.guild.roles.everyone;
-        if (!channel.permissionsFor(everyone).has('ViewChannel')) {
-            return;
+
+        // default to mod scope
+        let scope = '';
+        if (!dbmatches.length) {
+            scope = 'mod';
+        }
+        else {
+            scope = dbmatches[0].deletescope;
         }
         
         // get the current timestamp of when this event was triggered, in ms since the epoch
@@ -52,9 +62,24 @@ export const clientEvent: eventHandler = {
         // Since there's only 1 audit log entry in this collection, grab the first one
         const deletionLog = fetchedLogs.entries.first();
 
-        // If there's nothing in the audit log, don't do anything.
-        if (!deletionLog) {
-            // await buildEmbed('Unknown. Possibly a bot or self.');
+        
+        // If there's nothing in the audit log, see if this server wants to log every message delete
+        // but also check to make sure this isn't an old post (> 2 weeks)
+        const old = Math.abs(currentTime - message.createdTimestamp) > 1000 * 60 * 60 * 24 * 7 * 2;
+        if (!deletionLog && scope === 'all' && !old) {
+            // build the embed params
+            const [title, description, color, fields] = buildMsgDeleteEmbedParams('Self', message);
+
+            // build the embed itself
+            const embed = buildEmbed(title, description, color, fields);
+
+            // post it to the log chan
+            await postLogEvent(embed, message.guild, message);
+            return;
+        }
+
+        // if there's no audit log and they don't want to log everything, return
+        else if (!deletionLog) {
             return;
         }
 
@@ -75,7 +100,23 @@ export const clientEvent: eventHandler = {
          * Alternatively, you could loop through the stacks and compile the list of possible exectors for output.
          */
         if (Math.abs(currentTime - auditTime) > 300000) {
-            return;
+            // if it's an old audit log this is probably a self delete
+            // so see if they want to log those and if it's not too old
+            if (scope === 'all' && !old) {
+                // build the embed params
+                const [title, description, color, fields] = buildMsgDeleteEmbedParams('Self', message);
+
+                // build the embed
+                const embed = buildEmbed(title, description, color, fields);
+
+                // post it to the log chan
+                await postLogEvent(embed, message.guild, message);
+                return;
+            }
+            else {
+                return;
+            }
+            
         }
 
         // Now grab the user object of the person who deleted the message
@@ -84,87 +125,39 @@ export const clientEvent: eventHandler = {
 
         // make sure executor isn't null to make TS happy. It shouldn't be
         if (!executor) {
-            await buildEmbed('Unknown. Possibly a bot or self.', message);
             return;
         }
 
-        // if the target is a bot, don't log it
-        // similarly, don't log it if the executor is the author
-        if (target.bot === true || executor.id === message.author.id) {
+        // if the author of this deleted message is a bot, don't log it
+        if (message.author.bot === true) {
             return;
         }
 
-        // Update the output with a bit more information
-        // Also run a check to make sure that the log returned was for the same author's message
+        // check to make sure that the log returned was for the same author's message
         if (target.id === message.author.id) {
-            await buildEmbed(executor, message);
+            // build the embed params
+            const [title, description, color, fields] = buildMsgDeleteEmbedParams(executor, message);
+                
+            // build the embed
+            const embed = buildEmbed(title, description, color, fields);
+
+            // post it to the log chan
+            await postLogEvent(embed, message.guild, message);
+            return;
         }
-        else {
-            // await buildEmbed('Unknown. Possibly a bot or self.');
-            // we don't know what it is, so do nothing
+        // if you got a new audit log but it was for a different user, this is probably a self delete
+        // so check to see if it's a valid log case
+        else if (scope === 'all' && !old) {
+            // build the embed params
+            const [title, description, color, fields] = buildMsgDeleteEmbedParams('Self', message);
+            
+            // build the embed
+            const embed = buildEmbed(title, description, color, fields);
+
+            // post it to the log chan
+            await postLogEvent(embed, message.guild, message);
             return;
         }
 
     },
 };
-
-
-/**
- * Builds a discord embed to log the mod action.
- * @param executor User who deleted the message
- * @returns void. Posts embed to log channel
- */
-async function buildEmbed(executor: User | string, message: Message) {
-    // if the executor is a User type, that means we found an audit log entry
-    // we only care about their id, so grab that.
-    // Otherwise output the string we passed
-    let executorOut = '';
-    let executorName = '';
-    if (executor instanceof User) {
-        executorOut = `<@${executor.id}>`;
-        executorName = executor.tag;
-    }
-    else {
-        executorOut = executor;
-        executorName = 'Unknown';
-    }
-
-    // check for messages that are too long
-    // the embed expects a field <= 1024 characters in length
-    if (message.content) {
-        if (message.content.length > 1024) {
-            message.content = 'Message too long to output.';
-        }
-    }
-
-    // build the embed for output
-    const embed = new EmbedBuilder()
-        .setColor(0x0099FF)
-        .setTitle('Message Deleted')
-        .setDescription(`${message.author.tag}'s message was deleted by ${executorName}.`)
-        .addFields(
-            { name: 'Content', value: `${message.content}` || 'No text' },
-            // blank space
-            // { name: '\u200B', value: '\u200B' },
-            { name: 'Author', value: `<@${message.author.id}>`, inline: true },
-            { name: 'Channel', value: `<#${message.channelId}>`, inline: true },
-            { name: 'Deleted By', value: `${executorOut}` },
-            { name: 'Attachments', value: message.attachments.map((a) => a.url).join(' ') || 'No Attachments' },
-        );
-
-    // log to the logging channel, if it exists
-    const pgres = await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid=$1', [message.guildId]);
-    const logchan: { channelid: string }[] | [] = pgres.rows;
-
-    if (logchan.length) {
-        const channel = message.client.channels.cache.get(logchan[0].channelid);
-        if (channel?.type !== ChannelType.GuildText) {
-            return;
-        }
-        await channel.send({ embeds: [embed] });
-    }
-    else {
-        return;
-    }
-}
-

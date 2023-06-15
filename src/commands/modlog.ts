@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
+import { stripDiscrim } from '../helpers/stripDiscrim.js';
 
 /**
  * Retrieves the list of modlog actions for a given user
@@ -63,13 +64,13 @@ export const command: SlashCommand = {
             const execUser = await interaction.client.users.fetch(row.executor);
 
             // make the output string
-            const str = `<t:${ts}> - ${row.action} by ${execUser.tag} - ${row.reason}`;
+            const str = `<t:${ts}> - ${row.action} by ${stripDiscrim(execUser)} - ${row.reason}`;
             strOut.push(str);
         }
 
         // build embed
         const embed = new EmbedBuilder()
-            .setTitle(`Modlog for ${user.tag}`)
+            .setTitle(`Modlog for ${stripDiscrim(user)}`)
             .setDescription(strOut.join('\n\n'));
         
         // post the embed
