@@ -88,7 +88,8 @@ CREATE TYPE chatot.logdeletescope AS enum ('mod', 'all');
 
 CREATE TABLE chatot.logprefs (
     serverid varchar(20),
-    ignoreid varchar(20) UNIQUE,
+    ignoreid varchar(20),
     deletescope chatot.logdeletescope,
-    PRIMARY KEY (serverid, ignoreid, deletescope)
+    logedits BOOLEAN,
+    PRIMARY KEY (serverid, ignoreid)
 );

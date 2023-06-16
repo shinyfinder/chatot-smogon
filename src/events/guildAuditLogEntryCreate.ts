@@ -3,7 +3,7 @@ import { eventHandler } from '../types/event-base';
 import { pool } from '../helpers/createPool.js';
 import config from '../config.js';
 import { stripDiscrim } from '../helpers/stripDiscrim.js';
-import { buildEmbed, postLogEvent, echoPunishment } from '../helpers/logging.js';
+import { buildEmbed, postLogEvent, echoPunishment, embedField } from '../helpers/logging.js';
 
 /**
  * Ban handler
@@ -44,14 +44,14 @@ export const clientEvent: eventHandler = {
             const title = 'User Banned';
             const description = `${stripDiscrim(target)} was banned from the server by ${stripDiscrim(executor)}.`;
             const color = 0xED4245;
-            const fields = [
+            const fields: embedField[] = [
                 { name: 'User', value: `<@${target.id}>` },
-                { name: 'Banned by', value: `${executor.id}` },
+                { name: 'Banned by', value: `<@${executor.id}>` },
                 { name: 'Reason', value: `${reason}` },
             ];
 
             // build the discord embed
-            const embed = buildEmbed(title, description, color, fields);
+            const embed = buildEmbed(title, description, { color: color, fields: fields });
 
             // save to modlog for the server
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Ban', reason]);
@@ -83,14 +83,13 @@ export const clientEvent: eventHandler = {
             const title = 'User Unbanned';
             const description = `${stripDiscrim(target)} was unbanned from the server by ${stripDiscrim(executor)}.`;
             const color = 0x57F287;
-            const fields = [
+            const fields: embedField[] = [
                 { name: 'User', value: `<@${target.id}>` },
                 { name: 'Unbanned by', value: `<@${executor.id}>` },
-                { name: 'Reason', value: `${reason}` },
             ];
 
             // build the discord embed
-            const embed = buildEmbed(title, description, color, fields);
+            const embed = buildEmbed(title, description, { color: color, fields: fields });
 
             // save to modlog for the server
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Unban', reason]);
@@ -118,14 +117,14 @@ export const clientEvent: eventHandler = {
             const title = 'User Kicked';
             const description = `${stripDiscrim(target)} was kicked from the server by ${stripDiscrim(executor)}.`;
             const color = 0xE67E22;
-            const fields = [
+            const fields: embedField[] = [
                 { name: 'User', value: `<@${target.id}>` },
                 { name: 'Kicked by', value: `<@${executor.id}>` },
                 { name: 'Reason', value: `${reason}` },
             ];
 
             // build the discord embed
-            const embed = buildEmbed(title, description, color, fields);
+            const embed = buildEmbed(title, description, { color: color, fields: fields });
 
             // save to modlog for the server
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Kick', reason]);
@@ -169,12 +168,12 @@ export const clientEvent: eventHandler = {
                 const title = 'Timeout Removed';
                 const description = `${stripDiscrim(target)}'s timeout was removed by ${stripDiscrim(executor)}.`;
                 const color = 0xFEE75C;
-                const fields = [
+                const fields: embedField[] = [
                     { name: 'User', value: `<@${target.id}>`, inline: true },
                     { name: 'Performed by', value: `<@${executor.id}>`, inline: true },
                 ];
                 // build the embed
-                const embed = buildEmbed(title, description, color, fields);
+                const embed = buildEmbed(title, description, { color: color, fields: fields });
                 // save to modlog for the server
                 await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Untimeout', reason]);
                 // log it
@@ -250,7 +249,7 @@ export const clientEvent: eventHandler = {
             const title = 'User Timed Out';
             const description = `${stripDiscrim(target)} was timed out by ${stripDiscrim(executor)}.`;
             const color = 0xFEE75C;
-            const fields = [
+            const fields: embedField[] = [
                 { name: 'User', value: `<@${target.id}>`, inline: true },
                 { name: 'Duration', value: `${duration}`, inline: true },
                 { name: 'Performed by', value: `<@${executor.id}>` },
@@ -258,7 +257,7 @@ export const clientEvent: eventHandler = {
             ];
 
             // build the discord embed
-            const embed = buildEmbed(title, description, color, fields);
+            const embed = buildEmbed(title, description, { color: color, fields: fields });
 
             // save to modlog for the server
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Timeout', reason]);

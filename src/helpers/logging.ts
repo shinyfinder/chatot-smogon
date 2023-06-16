@@ -13,19 +13,23 @@ export interface embedField {
 }
 
 /**
- * Builds discord embed for logging
+ * Builds a discord embed for logging
+ * @param title Title field of the embed
+ * @param desc Description field for the embed
+ * @param options Optional object containing the color and fields to use for the embed
+ * @returns embedBuilder
  */
-export function buildEmbed(title: string, desc: string, color?: number, fields?: embedField[]) {
+export function buildEmbed(title: string, desc: string, options?: { color?: number, fields?: embedField[] }) {
     const embed = new EmbedBuilder()
         .setTitle(title)
         .setDescription(desc);
 
-    if (color) {
-        embed.setColor(color);
+    if (options?.color) {
+        embed.setColor(options.color);
     }
 
-    if (fields) {
-        embed.addFields(fields);
+    if (options?.fields) {
+        embed.addFields(options.fields);
     }
 
    return embed;

@@ -51,7 +51,7 @@ export const clientEvent: eventHandler = {
         const currentTime = Date.now();
 
         // wait a bit for the audit log to update
-        await sleep(5000);
+        await sleep(3000);
 
         // since we're only deleteing 1 message at a time, fetch the latest event from the audit log of type message deleted
         const fetchedLogs = await message.guild.fetchAuditLogs({
@@ -71,7 +71,7 @@ export const clientEvent: eventHandler = {
             const [title, description, color, fields] = buildMsgDeleteEmbedParams('Self', message);
 
             // build the embed itself
-            const embed = buildEmbed(title, description, color, fields);
+            const embed = buildEmbed(title, description, { color: color, fields: fields });
 
             // post it to the log chan
             await postLogEvent(embed, message.guild, message);
@@ -107,7 +107,7 @@ export const clientEvent: eventHandler = {
                 const [title, description, color, fields] = buildMsgDeleteEmbedParams('Self', message);
 
                 // build the embed
-                const embed = buildEmbed(title, description, color, fields);
+                const embed = buildEmbed(title, description, { color: color, fields: fields });
 
                 // post it to the log chan
                 await postLogEvent(embed, message.guild, message);
@@ -139,7 +139,7 @@ export const clientEvent: eventHandler = {
             const [title, description, color, fields] = buildMsgDeleteEmbedParams(executor, message);
                 
             // build the embed
-            const embed = buildEmbed(title, description, color, fields);
+            const embed = buildEmbed(title, description, { color: color, fields: fields });
 
             // post it to the log chan
             await postLogEvent(embed, message.guild, message);
@@ -152,7 +152,7 @@ export const clientEvent: eventHandler = {
             const [title, description, color, fields] = buildMsgDeleteEmbedParams('Self', message);
             
             // build the embed
-            const embed = buildEmbed(title, description, color, fields);
+            const embed = buildEmbed(title, description, { color: color, fields: fields });
 
             // post it to the log chan
             await postLogEvent(embed, message.guild, message);

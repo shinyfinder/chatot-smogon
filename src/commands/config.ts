@@ -1,8 +1,6 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, User, ComponentType, ButtonInteraction, ButtonComponent } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
-import { getRandInt } from '../helpers/getRandInt.js';
-import { cp } from 'node:fs';
 
 /**
  * Sets up the requirements for a user to be considered verified within the discord server
@@ -51,34 +49,30 @@ export const command: SlashCommand = {
         /**
          * LOGGING
          */
-        .addSubcommandGroup(new SlashCommandSubcommandGroupBuilder()
+        .addSubcommand(new SlashCommandSubcommandBuilder()
             .setName('logging')
             .setDescription('Configures server logging')
-            .addSubcommand(new SlashCommandSubcommandBuilder()
-                .setName('ignore')
-                .setDescription('Turns off deleted message tracking from the specified channel')
-                .addChannelOption(option =>
-                    option.setName('channel')
-                    .setDescription('Channel to ignore deleted messages in')
-                    .setRequired(true)))
-            .addSubcommand(new SlashCommandSubcommandBuilder()
-            .setName('unignore')
-            .setDescription('Restores deleted message logging in ignored channel')
+            .addChannelOption(option => 
+                option.setName('ignore')
+                    .setDescription('Turns off deleted and edit message tracking from the specified channel')
+                    .setRequired(false))
             .addChannelOption(option =>
-                option.setName('channel')
-                .setDescription('Channel to restore deleted message tracking')
-                .setRequired(true)))
-            .addSubcommand(new SlashCommandSubcommandBuilder()
-                .setName('deletes')
-                .setDescription('Configure whether all or only mod deletes get tracked')
-                .addStringOption(option =>
-                    option.setName('scope')
-                    .setDescription('Messages will by logged if deleted by...')
+                option.setName('unignore')
+                    .setDescription('Restores message tracking in the specified channel')
+                    .setRequired(false))
+            .addStringOption(option =>
+                option.setName('deletions')
+                    .setDescription('Messages will be logged if deleted by...')
                     .setChoices(
                         { name: 'Mods', value: 'mod' },
                         { name: 'Everyone', value: 'all' },
                     )
-                    .setRequired(true)))),
+                    .setRequired(false))
+            .addBooleanOption(option =>
+                option.setName('edits')
+                    .setDescription('Configure whether to track message edits')
+                    .setRequired(false)),
+            ),
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
@@ -117,56 +111,82 @@ export const command: SlashCommand = {
             return;
         }
 
-        else if (interaction.options.getSubcommand() === 'ignore') {
+        else if (interaction.options.getSubcommand() === 'logging') {
             // get the user input
-            const chan = interaction.options.getChannel('channel', true);
+            const ignoreChan = interaction.options.getChannel('ignore');
+            const unignoreChan = interaction.options.getChannel('unignore');
+            let del = interaction.options.getString('deletions');
+            let edits = interaction.options.getBoolean('edits');
 
-            // see if there are entries for this server already so we can update them
-            const q = await pool.query('SELECT deletescope FROM chatot.logprefs WHERE serverid=$1', [interaction.guildId]);
-            const storedScope: { deletescope: string }[] | [] = q.rows;
-
-            // get the desired deletion scope
-            // if there's an existing row for this server, just use whatever it says
-            // if there isn't a row, default to only logging mod deletes
-            const scope = storedScope.length ? storedScope[0].deletescope : 'mod';
-
-            // store it in the db
-            await pool.query('INSERT INTO chatot.logprefs (serverid, ignoreid, deletescope) VALUES ($1, $2, $3) ON CONFLICT (ignoreid) DO NOTHING', [interaction.guildId, chan.id, scope]);
-
-            // success!
-            await interaction.followUp(`I won't log messages deleted from channel **${chan.name ?? 'Unknown'}**`);
-        }
-
-        else if (interaction.options.getSubcommand() === 'unignore') {
-            // get the user input
-            const chan = interaction.options.getChannel('channel', true);
-
-            // store it in the db
-            await pool.query('DELETE FROM chatot.logprefs WHERE ignoreid=$1', [chan.id]);
-
-            // success!
-            await interaction.followUp(`I'll log messages deleted from channel **${chan.name ?? 'Unknown'}** again`);
-        }
-
-        else if (interaction.options.getSubcommand() === 'deletes') {
-            // get user input
-            const scope = interaction.options.getString('scope', true);
-
-            // see if there are entries for this server already so we can update them
-            const q = await pool.query('SELECT deletescope FROM chatot.logprefs WHERE serverid=$1', [interaction.guildId]);
-            const storedScope: { deletescope: string }[] | [] = q.rows;
-
-            // if there's no row for this server, make one
-            if (!storedScope.length) {
-                await pool.query('INSERT INTO chatot.logprefs (serverid, ignoreid, deletescope) VALUES ($1, $2, $3)', [interaction.guildId, '0', scope]);
-                // success!
-                await interaction.followUp(`Now logging messages deleted by ${scope === 'mod' ? 'mods' : 'everyone'}`);
+            // make sure they didn't enter the same chan for ignore and unignore
+            if (ignoreChan && unignoreChan) {
+                if (ignoreChan.id === unignoreChan.id) {
+                    await interaction.followUp('Ignore and unignore channels cannot be the same');
+                    return;
+                }
             }
-            // otherwise, update all references to use the new scope if it changed
-            else if (storedScope[0].deletescope !== scope) {
-                await pool.query('UPDATE chatot.logprefs SET deletescope=$1 WHERE serverid=$2', [scope, interaction.guildId]);
-                // success!
-                await interaction.followUp(`Now logging messages deleted by ${scope === 'mod' ? 'mods' : 'everyone'}`);
+
+            // make sure they entered something
+            if (!ignoreChan && !unignoreChan && !del && edits === null) {
+                await interaction.followUp('No inputs provided. Nothing to update.');
+                return;
+            }
+
+            // query the db so we can update the info if necessary
+            const q = await pool.query('SELECT ignoreid, deletescope, logedits FROM chatot.logprefs WHERE serverid=$1', [interaction.guildId]);
+            const storedVal: { ignoreid: string, deletescope: string, logedits: boolean }[] | [] = q.rows;
+
+            /*
+            // make sure they didn't duplicate the ignore chan
+            if (storedVal.some(row => row.ignoreid === ignoreChan?.id && row.ignoreid !== '0')) {
+                await interaction.followUp('This channel is already being ignored! Nothing was updated.');
+                return;
+            }
+            */
+
+            // default delete preferences to mod scope if not provided and not previously stored
+            if (!del && storedVal.length) {
+                del = storedVal[0].deletescope;
+            }
+            else if (!del) {
+                del = 'mod';
+            }
+
+            // similarly, default log edits to false if not provided and not previously stored
+            if (edits === null && storedVal.length) {
+                edits = storedVal[0].logedits;
+            }
+            else if (edits === null) {
+                edits = false;
+            }
+
+            // query the pool with a transaction
+            const pgClient = await pool.connect();
+            let hadError = false;
+            try {
+                // start
+                await pgClient.query('BEGIN');
+                // delete
+                await pgClient.query('DELETE FROM chatot.logprefs WHERE ignoreid=$1', [unignoreChan?.id]);
+                // insert
+                await pgClient.query('INSERT INTO chatot.logprefs (serverid, ignoreid, deletescope, logedits) VALUES ($1, $2, $3, $4) ON CONFLICT (serverid, ignoreid) DO NOTHING', [interaction.guildId, ignoreChan?.id ?? '0', del, edits]);
+                // update
+                await pgClient.query('UPDATE chatot.logprefs SET deletescope=$1, logedits=$2 WHERE serverid=$3', [del, edits, interaction.guildId]);
+                // end
+                await pgClient.query('COMMIT');
+            }
+            catch (e) {
+                await pgClient.query('ROLLBACK');
+                hadError = true;
+                // if this errors we have bigger problems, so log it
+                console.error(e);
+                await interaction.followUp('An error occurred and your preferences were not saved');
+            }
+            finally {
+                pgClient.release();
+            }
+            if (!hadError) {
+                await interaction.followUp('Preferences updated');
             }
         }
     },
