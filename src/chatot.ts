@@ -35,10 +35,10 @@ const client = new Client({
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildBans,
         GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.GuildPresences,
+        GatewayIntentBits.GuildModeration,
     ],
     partials: [
         Partials.GuildMember,

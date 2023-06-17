@@ -83,3 +83,13 @@ CREATE TABLE chatot.verifyreqs (
     method chatot.verifymethod NOT NULL DEFAULT 'remove',
     PRIMARY KEY (serverid)
 );
+
+CREATE TYPE chatot.logdeletescope AS enum ('mod', 'all');
+
+CREATE TABLE chatot.logprefs (
+    serverid varchar(20),
+    ignoreid varchar(20),
+    deletescope chatot.logdeletescope,
+    logedits BOOLEAN,
+    PRIMARY KEY (serverid, ignoreid)
+);

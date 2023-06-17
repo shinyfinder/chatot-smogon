@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Channel, ChannelType, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
+import { stripDiscrim } from '../helpers/stripDiscrim.js';
 
 /**
  * Command to dump the line count of the comp helpers in the RMT channels of the main Smogon discord.
@@ -203,7 +204,7 @@ export const command: SlashCommand = {
                         // extract the ID and account name of the user who sent the message
                         // also get the character length of the message
                         ID = msg.author.id;
-                        username = msg.author.tag;
+                        username = stripDiscrim(msg.author);
                         characters = msg.content.length;
 
                         // if the username includes a comma, remove it
