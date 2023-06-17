@@ -148,8 +148,8 @@ export function buildMsgDeleteEmbedParams(executor: User | string, message: Mess
     if (executor === 'Self') {
         description = `${stripDiscrim(message.author)} deleted their own message.`;
     }
-    else {
-        description = `${stripDiscrim(message.author)}'s message was deleted by ${executor.toString()}.`;
+    else if (executor instanceof User) {
+        description = `${stripDiscrim(message.author)}'s message was deleted by ${stripDiscrim(executor)}.`;
     }
 
     // set the embed color
