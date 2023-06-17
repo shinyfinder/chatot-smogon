@@ -1,9 +1,9 @@
 import { Message } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import config from '../config.js';
-import { stripDiscrim } from '../helpers/stripDiscrim.js';
 import { buildEmbed, postLogEvent, embedField } from '../helpers/logging.js';
 import { pool } from '../helpers/createPool.js';
+import { stripDiscrim } from '../helpers/stripDiscrim.js';
 
 /**
  * Update member handler
@@ -17,8 +17,8 @@ export const clientEvent: eventHandler = {
     name: 'messageUpdate',
     // execute the code for this event
     async execute(oldMsg: Message, newMsg: Message) {
-        // ignore DMs and events pertaining to the bot
-        if (!newMsg.guild || newMsg.author.id === config.CLIENT_ID) {
+        // ignore DMs and uncached messages
+        if (!newMsg.guild || !oldMsg.author || newMsg.author.id === config.CLIENT_ID) {
             return;
         }
 
@@ -50,23 +50,30 @@ export const clientEvent: eventHandler = {
         // build the log embed
         // make sure the content is short enough for us to log it
         let oldContent = '';
+        let newContent = '';
 
-        if (oldMsg.content.length < 1025) {
+        if (oldMsg.content.length < 1025 && newMsg.content.length < 1025) {
             oldContent = oldMsg.content;
+            newContent = newMsg.content;
+        }
+        else if (oldMsg.content.length + newMsg.content.length > 5800 && oldMsg.content.length < 1025) {
+            oldContent = oldMsg.content;
+            newContent = 'Message too long to output';
         }
         else {
             oldContent = 'Message too long to output';
+            newContent = 'Message too long to output';
         }
-
+        
         const title = 'Message Edited';
-        const description = `${stripDiscrim(newMsg.author)} edited their message.`;
         const fields: embedField[] = [
-            { name: 'Original Content', value: `${oldContent}` },
+            { name: 'Old Content', value: `${oldContent}` },
+            { name: 'New Content', value: `${newContent}` },
             { name: 'Name', value: `<@${newMsg.author.id}>`, inline: true },
             { name: 'Message', value: `${newMsg.url}`, inline: true },
         ];
-        const embed = buildEmbed(title, description, { fields: fields });
-
+        const embed = buildEmbed(title, { fields: fields });
+        
         // try to post it
         await postLogEvent(embed, newMsg.guild);
     },

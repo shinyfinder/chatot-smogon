@@ -19,10 +19,13 @@ export interface embedField {
  * @param options Optional object containing the color and fields to use for the embed
  * @returns embedBuilder
  */
-export function buildEmbed(title: string, desc: string, options?: { color?: number, fields?: embedField[] }) {
+export function buildEmbed(title: string, options?: { description?: string, color?: number, fields?: embedField[] }) {
     const embed = new EmbedBuilder()
-        .setTitle(title)
-        .setDescription(desc);
+        .setTitle(title);
+    
+    if (options?.description) {
+        embed.setDescription(options.description);
+    }
 
     if (options?.color) {
         embed.setColor(options.color);

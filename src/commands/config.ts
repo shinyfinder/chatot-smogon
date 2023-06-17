@@ -71,8 +71,22 @@ export const command: SlashCommand = {
             .addBooleanOption(option =>
                 option.setName('edits')
                     .setDescription('Configure whether to track message edits')
-                    .setRequired(false)),
-            ),
+                    .setRequired(false)))
+        
+        /**
+         * DEX
+         */
+        .addSubcommand(new SlashCommandSubcommandBuilder()
+            .setName('dex')
+            .setDescription('Sets the default format for the /dex command. Defaults are automatically appended.')
+            .addStringOption(option =>
+                option.setName('format')
+                .setDescription('Which format to automatically link to when using /dex. i.e. ou, uu, lc, doubles')
+                .setRequired(false))
+            .addStringOption(option =>
+                option.setName('gen')
+                .setDescription('Which gen to automatically link to when using /dex. i.e. rb, ss, sv')
+                .setRequired(false))),
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
@@ -82,7 +96,10 @@ export const command: SlashCommand = {
             return;
         }
 
-        
+        /**
+         * VERIFY
+         */
+
         if (interaction.options.getSubcommand() === 'verify') {
             // retrieve the user input
             const role = interaction.options.getRole('role', true);
@@ -111,6 +128,10 @@ export const command: SlashCommand = {
             return;
         }
 
+
+        /**
+         * LOGGING
+         */
         else if (interaction.options.getSubcommand() === 'logging') {
             // get the user input
             const ignoreChan = interaction.options.getChannel('ignore');
@@ -188,6 +209,22 @@ export const command: SlashCommand = {
             if (!hadError) {
                 await interaction.followUp('Preferences updated');
             }
+        }
+
+
+        /**
+         * DEX DEFAULTS
+         */
+
+        else if (interaction.options.getSubcommand() === 'dex') {
+            // get the inputs
+            const format = interaction.options.getString('format') ?? '';
+            const gen = interaction.options.getString('gen') ?? '';
+
+            // upsert it into the table
+            await pool.query('INSERT INTO chatot.dexdefaults (serverid, format, gen) VALUES ($1, $2, $3) ON CONFLICT (serverid) DO UPDATE SET format=EXCLUDED.format, gen=EXCLUDED.gen', [interaction.guildId, format.toLowerCase(), gen.toLowerCase()]);
+            // let them know we updated it
+            await interaction.followUp('Defaults set');
         }
     },
 };

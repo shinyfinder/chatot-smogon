@@ -51,7 +51,7 @@ export const clientEvent: eventHandler = {
             ];
 
             // build the discord embed
-            const embed = buildEmbed(title, description, { color: color, fields: fields });
+            const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
             // save to modlog for the server
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Ban', reason]);
@@ -89,7 +89,7 @@ export const clientEvent: eventHandler = {
             ];
 
             // build the discord embed
-            const embed = buildEmbed(title, description, { color: color, fields: fields });
+            const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
             // save to modlog for the server
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Unban', reason]);
@@ -124,7 +124,7 @@ export const clientEvent: eventHandler = {
             ];
 
             // build the discord embed
-            const embed = buildEmbed(title, description, { color: color, fields: fields });
+            const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
             // save to modlog for the server
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Kick', reason]);
@@ -173,7 +173,7 @@ export const clientEvent: eventHandler = {
                     { name: 'Performed by', value: `<@${executor.id}>`, inline: true },
                 ];
                 // build the embed
-                const embed = buildEmbed(title, description, { color: color, fields: fields });
+                const embed = buildEmbed(title, { description: description, color: color, fields: fields });
                 // save to modlog for the server
                 await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Untimeout', reason]);
                 // log it
@@ -257,7 +257,7 @@ export const clientEvent: eventHandler = {
             ];
 
             // build the discord embed
-            const embed = buildEmbed(title, description, { color: color, fields: fields });
+            const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
             // save to modlog for the server
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Timeout', reason]);
