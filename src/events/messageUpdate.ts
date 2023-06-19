@@ -18,7 +18,12 @@ export const clientEvent: eventHandler = {
     // execute the code for this event
     async execute(oldMsg: Message, newMsg: Message) {
         // ignore DMs and uncached messages
-        if (!newMsg.guild || !oldMsg.author || newMsg.author.id === config.CLIENT_ID) {
+        if (!newMsg.guild || !oldMsg.author) {
+            return;
+        }
+
+        // ignore bot messages
+        if (newMsg.author.bot === true) {
             return;
         }
 
@@ -37,13 +42,23 @@ export const clientEvent: eventHandler = {
 
         const dbmatches: { logedits: boolean, logchan: string }[] | [] = editPG.rows;
         */
-        const editPG = await pool.query('SELECT logedits FROM chatot.logprefs WHERE serverid=$1', [newMsg.guildId]);
-        const dbmatches: { logedits: boolean }[] | [] = editPG.rows;
+        const editPG = await pool.query('SELECT ignoreid, logedits FROM chatot.logprefs WHERE serverid=$1', [newMsg.guildId]);
+        const dbmatches: { ignoreid: string, logedits: boolean }[] | [] = editPG.rows;
 
+        // if you didn't get a match, return (default false)
         if (!dbmatches.length) {
             return;
         }
+        // else if they specifically don't want to log edits, return
         else if (dbmatches[0].logedits === false) {
+            return;
+        }
+
+        // make sure the channel isn't being ignored
+        const isIgnored = dbmatches.some(row => row.ignoreid === newMsg.channelId);
+
+        // if it is, return because we don't want to log it
+        if (isIgnored) {
             return;
         }
         
