@@ -67,9 +67,11 @@ export const clientEvent: eventHandler = {
         let oldContent = '';
         let newContent = '';
 
+        // make sure there's actually content in the messages. If there isn't, insert something so it's non-zero length
+        // also make sure the content is less than the max field length of 1024 char
         if (oldMsg.content.length < 1025 && newMsg.content.length < 1025) {
-            oldContent = oldMsg.content;
-            newContent = newMsg.content;
+            oldContent = oldMsg.content.length ? oldMsg.content : '\u200b';
+            newContent = newMsg.content.length ? newMsg.content : '\u200b';
         }
         else if (oldMsg.content.length + newMsg.content.length > 5800 && oldMsg.content.length < 1025) {
             oldContent = oldMsg.content;
