@@ -167,7 +167,7 @@ export const clientEvent: eventHandler = {
                 // set the inputs needed to build the embed
                 const title = 'Timeout Removed';
                 const description = `${stripDiscrim(target)}'s timeout was removed by ${stripDiscrim(executor)}.`;
-                const color = 0xFEE75C;
+                const color = 0xa29863;
                 const fields: embedField[] = [
                     { name: 'User', value: `<@${target.id}>`, inline: true },
                     { name: 'Performed by', value: `<@${executor.id}>`, inline: true },
@@ -248,7 +248,7 @@ export const clientEvent: eventHandler = {
             // set the inputs needed to build the embed
             const title = 'User Timed Out';
             const description = `${stripDiscrim(target)} was timed out by ${stripDiscrim(executor)}.`;
-            const color = 0xFEE75C;
+            const color = 0xFFDB00;
             const fields: embedField[] = [
                 { name: 'User', value: `<@${target.id}>`, inline: true },
                 { name: 'Duration', value: `${duration}`, inline: true },

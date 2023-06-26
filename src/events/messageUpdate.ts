@@ -1,9 +1,7 @@
 import { Message } from 'discord.js';
 import { eventHandler } from '../types/event-base';
-import config from '../config.js';
 import { buildEmbed, postLogEvent, embedField } from '../helpers/logging.js';
 import { pool } from '../helpers/createPool.js';
-import { stripDiscrim } from '../helpers/stripDiscrim.js';
 
 /**
  * Update member handler

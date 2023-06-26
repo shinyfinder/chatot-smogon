@@ -38,7 +38,7 @@ export const clientEvent: eventHandler = {
             // build the embed
             const title = 'Nitro Boost Gained';
             const description = `${stripDiscrim(newMember.user)} is now boosting! Their profile is <@${newMember.id}>`;
-            const color = 0xBF40BF;
+            const color = 0xFFBCFF;
             const embed = buildEmbed(title, { description: description, color: color });
 
             // send the message, if the logging channel exists
@@ -51,7 +51,7 @@ export const clientEvent: eventHandler = {
             // build the embed
             const title = 'Nitro Boost Lost';
             const description = `${stripDiscrim(newMember.user)} is no longer boosting. Their profile is <@${newMember.id}>`;
-            const color = 0x630330;
+            const color = 0xFD00FD;
             const embed = buildEmbed(title, { description: description, color: color });
 
             // send the message, if the logging channel exists
