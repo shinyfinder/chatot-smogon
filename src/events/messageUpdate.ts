@@ -1,6 +1,6 @@
 import { Message } from 'discord.js';
 import { eventHandler } from '../types/event-base';
-import { buildEmbed, postLogEvent, embedField } from '../helpers/logging.js';
+import { buildEmbed, postLogEvent, embedField, loggedEventTypes } from '../helpers/logging.js';
 import { pool } from '../helpers/createPool.js';
 
 /**
@@ -90,6 +90,6 @@ export const clientEvent: eventHandler = {
         const embed = buildEmbed(title, { fields: fields });
         
         // try to post it
-        await postLogEvent(embed, newMsg.guild);
+        await postLogEvent(embed, newMsg.guild, loggedEventTypes.edit);
     },
 };

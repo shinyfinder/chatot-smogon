@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, PermissionFlagsBits, ChannelType } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 
@@ -15,76 +15,92 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('logging')
-        .setDescription('Toggles mod logging in this channel')
+        .setDescription('Toggles mod logging for this server')
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .addSubcommand(new SlashCommandSubcommandBuilder()
-                .setName('on')
-                .setDescription('Turns on modlogging to this channel'),
+                .setName('enable')
+                .setDescription('Turns on logging in the specified channel')
+                .addChannelOption(option =>
+                    option.setName('channel')
+                    .setDescription('Which channel to log in')
+                    .setRequired(true))
+                .addStringOption(option =>
+                    option.setName('logtype')
+                    .setDescription('Whether to log edits, all, or mod actions in this channel')
+                    .setChoices(
+                        { name: 'All', value: 'all' },
+                        { name: 'Edits', value: 'edits' },
+                        { name: 'Mod Actions', value: 'mod' },
+                    )
+                    .setRequired(false)),
         )
         .addSubcommand(
             new SlashCommandSubcommandBuilder()
-                .setName('off')
-                .setDescription('Turns off modlogging in the server'),
+                .setName('disable')
+                .setDescription('Turns off logging in the specified channel')
+                .addChannelOption(option =>
+                    option.setName('channel')
+                    .setDescription('The channel currently being logged in')
+                    .setRequired(true)),
         ),
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
-        const channelid = interaction.channelId;
-        const serverid = interaction.guildId;
-
         // typecheck
-        if (serverid === null) {
+        if (interaction.guildId === null) {
             return;
         }
         await interaction.deferReply();
+
         // query the database for the list of logging channels
-        // the PK is serverid, so there can only be 1 result, if any
-        const ratersPostgres = await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid = $1', [serverid]);
-        const logchans: { channelid: string}[] | [] = ratersPostgres.rows;
+        // const ratersPostgres = await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid = $1', [interaction.guildId]);
+        // const logchans: { channelid: string}[] | [] = ratersPostgres.rows;
 
         
         /**
-         * MODLOG ON
+         * LOG ENABLE
          */
-        if (interaction.options.getSubcommand() === 'on') {
-            // if there is already a row in the table, mod log is on somewhere
-            if (logchans.length) {
-                // check if the logging channel is already set to this channel
-                if (logchans[0].channelid === channelid) {
-                    await interaction.followUp({ content: 'Logging is already set to this channel.' });
-                    return;
+        if (interaction.options.getSubcommand() === 'enable') {
+            // get the user input
+            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText]);
+            let type = interaction.options.getString('logtype');
+
+            // try to default the chan type to whatever is currently there
+            // if no results, default to all
+            const logchanPG = await pool.query('SELECT channelid, logtype FROM chatot.logchan WHERE serverid = $1', [interaction.guildId]);
+            const logchans: { channelid: string, logtype: string }[] | [] = logchanPG.rows;
+
+            let matchIndex = 0;
+            if (logchans.some((row, index) => {
+                if (row.channelid === chan.id) {
+                    matchIndex = index;
                 }
-                // else, update it to be this channel
-                else {
-                    await pool.query('UPDATE chatot.logchan SET channelid=$1 WHERE serverid=$2', [channelid, serverid]);
-                    await interaction.followUp({ content: 'Logging set to this channel.' });
-                    return;
-                }
+            })) {
+                type = logchans[matchIndex].logtype;
             }
-            // if you didn't find a result, insert a new row to turn on logging
             else {
-                await pool.query('INSERT INTO chatot.logchan (serverid, channelid) VALUES ($1, $2)', [serverid, channelid]);
-                await interaction.followUp({ content: 'Logging set to this channel.' });
-                return;
+                type = 'all';
             }
+
+
+            // upsert into the db
+            await pool.query('INSERT INTO chatot.logchan (serverid, channelid, logtype) VALUES ($1, $2, $3) ON CONFLICT (channelid) DO UPDATE SET serverid = EXCLUDED.serverid, channelid = EXCLUDED.channelid, logtype = $3', [interaction.guildId, chan.id, type]);
+
+            // let them know we're done
+            await interaction.followUp(`Logging set to channel **${chan.name}**`);
         }
 
         /**
          * MODLOG OFF
          */
-        else if (interaction.options.getSubcommand() === 'off') {
-            // if there is already a row in the table, mod log is on somewhere
-            if (logchans.length) {
-                await pool.query('DELETE FROM chatot.logchan WHERE serverid=$1', [serverid]);
-                await interaction.followUp({ content: 'Logging turned off in this server.' });
-                return;
-            }
-            // if you didn't find a result, let them know
-            else {
-                await interaction.followUp({ content: 'Logging is not currently enabled in this server' });
-                return;
-            }
-
+        else if (interaction.options.getSubcommand() === 'disable') {
+            // get the user input
+            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText]);
+            // delete the corresponding row
+            await pool.query('DELETE FROM chatot.logchan WHERE serverid = $1 AND channelid = $2', [interaction.guildId, chan.id]);
+            
+            // let hem know we're done
+            await interaction.followUp(`No longer Logging in channel **${chan.name}**`);
         }
     },
 

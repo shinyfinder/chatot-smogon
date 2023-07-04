@@ -39,78 +39,106 @@ export function buildEmbed(title: string, options?: { description?: string, colo
 }
 
 
+export enum loggedEventTypes {
+    ban = 'ban',
+    kick = 'kick',
+    timeout = 'timeout',
+    delete = 'delete',
+    edit = 'edit',
+    boost = 'boost',
+}
+
 /**
  * Logs to the log chan, if it exists
  */
-export async function postLogEvent(embed: EmbedBuilder, guild: Guild, message?: Message) {
-    const pgres = await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid=$1', [guild.id]);
-    const logchan: { channelid: string }[] | [] = pgres.rows;
+interface ILogChan {
+    channelid: string,
+    logtype: string,
+}
+export async function postLogEvent(embed: EmbedBuilder, guild: Guild, event: loggedEventTypes, message?: Message) {
+    const pgres = await pool.query('SELECT channelid, logtype FROM chatot.logchan WHERE serverid=$1', [guild.id]);
+    const logchan: ILogChan[] | [] = pgres.rows;
 
     if (logchan.length) {
-        const channel = guild.client.channels.cache.get(logchan[0].channelid);
-        if (channel?.type !== ChannelType.GuildText) {
-            return;
+        // try to find the channel with the type corresponding to the event type
+        // as of now, only edits are singled out
+        let targetChans: ILogChan[] = [];
+        if (event === 'edit') {
+            targetChans = logchan.filter(row => row.logtype === 'edits' || row.logtype === 'all');
         }
-        // special logic for message deletes
-        // we didn't build the attachment filed before becuase we want to preview embeds
-        if (message) {
-            // echo any attachments in another post
-            if (message.attachments.size > 0) {
-                const attachmentArr = [...message.attachments.values()];
-                // loop over all of the attachments and build an embed for each one so they preview
-                let attCnt = 0;
-                let postCnt = 0;
-                // set the max number of images per embed
-                // the max that can be previewed is 4
-                // any more are embeded, but you need to scroll thru the images to see them.
-                const maxImages = 4;
-                let embedHolder: EmbedBuilder[] = [];
+        else {
+            targetChans = logchan.filter(row => row.logtype === 'mod' || row.logtype === 'all');
+        }
 
-                for (const attachment of attachmentArr) {
-                    const attPreviewEmbed = EmbedBuilder.from(embed).setURL('https://www.smogon.com/forums/').setImage(attachment.url);
-                    embedHolder.push(attPreviewEmbed);
-                    attCnt++;
-                    // set a cap for the number of images allowed in each embed
-                    // then reset the holder
-                    if (attCnt === maxImages) {
-                        // build the embed attachment list
+        // loop over the list of relevant channels
+        // there'll only be 1, but technically there could be more
+        for (const chan of targetChans) {
+            const channel = guild.client.channels.cache.get(chan.channelid);
+            if (channel?.type !== ChannelType.GuildText) {
+                return;
+            }
+            // special logic for message deletes
+            // we didn't build the attachment filed before becuase we want to preview embeds
+            if (message) {
+                // echo any attachments in another post
+                if (message.attachments.size > 0) {
+                    const attachmentArr = [...message.attachments.values()];
+                    // loop over all of the attachments and build an embed for each one so they preview
+                    let attCnt = 0;
+                    let postCnt = 0;
+                    // set the max number of images per embed
+                    // the max that can be previewed is 4
+                    // any more are embeded, but you need to scroll thru the images to see them.
+                    const maxImages = 4;
+                    let embedHolder: EmbedBuilder[] = [];
+
+                    for (const attachment of attachmentArr) {
+                        const attPreviewEmbed = EmbedBuilder.from(embed).setURL('https://www.smogon.com/forums/').setImage(attachment.url);
+                        embedHolder.push(attPreviewEmbed);
+                        attCnt++;
+                        // set a cap for the number of images allowed in each embed
+                        // then reset the holder
+                        if (attCnt === maxImages) {
+                            // build the embed attachment list
+                            embedHolder.forEach((newEmbed, index) => {
+                                embedHolder[index] = newEmbed.addFields(
+                                    { name: 'Attachments', value: attachmentArr.slice(maxImages * postCnt, maxImages * (postCnt + 1)).map(att => att.url).join(' ') },
+                                );
+                            });
+
+                            // post it 
+                            await channel.send({ embeds: embedHolder });
+                            // increment the post counter
+                            postCnt++;                    
+                            // reset the holder and attachment counter
+                            embedHolder = [];
+                            attCnt = 0;
+                        }
+                    }
+                    // if there are still pending embeds in the holder, we need to post them
+                    if (embedHolder.length) {
+                        // build the attachment list
                         embedHolder.forEach((newEmbed, index) => {
                             embedHolder[index] = newEmbed.addFields(
-                                { name: 'Attachments', value: attachmentArr.slice(maxImages * postCnt, maxImages * (postCnt + 1)).map(att => att.url).join(' ') },
+                                { name: 'Attachments', value: attachmentArr.slice(maxImages * postCnt).map(att => att.url).join(' ') },
                             );
                         });
-
-                        // post it 
+                            
                         await channel.send({ embeds: embedHolder });
-                        // increment the post counter
-                        postCnt++;                    
-                        // reset the holder and attachment counter
-                        embedHolder = [];
-                        attCnt = 0;
                     }
                 }
-                // if there are still pending embeds in the holder, we need to post them
-                if (embedHolder.length) {
-                    // build the attachment list
-                    embedHolder.forEach((newEmbed, index) => {
-                        embedHolder[index] = newEmbed.addFields(
-                            { name: 'Attachments', value: attachmentArr.slice(maxImages * postCnt).map(att => att.url).join(' ') },
-                        );
-                    });
-                        
-                    await channel.send({ embeds: embedHolder });
+                else {
+                    embed.addFields(
+                        { name: 'Attachments', value: 'No Attachments' },
+                    );
+                    await channel.send({ embeds: [embed] });
                 }
             }
             else {
-                embed.addFields(
-                    { name: 'Attachments', value: 'No Attachments' },
-                );
                 await channel.send({ embeds: [embed] });
             }
         }
-        else {
-            await channel.send({ embeds: [embed] });
-        }
+        
     }
 }
 

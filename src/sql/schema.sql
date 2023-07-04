@@ -24,11 +24,16 @@ CREATE TABLE chatot.customs (
     PRIMARY KEY (serverid, cmd)
 );
 
+CREATE TYPE chatot.logchan_type AS enum ('all', 'edits', 'mod');
+
 CREATE TABLE chatot.logchan (
     serverid varchar(20),
     channelid varchar(20),
-    PRIMARY KEY (serverid)
+    logtype chatot.logchan_type,
+    PRIMARY KEY (serverid, channelid)
 );
+-- ALTER TABLE chatot.logchan DROP CONSTRAINT logchan_pkey, ADD PRIMARY KEY (serverid, channelid);
+-- ALTER TABLE chatot.logchan ADD COLUMN logtype chatot.logchan_type;
 
 CREATE TABLE chatot.modlog (
     serverid varchar(20),

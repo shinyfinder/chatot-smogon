@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, ChannelType } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 
@@ -49,29 +49,49 @@ export const command: SlashCommand = {
         /**
          * LOGGING
          */
-        .addSubcommand(new SlashCommandSubcommandBuilder()
+        .addSubcommandGroup(new SlashCommandSubcommandGroupBuilder()
             .setName('logging')
             .setDescription('Configures server logging')
-            .addChannelOption(option => 
-                option.setName('ignore')
-                    .setDescription('Turns off deleted and edit message tracking from the specified channel')
-                    .setRequired(false))
-            .addChannelOption(option =>
-                option.setName('unignore')
-                    .setDescription('Restores message tracking in the specified channel')
-                    .setRequired(false))
-            .addStringOption(option =>
-                option.setName('deletions')
-                    .setDescription('Messages will be logged if deleted by...')
+            .addSubcommand(new SlashCommandSubcommandBuilder()
+                .setName('scope')
+                .setDescription('Configures whether certain locations or actions are ignored')
+                .addChannelOption(option => 
+                    option.setName('ignore')
+                        .setDescription('Turns off deleted and edit message tracking from the specified channel')
+                        .setRequired(false))
+                .addChannelOption(option =>
+                    option.setName('unignore')
+                        .setDescription('Restores message tracking in the specified channel')
+                        .setRequired(false))
+                .addStringOption(option =>
+                    option.setName('deletions')
+                        .setDescription('Messages will be logged if deleted by...')
+                        .setChoices(
+                            { name: 'Mods', value: 'mod' },
+                            { name: 'Everyone', value: 'all' },
+                        )
+                        .setRequired(false))
+                .addBooleanOption(option =>
+                    option.setName('edits')
+                        .setDescription('Configure whether to track message edits')
+                        .setRequired(false)))
+            .addSubcommand(new SlashCommandSubcommandBuilder()
+                .setName('chantype')
+                .setDescription('Configures the log channel type (edits, mod actions, or everything)')
+                .addChannelOption(option =>
+                    option.setName('channel')
+                    .setDescription('The log channel to modify')
+                    .setRequired(true))
+                .addStringOption(option =>
+                    option.setName('type')
+                    .setDescription('Whether to log edits, mod actions, or both in this channel')
                     .setChoices(
-                        { name: 'Mods', value: 'mod' },
-                        { name: 'Everyone', value: 'all' },
+                        { name: 'All', value: 'all' },
+                        { name: 'Edits', value: 'edits' },
+                        { name: 'Mod Actions', value: 'mod' },
                     )
-                    .setRequired(false))
-            .addBooleanOption(option =>
-                option.setName('edits')
-                    .setDescription('Configure whether to track message edits')
-                    .setRequired(false)))
+                    .setRequired(true))),
+            )
         
         /**
          * DEX
@@ -130,9 +150,9 @@ export const command: SlashCommand = {
 
 
         /**
-         * LOGGING
+         * LOGGING SCOPE
          */
-        else if (interaction.options.getSubcommand() === 'logging') {
+        else if (interaction.options.getSubcommand() === 'scope') {
             // get the user input
             const ignoreChan = interaction.options.getChannel('ignore');
             const unignoreChan = interaction.options.getChannel('unignore');
@@ -211,6 +231,31 @@ export const command: SlashCommand = {
             }
         }
 
+        /**
+         * LOGGING CHAN TYPE
+         */
+        else if (interaction.options.getSubcommand() === 'chantype') {
+            // get the user input
+            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText]);
+            const type = interaction.options.getString('type', true);
+
+            // make sure they are actually logging in this channel.
+            // if they aren't, return and tell them to enable it first
+            const logchanPG = await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid = $1', [interaction.guildId]);
+            const logchans: { channelid: string }[] | [] = logchanPG.rows;
+
+            if (!logchans.some(row => row.channelid === chan.id)) {
+                await interaction.followUp('Logging is not currently set to the provided channel. Please enable logging with the `/logging enable` command first before setting preferences.');
+                return;
+            }
+
+            // otherwise, update
+            await pool.query('UPDATE chatot.logchan SET logtype = $1 WHERE channelid = $2', [type, chan.id]);
+
+            // and tell them we updated their prefs
+            await interaction.followUp('Log channel type updated');
+
+        }
 
         /**
          * DEX DEFAULTS

@@ -3,7 +3,7 @@ import { eventHandler } from '../types/event-base';
 import config from '../config.js';
 import { checkVerified } from '../helpers/checkVerified.js';
 import { stripDiscrim } from '../helpers/stripDiscrim.js';
-import { buildEmbed, postLogEvent } from '../helpers/logging.js';
+import { buildEmbed, postLogEvent, loggedEventTypes } from '../helpers/logging.js';
 
 /**
  * Update member handler
@@ -42,7 +42,7 @@ export const clientEvent: eventHandler = {
             const embed = buildEmbed(title, { description: description, color: color });
 
             // send the message, if the logging channel exists
-            await postLogEvent(embed, newMember.guild);
+            await postLogEvent(embed, newMember.guild, loggedEventTypes.boost);
             return;
         }
 
@@ -55,7 +55,7 @@ export const clientEvent: eventHandler = {
             const embed = buildEmbed(title, { description: description, color: color });
 
             // send the message, if the logging channel exists
-            await postLogEvent(embed, newMember.guild);
+            await postLogEvent(embed, newMember.guild, loggedEventTypes.boost);
             return;
         }
 
