@@ -40,3 +40,16 @@ const allowedMetas = [
 ];
 
 export const allowedMetasObj = allowedMetas.map(meta => ({ name: meta, value: meta.toLowerCase() }));
+
+/**
+ * Time interval for checking for new C&C threads (ms)
+ */
+export const ccTimeInterval = 15 * 1000;
+
+/**
+ * List of subforum IDs containing analyses
+ */
+export const ccSubs = [
+    '1',
+    '2',
+];

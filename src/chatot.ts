@@ -15,6 +15,8 @@ import { loadDex } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
+import { findNewThreads } from './helpers/cnc.js';
+import { ccTimeInterval } from './helpers/constants.js';
 
 /**
  * Load in the environment variables
@@ -164,8 +166,14 @@ await client.login(config.TOKEN);
 
 await loadRRMessages(client);
 
+/**
+ * Schedule timers
+ */
 // schedule a timer to post updates the public rater list every so often (in ms)
 setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)), 1000 * 60 * 60 * 24);
+
+// schedule checking for new/updated QC threads
+setInterval(() => void findNewThreads().catch(e => errorHandler(e)), ccTimeInterval);
 
 
 /**
