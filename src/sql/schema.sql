@@ -33,7 +33,7 @@ CREATE TABLE chatot.logchan (
     PRIMARY KEY (serverid, channelid)
 );
 -- ALTER TABLE chatot.logchan DROP CONSTRAINT logchan_pkey, ADD PRIMARY KEY (serverid, channelid);
--- ALTER TABLE chatot.logchan ADD COLUMN logtype chatot.logchan_type;
+-- ALTER TABLE chatot.logchan ADD COLUMN logtype chatot.logchan_type DEFAULT 'all';
 
 CREATE TABLE chatot.modlog (
     serverid varchar(20),
