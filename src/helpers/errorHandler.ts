@@ -1,4 +1,4 @@
-import { DiscordAPIError, Collection, CommandInteractionOption } from 'discord.js';
+import { DiscordAPIError, Collection } from 'discord.js';
 import { IErrorPack } from '../types/error';
 import { stripDiscrim } from './stripDiscrim.js';
 
@@ -35,7 +35,7 @@ export function errorHandler(err: unknown) {
             // form the err message
             const intInfo = `This error occurred in the following interaction:
             Command: ${err.int.toString()}
-            Guild: ${err.int.guild?.name}
+            Guild: ${err.int.guild ? err.int.guild.name : 'None'}
             User: ${stripDiscrim(err.int.user)} (${err.int.id})`;
             
             // log it
@@ -46,7 +46,6 @@ export function errorHandler(err: unknown) {
     else {
         console.error(errObj);
     }
-    
 }
 
 /**
