@@ -24,10 +24,13 @@ CREATE TABLE chatot.customs (
     PRIMARY KEY (serverid, cmd)
 );
 
+CREATE TYPE chatot.logchan_type AS enum ('all', 'edits', 'nonedits', 'userex', 'modex', 'usertarget', 'msgtarget');
+
 CREATE TABLE chatot.logchan (
     serverid varchar(20),
     channelid varchar(20),
-    PRIMARY KEY (serverid)
+    logtype chatot.logchan_type,
+    PRIMARY KEY (serverid, channelid)
 );
 
 CREATE TABLE chatot.modlog (
