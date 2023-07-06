@@ -93,7 +93,7 @@ export async function postLogEvent(ogEmbed: EmbedBuilder, guild: Guild, event: l
         // there'll only be 1, but technically there could be more
         for (const chan of targetChans) {
             // clone the embed so that we keep the original as a reference in case there are multiple log chans in a server
-            const embed = structuredClone(ogEmbed);
+            const embed = EmbedBuilder.from(ogEmbed);
 
             const channel = guild.client.channels.cache.get(chan.channelid);
             if (channel?.type !== ChannelType.GuildText) {

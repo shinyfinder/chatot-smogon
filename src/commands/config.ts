@@ -81,7 +81,8 @@ export const command: SlashCommand = {
                 .addChannelOption(option =>
                     option.setName('channel')
                     .setDescription('The log channel to modify')
-                    .setRequired(true))
+                    .setRequired(true)
+                    .addChannelTypes(ChannelType.GuildText))
                 .addStringOption(option =>
                     option.setName('type')
                     .setDescription('Whether to log edits, mod actions, or both in this channel')

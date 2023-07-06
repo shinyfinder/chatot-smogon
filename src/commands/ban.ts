@@ -49,8 +49,6 @@ export const command: SlashCommand = {
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
-        throw new Error();
-        /*
         // make sure this command is used in a guild
         if (!interaction.guild) {
             await interaction.reply({ content: 'This command can only be used in a server!', ephemeral: true });
@@ -108,7 +106,6 @@ export const command: SlashCommand = {
             await interaction.followUp(`${user.username} has been banned. I did not DM them. Possible reasons are they have DMs turned off, they are not in a server with me, or you didn't specify a DM.`);
             return;
         }
-        */
         
     },
 };
