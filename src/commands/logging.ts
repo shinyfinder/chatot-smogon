@@ -27,8 +27,8 @@ export const command: SlashCommand = {
                     .setRequired(true)
                     .addChannelTypes(ChannelType.GuildText))
                 .addStringOption(option =>
-                    option.setName('logtype')
-                    .setDescription('Whether to log edits, all, or mod actions in this channel')
+                    option.setName('type')
+                    .setDescription('What actions get logged into the channel. See the wiki for details.')
                     .setChoices(
                         // everything
                         { name: 'All', value: 'all' },
@@ -75,7 +75,7 @@ export const command: SlashCommand = {
         if (interaction.options.getSubcommand() === 'enable') {
             // get the user input
             const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText]);
-            let type = interaction.options.getString('logtype');
+            let type = interaction.options.getString('type');
 
             // try to default the chan type to whatever is currently there if no type was provided
             // if no results, default to all
