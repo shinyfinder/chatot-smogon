@@ -90,6 +90,6 @@ export const clientEvent: eventHandler = {
         const embed = buildEmbed(title, { fields: fields });
         
         // try to post it
-        await postLogEvent(embed, newMsg.guild, loggedEventTypes.edit);
+        await postLogEvent(embed, newMsg.guild, loggedEventTypes.Edit);
     },
 };

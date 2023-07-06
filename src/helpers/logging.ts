@@ -40,12 +40,13 @@ export function buildEmbed(title: string, options?: { description?: string, colo
 
 
 export enum loggedEventTypes {
-    ban = 'ban',
-    kick = 'kick',
-    timeout = 'timeout',
-    delete = 'delete',
-    edit = 'edit',
-    boost = 'boost',
+    Ban = 'ban',
+    Kick = 'kick',
+    Timeout = 'timeout',
+    ModDelete = 'moddelete',
+    SelfDelete = 'selfdelete',
+    Edit = 'edit',
+    Boost = 'boost',
 }
 
 /**
@@ -55,24 +56,45 @@ interface ILogChan {
     channelid: string,
     logtype: string,
 }
-export async function postLogEvent(embed: EmbedBuilder, guild: Guild, event: loggedEventTypes, message?: Message) {
+export async function postLogEvent(ogEmbed: EmbedBuilder, guild: Guild, event: loggedEventTypes, message?: Message) {
+    // see if logging is enabled in the server
     const pgres = await pool.query('SELECT channelid, logtype FROM chatot.logchan WHERE serverid=$1', [guild.id]);
     const logchan: ILogChan[] | [] = pgres.rows;
 
     if (logchan.length) {
         // try to find the channel with the type corresponding to the event type
-        // as of now, only edits are singled out
+        /*
+        all - ban, kick, TO, mod delete, self delete, edit, boost
+        edits - edit
+        nonedits - ban, kick, TO, mod delete, self delete, boost
+        userex - self deletes, edits, boost
+        modex - kick, ban TO, mod delete
+        usertarget - kick, ban, TO, boost
+        msgtarget - mod delete, self delete, edit
+        */
         let targetChans: ILogChan[] = [];
-        if (event === 'edit') {
-            targetChans = logchan.filter(row => row.logtype === 'edits' || row.logtype === 'all');
+        if (event === 'ban' || event === 'kick' || event === 'timeout') {
+            targetChans = logchan.filter(row => ['all', 'nonedits', 'modex', 'usertarget'].includes(row.logtype));
         }
-        else {
-            targetChans = logchan.filter(row => row.logtype === 'mod' || row.logtype === 'all');
+        else if (event === 'moddelete') {
+            targetChans = logchan.filter(row => ['all', 'nonedits', 'modex', 'msgtarget'].includes(row.logtype));
+        }
+        else if (event === 'selfdelete') {
+            targetChans = logchan.filter(row => ['all', 'nonedits', 'userex', 'msgtarget'].includes(row.logtype));
+        }
+        else if (event === 'edit') {
+            targetChans = logchan.filter(row => ['all', 'edits', 'userex', 'msgtarget'].includes(row.logtype));
+        }
+        else if (event === 'boost') {
+            targetChans = logchan.filter(row => ['all', 'nonedits', 'userex', 'usertarget'].includes(row.logtype));
         }
 
         // loop over the list of relevant channels
         // there'll only be 1, but technically there could be more
         for (const chan of targetChans) {
+            // clone the embed so that we keep the original as a reference in case there are multiple log chans in a server
+            const embed = structuredClone(ogEmbed);
+
             const channel = guild.client.channels.cache.get(chan.channelid);
             if (channel?.type !== ChannelType.GuildText) {
                 return;

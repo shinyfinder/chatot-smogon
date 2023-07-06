@@ -29,9 +29,20 @@ export const command: SlashCommand = {
                     option.setName('logtype')
                     .setDescription('Whether to log edits, all, or mod actions in this channel')
                     .setChoices(
+                        // everything
                         { name: 'All', value: 'all' },
+                        // only edits
                         { name: 'Edits', value: 'edits' },
-                        { name: 'Mod Actions', value: 'mod' },
+                        // everything but edits
+                        { name: 'Non-Edits', value: 'nonedits' },
+                        // user executed (self deletes, edits, boost)
+                        { name: 'User Executed', value: 'userex' },
+                        // mod executed (kick, ban, TO, mod delete)
+                        { name: 'Mod Executed', value: 'modex' },
+                        // user targeted (kick, ban, TO, boost)
+                        { name: 'User Targeted', value: 'usertarget' },
+                        // message targeted (delete, edit)
+                        { name: 'Message Targeted', value: 'msgtarget' },
                     )
                     .setRequired(false)),
         )
@@ -50,7 +61,7 @@ export const command: SlashCommand = {
         if (interaction.guildId === null) {
             return;
         }
-        await interaction.deferReply();
+        await interaction.deferReply({ ephemeral: true });
 
         // query the database for the list of logging channels
         // const ratersPostgres = await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid = $1', [interaction.guildId]);
@@ -65,26 +76,23 @@ export const command: SlashCommand = {
             const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText]);
             let type = interaction.options.getString('logtype');
 
-            // try to default the chan type to whatever is currently there
+            // try to default the chan type to whatever is currently there if no type was provided
             // if no results, default to all
             const logchanPG = await pool.query('SELECT channelid, logtype FROM chatot.logchan WHERE serverid = $1', [interaction.guildId]);
             const logchans: { channelid: string, logtype: string }[] | [] = logchanPG.rows;
 
-            let matchIndex = 0;
-            if (logchans.some((row, index) => {
-                if (row.channelid === chan.id) {
-                    matchIndex = index;
-                }
-            })) {
+            const matchIndex = logchans.findIndex(row => row.channelid === chan.id);
+            // match and no type = set to match
+            if (matchIndex >= 0 && !type) {
                 type = logchans[matchIndex].logtype;
             }
-            else {
+            // no match and no type = default
+            else if (matchIndex < 0 && !type) {
                 type = 'all';
             }
 
-
             // upsert into the db
-            await pool.query('INSERT INTO chatot.logchan (serverid, channelid, logtype) VALUES ($1, $2, $3) ON CONFLICT (channelid) DO UPDATE SET serverid = EXCLUDED.serverid, channelid = EXCLUDED.channelid, logtype = $3', [interaction.guildId, chan.id, type]);
+            await pool.query('INSERT INTO chatot.logchan (serverid, channelid, logtype) VALUES ($1, $2, $3) ON CONFLICT (serverid, channelid) DO UPDATE SET serverid = EXCLUDED.serverid, channelid = EXCLUDED.channelid, logtype = $3', [interaction.guildId, chan.id, type]);
 
             // let them know we're done
             await interaction.followUp(`Logging set to channel **${chan.name}**`);
@@ -100,7 +108,7 @@ export const command: SlashCommand = {
             await pool.query('DELETE FROM chatot.logchan WHERE serverid = $1 AND channelid = $2', [interaction.guildId, chan.id]);
             
             // let hem know we're done
-            await interaction.followUp(`No longer Logging in channel **${chan.name}**`);
+            await interaction.followUp(`I will no longer log to channel **${chan.name}**`);
         }
     },
 

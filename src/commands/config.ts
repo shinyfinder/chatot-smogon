@@ -86,9 +86,20 @@ export const command: SlashCommand = {
                     option.setName('type')
                     .setDescription('Whether to log edits, mod actions, or both in this channel')
                     .setChoices(
+                        // everything
                         { name: 'All', value: 'all' },
+                        // only edits
                         { name: 'Edits', value: 'edits' },
-                        { name: 'Mod Actions', value: 'mod' },
+                        // everything but edits
+                        { name: 'Non-Edits', value: 'nonedits' },
+                        // user executed (self deletes, edits, boost)
+                        { name: 'User Executed', value: 'userex' },
+                        // mod executed (kick, ban, TO, mod delete)
+                        { name: 'Mod Executed', value: 'modex' },
+                        // user targeted (kick, ban, TO, boost)
+                        { name: 'User Targeted', value: 'usertarget' },
+                        // message targeted (delete, edit)
+                        { name: 'Message Targeted', value: 'msgtarget' },
                     )
                     .setRequired(true))),
             )

@@ -24,7 +24,7 @@ CREATE TABLE chatot.customs (
     PRIMARY KEY (serverid, cmd)
 );
 
-CREATE TYPE chatot.logchan_type AS enum ('all', 'edits', 'mod');
+CREATE TYPE chatot.logchan_type AS enum ('all', 'edits', 'nonedits', 'userex', 'modex', 'usertarget', 'msgtarget');
 
 CREATE TABLE chatot.logchan (
     serverid varchar(20),

@@ -74,7 +74,7 @@ export const clientEvent: eventHandler = {
             const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
             // post it to the log chan
-            await postLogEvent(embed, message.guild, loggedEventTypes.delete, message);
+            await postLogEvent(embed, message.guild, loggedEventTypes.SelfDelete, message);
             return;
         }
 
@@ -110,7 +110,7 @@ export const clientEvent: eventHandler = {
                 const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
                 // post it to the log chan
-                await postLogEvent(embed, message.guild, loggedEventTypes.delete, message);
+                await postLogEvent(embed, message.guild, loggedEventTypes.SelfDelete, message);
                 return;
             }
             else {
@@ -142,7 +142,7 @@ export const clientEvent: eventHandler = {
             const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
             // post it to the log chan
-            await postLogEvent(embed, message.guild, loggedEventTypes.delete, message);
+            await postLogEvent(embed, message.guild, loggedEventTypes.ModDelete, message);
             return;
         }
         // if you got a new audit log but it was for a different user, this is probably a self delete
@@ -155,7 +155,7 @@ export const clientEvent: eventHandler = {
             const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
             // post it to the log chan
-            await postLogEvent(embed, message.guild, loggedEventTypes.delete, message);
+            await postLogEvent(embed, message.guild, loggedEventTypes.SelfDelete, message);
             return;
         }
 

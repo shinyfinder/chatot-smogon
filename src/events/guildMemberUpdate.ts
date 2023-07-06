@@ -42,7 +42,7 @@ export const clientEvent: eventHandler = {
             const embed = buildEmbed(title, { description: description, color: color });
 
             // send the message, if the logging channel exists
-            await postLogEvent(embed, newMember.guild, loggedEventTypes.boost);
+            await postLogEvent(embed, newMember.guild, loggedEventTypes.Boost);
             return;
         }
 
@@ -55,7 +55,7 @@ export const clientEvent: eventHandler = {
             const embed = buildEmbed(title, { description: description, color: color });
 
             // send the message, if the logging channel exists
-            await postLogEvent(embed, newMember.guild, loggedEventTypes.boost);
+            await postLogEvent(embed, newMember.guild, loggedEventTypes.Boost);
             return;
         }
 

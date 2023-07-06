@@ -57,10 +57,10 @@ export const clientEvent: eventHandler = {
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Ban', reason]);
 
             // post the log to the logging channel
-            await postLogEvent(embed, guild, loggedEventTypes.ban);
+            await postLogEvent(embed, guild, loggedEventTypes.Ban);
 
             // if this is smogcord, echo to the log-punishments chan
-            await echoPunishment(guild, target, reason, loggedEventTypes.ban);
+            await echoPunishment(guild, target, reason, loggedEventTypes.Ban);
 
         }
 
@@ -95,7 +95,7 @@ export const clientEvent: eventHandler = {
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Unban', reason]);
 
             // post the log to the logging channel
-            await postLogEvent(embed, guild, loggedEventTypes.ban);
+            await postLogEvent(embed, guild, loggedEventTypes.Ban);
 
         }
 
@@ -130,10 +130,10 @@ export const clientEvent: eventHandler = {
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Kick', reason]);
 
             // post the log to the logging channel
-            await postLogEvent(embed, guild, loggedEventTypes.kick);
+            await postLogEvent(embed, guild, loggedEventTypes.Kick);
 
             // if this is smogcord, echo to the log-punishments chan
-            await echoPunishment(guild, target, reason, loggedEventTypes.kick);
+            await echoPunishment(guild, target, reason, loggedEventTypes.Kick);
 
         }
 
@@ -177,7 +177,7 @@ export const clientEvent: eventHandler = {
                 // save to modlog for the server
                 await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Untimeout', reason]);
                 // log it
-                await postLogEvent(embed, guild, loggedEventTypes.timeout);
+                await postLogEvent(embed, guild, loggedEventTypes.Timeout);
                 return;
             }
             // else, determine how long the timeout is for
@@ -263,7 +263,7 @@ export const clientEvent: eventHandler = {
             await pool.query('INSERT INTO chatot.modlog (serverid, executor, target, action, reason) VALUES ($1, $2, $3, $4, $5)', [guild.id, executor.id, target.id, 'Timeout', reason]);
 
             // post the log to the logging channel
-            await postLogEvent(embed, guild, loggedEventTypes.timeout);
+            await postLogEvent(embed, guild, loggedEventTypes.Timeout);
 
             // if this is smogcord, echo to the log-punishments chan
             await echoPunishment(guild, target, reason, `timeout for ${duration}`);

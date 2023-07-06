@@ -47,8 +47,6 @@ export function errorHandler(err: unknown) {
         console.error(errObj);
     }
     
-    
-   
 }
 
 /**
