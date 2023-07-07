@@ -48,8 +48,8 @@ export async function rrInit(msgID: string | null, interaction: ChatInputCommand
         const msg = await interaction.channel.send({ embeds: [embed] });
         // store it in the db
         // it's a bit hacky, but because we want to allow for multiple RR messages per server, we need to store an arbitrary unique emoji id on init
-        // so I chose the message id
-        await pool.query('INSERT INTO chatot.reactroles (serverid, channelid, messageid, roleid, emoji) VALUES ($1, $2, $3, $4, $5)', [msg?.guildId, msg?.channelId, msg?.id, 'bot', msg?.id]);
+        // so I chose the message id prepended with - so they don't accidentally enter it
+        await pool.query('INSERT INTO chatot.reactroles (serverid, channelid, messageid, roleid, emoji) VALUES ($1, $2, $3, $4, $5)', [msg?.guildId, msg?.channelId, msg?.id, 'bot', `-${msg?.id}`]);
 
         // cache the message id
         addRRMessage(msg.id);
@@ -95,7 +95,7 @@ export async function rrInit(msgID: string | null, interaction: ChatInputCommand
         }
         // the message already exists, so we just need to store it in the db
         // use the message id as the emoji id so it's unique
-        await pool.query('INSERT INTO chatot.reactroles (serverid, channelid, messageid, roleid, emoji) VALUES ($1, $2, $3, $4, $5)', [interaction.guildId, interaction.channelId, msgID, owner, msgID]);
+        await pool.query('INSERT INTO chatot.reactroles (serverid, channelid, messageid, roleid, emoji) VALUES ($1, $2, $3, $4, $5)', [interaction.guildId, interaction.channelId, msgID, owner, `-${msgID}`]);
 
         // cache the message id
         addRRMessage(rrMsg.id);
