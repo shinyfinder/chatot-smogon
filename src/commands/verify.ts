@@ -57,7 +57,7 @@ export const command: SlashCommand = {
                 const [sqlMatch] = await sqlPool.execute(`
                     SELECT xenforo.xf_user.user_id, field_value, register_date
                     FROM xenforo.xf_user
-                    INNER JOIN xenforo.xf_user_field_value ON xenforo.xf_user.user_id = xenforo.xf_user_field_value.user_id
+                    INNER JOIN xenforo.xf_user_field_value USING (user_id)
                     WHERE xenforo.xf_user.user_id = ? AND field_id = "discord"`, [forumid]);
                 
                 // cast to meaningful array
@@ -68,7 +68,7 @@ export const command: SlashCommand = {
                 const [sqlMatch] = await sqlPool.execute(`
                     SELECT xenforo.xf_user.user_id, field_value, register_date
                     FROM xenforo.xf_user 
-                    INNER JOIN xenforo.xf_user_field_value ON xenforo.xf_user.user_id = xenforo.xf_user_field_value.user_id 
+                    INNER JOIN xenforo.xf_user_field_value USING (user_id)
                     WHERE xenforo.xf_user.username = ? AND field_id = "discord"`, [profileURL]);
 
                 // cast the result as a meaningful array

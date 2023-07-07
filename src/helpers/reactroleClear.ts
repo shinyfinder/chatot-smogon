@@ -13,57 +13,73 @@ import { removeRRMessage } from './loadReactRoleMessages.js';
  * @param interaction Source interaction for the command
  * @returns Promise<void>
  */
-export async function rrClear(dbmatches: IReactRole[] | [], interaction: ChatInputCommandInteraction) {
-    // determine if the message is the bot's or a user's
-    // one of the rows will be the init row, which will have a roleID of bot or user
-    const isBotMsg = dbmatches.some(row => row.roleid === 'bot');
-
-    // there can only be 1 message per guild that can handle RRs, so we can pull the message ID from the db and use that for all subsequent events
-    const chan = dbmatches[0].channelid;
-    const msg = dbmatches[0].messageid;
-
-    // fetch the message's channel so we can then fetch the message
-    const rrChan = await interaction.client.channels.fetch(chan);
-
-    // type assertions
-    if (rrChan === null) {
-        await interaction.followUp('I could not fetch the channel. Did I lose access?');
-        return;
+export async function rrClear(dbmatches: IReactRole[] | [], interaction: ChatInputCommandInteraction, msgid: string | null) {
+    let targetArr: IReactRole[] | [] = [];
+    // if they provided a msgid, they only want to target 1 message
+    // so get the init row for that message so we can target it
+    if (msgid) {
+        targetArr = dbmatches.filter(row => row.messageid === msgid && (row.roleid === 'bot' || row.roleid === 'user'));
     }
-    else if (!(rrChan?.type === ChannelType.GuildText || rrChan?.type === ChannelType.PublicThread)) {
-        await interaction.followUp('Invalid channel type. Reaction role messages should be in a public channel');
-        return;
-    }
-    // fetch the message
-    const rrMsg = (await rrChan.messages.fetch({ around: msg, limit: 1, cache: false })).first();
-
-    if (rrMsg === undefined) {
-        await interaction.followUp('Unable to fetch message. Does it still exist?');
-        return;
+    // if they didn't provide a message id, get all of the ones for this server
+    // do so by getting all the init lines from the array of db matches
+    // each of these will have a unique message/channel id
+    else {
+        targetArr = dbmatches.filter(row => row.roleid === 'bot' || row.roleid === 'user');
     }
 
-    // if it's the bot's message, reinit the content
-    if (isBotMsg) {
-        // reinit the content
-        // create an embed
-        const newEmbed = new EmbedBuilder()
-            .setTitle('React Roles')
-            .setDescription('Choose your roles by reacting with the following:\n\u200B\n');
+    // loop over the array of targeted messages so we can clear each
+    for (const target of targetArr) {
+        // determine if the message is the bot's or a user's
+        // one of the rows will be the init row, which will have a roleID of bot or user
+        const isBotMsg = target.roleid === 'bot';
 
-        // edit the message embed
-        await rrMsg.edit({ embeds: [newEmbed] });
+        // pull the chanid and msgid 
+        const chan = target.channelid;
+        const msg = target.messageid;
+
+        // fetch the message's channel so we can then fetch the message
+        const rrChan = await interaction.client.channels.fetch(chan);
+
+        // type assertions
+        if (rrChan === null) {
+            await interaction.followUp('I could not fetch the channel. Did I lose access?');
+            return;
+        }
+        else if (!(rrChan?.type === ChannelType.GuildText || rrChan?.type === ChannelType.PublicThread)) {
+            await interaction.followUp('Invalid channel type. Reaction role messages should be in a public channel');
+            return;
+        }
+        // fetch the message
+        const rrMsg = (await rrChan.messages.fetch({ around: msg, limit: 1, cache: false })).first();
+
+        if (rrMsg === undefined) {
+            await interaction.followUp('Unable to fetch message. Does it still exist?');
+            return;
+        }
+
+        // if it's the bot's message, reinit the content
+        if (isBotMsg) {
+            // reinit the content
+            // create an embed
+            const newEmbed = new EmbedBuilder()
+                .setTitle('React Roles')
+                .setDescription('Choose your roles by reacting with the following:\n\u200B\n');
+
+            // edit the message embed
+            await rrMsg.edit({ embeds: [newEmbed] });
+        }
+
+        // remove all reactions from the post
+        await rrMsg.reactions.removeAll();
+
+        // clear the cache
+        removeRRMessage(rrMsg.id);
+
+        // clear the db for this message in this server
+        await pool.query('DELETE FROM chatot.reactroles WHERE serverid=$1 AND messageid=$2', [interaction.guildId, msg]);
     }
 
-    // remove all reactions from the post
-    await rrMsg.reactions.removeAll();
-
-    // clear the cache
-    removeRRMessage(rrMsg.id);
-
-    // clear the db for this server
-    await pool.query('DELETE FROM chatot.reactroles WHERE serverid=$1', [interaction.guildId]);
-    
     // let them know the deed is done
-    await interaction.followUp('All monitored reactions removed from this server. You may delete the monitored message if you wish.');
+    await interaction.followUp('React role message(s) cleared. You may delete the monitored message(s) if you wish.');
     return;
 }

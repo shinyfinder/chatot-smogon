@@ -1,4 +1,4 @@
-import { BaseInteraction, DiscordAPIError, Collection } from 'discord.js';
+import { DiscordAPIError, Collection, BaseInteraction } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { SlashCommand } from '../types/slash-command-base';
 
@@ -58,15 +58,16 @@ export const clientEvent: eventHandler = {
                     else if (!interaction.replied && interaction.isRepliable()) {
                         await interaction.reply({ content: msgout, ephemeral: true });
                     }
-                    throw error;
+                    
+                    throw { err: error, int: interaction };
                 }
                 // if it's a collector timeout error, just return without letting them know
                  else if (error instanceof Error && error.message === 'Collector received no interactions before ending with reason: time') {
-                    throw error;
+                    throw { err: error, int: interaction };
                 }
                 else if (error instanceof Collection && error.size === 0) {
-                    await interaction.channel?.send('Collector timed out without receiving an interation');
-                    throw error;
+                    await interaction.channel?.send('Collector timed out without receiving an interaction');
+                    throw { err: error, int: interaction };
                 }
                 // if we already replied, send a new one
                 else if (interaction.replied) {
@@ -81,7 +82,7 @@ export const clientEvent: eventHandler = {
                     await interaction.reply({ content: 'There was an error while executing this command', ephemeral: true });
                 }
                 
-                throw error;
+                throw { err: error, int: interaction };
                 
             }
         }
@@ -103,7 +104,7 @@ export const clientEvent: eventHandler = {
             }
             catch (error) {
                 // if there's an error, log it
-                throw error;
+                throw { err: error, int: interaction };
             }
 
         }
