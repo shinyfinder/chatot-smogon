@@ -23,10 +23,10 @@ export const command: SlashCommand = {
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
         .addSubcommand(new SlashCommandSubcommandBuilder()
             .setName('init')
-            .setDescription('Initializes the message to which users react')
+            .setDescription('Initializes a message in the channel where this is used to which users react')
             .addStringOption(option =>
                 option.setName('message')
-                .setDescription('Optional ID of the message which users react to. If not provided, the bot posts a message.')
+                .setDescription('ID of the message which users react to. If not provided, the bot posts a message in the chan.')
                 .setRequired(false)))
         /**
          * Add react role (RR)
@@ -45,7 +45,11 @@ export const command: SlashCommand = {
             .addStringOption(option =>
                 option.setName('description')
                 .setDescription('Description of the role the user gets')
-                .setRequired(true)))
+                .setRequired(true))
+            .addStringOption(option =>
+                option.setName('message')
+                .setDescription('ID of the message which users react to.')
+                .setRequired(false)))
         /**
          * Remove RR
          */
@@ -57,8 +61,12 @@ export const command: SlashCommand = {
                 .setDescription('Emoji users need to react with (use the standard :name: syntax)')
                 .setRequired(true)))
         .addSubcommand(new SlashCommandSubcommandBuilder()
-        .setName('clear')
-        .setDescription('Empties the database of all self-assignable roles for this server. Does not remove roles.')),
+            .setName('clear')
+            .setDescription('Removes listening for reactions from the provided message, or all if blank.')
+            .addStringOption(option =>
+                option.setName('message')
+                .setDescription('ID of the message which users react to.')
+                .setRequired(false))),
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
@@ -79,13 +87,14 @@ export const command: SlashCommand = {
          * INITIALIZE RR
          */
         if (interaction.options.getSubcommand() === 'init') {
-            // if there's already a row for this server, they don't need to reinit
-            if (dbmatches.length) {
-                await interaction.followUp('You already initialized a post for this server');
-                return;
-            }
             // get the user input message id
             const msgID = interaction.options.getString('message');
+
+            // if the provided message id is already stored, return
+            if (dbmatches.some(row => row.messageid === msgID)) {
+                await interaction.followUp('You cannot reinitialize the same message');
+                return;
+            }
 
             // intialize the message
             await rrInit(msgID, interaction);
@@ -105,7 +114,23 @@ export const command: SlashCommand = {
 
             // get the user inputs
             const role = interaction.options.getRole('role', true);
+            const msgid = interaction.options.getString('message');
 
+            // make sure the provided message id has been initialized
+            if (msgid) {
+                if (!dbmatches.some(row => row.messageid === msgid)) {
+                    await interaction.followUp('Provided message has not been initialized to receive reactions. Please initialize the message first with `/reactrole init`.');
+                    return;
+                }
+            }
+
+            // if there is more than 1 message id initialized and they didn't specify which, return because we don't know what to target
+            const uniqMsg = [... new Set(dbmatches.map(row => row.messageid))];
+            if (uniqMsg.length > 1 && !msgid) {
+                await interaction.followUp('More than 1 message has been initialized to receive reactions for this server, but you did not specify which message to add this reaction to. Please specify the message id.');
+                return;
+            }
+            
             // make sure it's a valid assignable role
             // invalid are the built-in @everyone role and any role that's externally managed (i.e. bot role, boost role)
             if (role.managed || role.name === '@everyone') {
@@ -125,7 +150,7 @@ export const command: SlashCommand = {
             }
 
             // setup the new react role addition
-            await rrAdd(dbmatches, interaction, role, emojiID, desc);
+            await rrAdd(dbmatches, interaction, role, emojiID, desc, msgid);
 
             return;
         }
@@ -143,7 +168,7 @@ export const command: SlashCommand = {
 
             // get the user inputs
             const emojiID = interaction.options.getString('emoji', true);
-
+            
             // remove the react role
             await rrRemove(dbmatches, interaction, emojiID);
             return;
@@ -161,8 +186,11 @@ export const command: SlashCommand = {
                 return;
             }
 
+            // get the user input
+            const msgid = interaction.options.getString('message');
+
             // clear the react roles setup for the server
-            await rrClear(dbmatches, interaction);
+            await rrClear(dbmatches, interaction, msgid);
             return;
 
         }

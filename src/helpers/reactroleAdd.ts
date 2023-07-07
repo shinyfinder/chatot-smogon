@@ -15,10 +15,20 @@ import type { IReactRole } from '../types/reactrole.js';
  * @param desc Description of the role the user receives
  * @returns Promise<void>
  */
-export async function rrAdd(dbmatches: IReactRole[] | [], interaction: ChatInputCommandInteraction, role: Role | APIRole, emojiID: string, desc: string) {
-    // there can only be 1 message per guild that can handle RRs, so we can pull the messaage ID from the db and use that for all subsequent adds
-    const chan = dbmatches[0].channelid;
-    const msg = dbmatches[0].messageid;
+export async function rrAdd(dbmatches: IReactRole[] | [], interaction: ChatInputCommandInteraction, role: Role | APIRole, emojiID: string, desc: string, msgid: string | null) {
+    let chan = '';
+    let msg = '';
+    // if they didn't provide a message, assume it's the first entry from the db
+    if (!msgid) {
+        chan = dbmatches[0].channelid;
+        msg = dbmatches[0].messageid;
+    }
+    // otherwise, find the channel id corresponding to the provided message id
+    else {
+        chan = dbmatches.filter(row => row.messageid === msgid).map(filtRow => filtRow.channelid)[0];
+        msg = msgid;
+    }
+    
 
     // fetch the message
     const rrChan = await interaction.client.channels.fetch(chan);

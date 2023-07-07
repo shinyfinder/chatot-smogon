@@ -77,15 +77,15 @@ export const command: SlashCommand = {
                         .setRequired(false)))
             .addSubcommand(new SlashCommandSubcommandBuilder()
                 .setName('chantype')
-                .setDescription('Configures the log channel type (edits, mod actions, or everything)')
+                .setDescription('Configures the log channel type. See wiki for details')
                 .addChannelOption(option =>
                     option.setName('channel')
                     .setDescription('The log channel to modify')
                     .setRequired(true)
-                    .addChannelTypes(ChannelType.GuildText))
+                    .addChannelTypes(ChannelType.GuildText | ChannelType.PublicThread | ChannelType.PrivateThread))
                 .addStringOption(option =>
                     option.setName('type')
-                    .setDescription('Whether to log edits, mod actions, or both in this channel')
+                    .setDescription('What gets logged into the channel')
                     .setChoices(
                         // everything
                         { name: 'All', value: 'all' },
@@ -248,7 +248,7 @@ export const command: SlashCommand = {
          */
         else if (interaction.options.getSubcommand() === 'chantype') {
             // get the user input
-            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText]);
+            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
             const type = interaction.options.getString('type', true);
 
             // make sure they are actually logging in this channel.

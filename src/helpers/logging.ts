@@ -96,7 +96,7 @@ export async function postLogEvent(ogEmbed: EmbedBuilder, guild: Guild, event: l
             const embed = EmbedBuilder.from(ogEmbed);
 
             const channel = guild.client.channels.cache.get(chan.channelid);
-            if (channel?.type !== ChannelType.GuildText) {
+            if (!(channel?.type === ChannelType.GuildText || channel?.type === ChannelType.PublicThread || channel?.type === ChannelType.PrivateThread)) {
                 return;
             }
             // special logic for message deletes

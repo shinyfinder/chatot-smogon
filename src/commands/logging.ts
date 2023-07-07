@@ -25,7 +25,7 @@ export const command: SlashCommand = {
                     option.setName('channel')
                     .setDescription('Which channel to log in')
                     .setRequired(true)
-                    .addChannelTypes(ChannelType.GuildText))
+                    .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread))
                 .addStringOption(option =>
                     option.setName('type')
                     .setDescription('What actions get logged into the channel. See the wiki for details.')
@@ -54,7 +54,8 @@ export const command: SlashCommand = {
                 .addChannelOption(option =>
                     option.setName('channel')
                     .setDescription('The channel currently being logged in')
-                    .setRequired(true)),
+                    .setRequired(true)
+                    .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread)),
         ),
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
@@ -74,7 +75,7 @@ export const command: SlashCommand = {
          */
         if (interaction.options.getSubcommand() === 'enable') {
             // get the user input
-            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText]);
+            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
             let type = interaction.options.getString('type');
 
             // try to default the chan type to whatever is currently there if no type was provided
@@ -100,11 +101,11 @@ export const command: SlashCommand = {
         }
 
         /**
-         * MODLOG OFF
+         * LOG DISABLE
          */
         else if (interaction.options.getSubcommand() === 'disable') {
             // get the user input
-            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText]);
+            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
             // delete the corresponding row
             await pool.query('DELETE FROM chatot.logchan WHERE serverid = $1 AND channelid = $2', [interaction.guildId, chan.id]);
             
