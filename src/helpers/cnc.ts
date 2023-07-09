@@ -46,6 +46,7 @@ export async function findNewThreads() {
         // first, try to parse the prefix text, because that will work for most cases
         // we care about: QC ready (tag changed to QC), QC progress, and done
         let stage = '';
+        let progress = '';
         if (thread.phrase_text === 'WIP') {
             stage = 'WIP';
         }
@@ -105,10 +106,69 @@ export async function findNewThreads() {
         // and no tag
         // the tag isn't helpful to determine the stage, so we'll need to parse the title
         else {
-            // const progressions = thread.title.matchAll(/(QC:?\s?|GP\s?)?\d\s?\/\s?\d/gi);
-            const progressions = 'SubRoost Zapdos [QC: 2/2] [GP:0/1]'.matchAll(/(QC:?\s?|GP:?\s?)?\d\s?\/\s?\d/gi);
-            return;
+            // regex match results in [match, 'qc/gp', '0/1'][] format
+            // const progressions = [...thread.title.matchAll(/(QC|GP)?:?\s?\d\s?\/\s?\d/gi)];
+            const progressions = [...'SubRoost Zapdos [QC: 2/2] [GP:0/1]'.matchAll(/(QC|GP)?:?\s?(\d\s?\/\s?\d)/gi)];
+            // general progression is WIP, QC, GP, done
+            if (thread.title.toLowerCase().includes('done')) {
+                stage = 'Done';
+            }
+            else if (progressions.some(prog => prog.some(val => val.toLowerCase() === 'gp'))) {
+                const gpStageProgress = progressions.filter(prog => prog.some(val => val.toLowerCase() === 'gp'));
+                stage = 'GP';
+                progress = gpStageProgress[0][2];
+            }
+            else if (progressions.some(prog => prog.some(val => val.toLowerCase() === 'qc'))) {
+                const gpStageProgress = progressions.filter(prog => prog.some(val => val.toLowerCase() === 'qc'));
+                stage = 'QC';
+                progress = gpStageProgress[0][2];
+            }
+            // if nothing, assume it's wip
+            else {
+                stage = 'WIP';
+            }
         }
+
+        // determine the progress if we haven't already
+        if (progress === '') {
+            // const progressions = [...thread.title.matchAll(/(QC|GP)?:?\s?\d\s?\/\s?\d/gi)];
+            const progressions = [...'SubRoost Zapdos [QC: 2/2] [GP:0/1]'.matchAll(/(QC|GP)?:?\s?(\d\s?\/\s?\d)/gi)];
+            // if you found a match from the regex, try to find the entry corresponding to the tag
+            if (stage === 'GP' || stage === 'QC') {
+                let stageProgress = progressions.filter(prog => prog.some(val => val.toLowerCase() === stage.toLowerCase()));
+                // if you found one, a match, then use the match's progress
+                if (stageProgress.length) {
+                    progress = stageProgress[0][2];
+                }
+                // if you didn't find a match, it's possible they didn't enter the name of the stage into the title because it's implied by the tag
+                // so use the progress of the match that doesn't have text
+                else if (progressions.length) {
+                    stageProgress = progressions.filter(prog => prog[1] === undefined && prog[2]);
+                    progress = stageProgress[0][2];
+                }
+            }
+
+        }
+
+        // we have all the data we need, so interact with the cache
+        // first, poll the db for this thread id to see if anything changed
+        const oldThreadDataPG = await pool.query('SELECT stage, progress FROM chatot.cc_status WHERE thread_id =$1', [thread.thread_id]);
+        const oldThreadData: { stage: string, progress: string }[] | [] = oldThreadDataPG.rows;
+
+        /**
+         * TODO publish to discord on change
+         */
+        
+        // update the db
+        // if done, delete the row so we don't clog up the db
+        if (stage === 'Done') {
+            await pool.query('DELETE FROM chatot.cc_status WHERE thread_id=$1', [thread.thread_id]);
+        }
+        // otherwise, upsert the row with the new values
+        else {
+            await pool.query('INSERT INTO chatot.cc_status (thread_id, stage, progress) VALUES ($1, $2, $3) ON CONFLICT (thread_id) DO UPDATE SET stage=$1, progress=$2', [thread.thread_id, stage, progress]);
+        }
+        
 
     }
 
