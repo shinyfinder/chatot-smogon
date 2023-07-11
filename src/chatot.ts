@@ -86,6 +86,8 @@ for (const file of commandFiles) {
     modulePromiseArr.push(loadModule(filePath.toString(), 'command'));
 }
 
+// create a collection to contain the command cooldowns
+client.cmdCooldowns = new Collection();
 
 /**
  * Build the event handler
