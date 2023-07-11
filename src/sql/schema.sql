@@ -98,11 +98,20 @@ CREATE TABLE chatot.logprefs (
 );
 
 
-CREATE TABLE chatot.cc_status (
+CREATE TABLE chatot.ccstatus (
     thread_id integer,
     stage text,
     progress text,
     PRIMARY KEY (thread_id)
+);
+
+CREATE TABLE chatot.ccprefs (
+    serverid varchar(20),
+    channelid varchar(20),
+    tier text,
+    role varchar(20),
+    gen text,
+    PRIMARY KEY (serverid, channelid, gen)
 );
 
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only

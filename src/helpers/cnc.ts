@@ -2,7 +2,8 @@
  * Functions related to C&C integration
  */
 import { pool, sqlPool } from './createPool.js';
-import { ccTimeInterval, ccSubs } from './constants.js';
+import { ccTimeInterval, ccSubIDs, ccIntObj } from './constants.js';
+import { APIRole, ChatInputCommandInteraction, PrivateThreadChannel, PublicThreadChannel, Role, TextChannel } from 'discord.js';
 
 export async function findNewThreads() {
     /**
@@ -25,7 +26,7 @@ export async function findNewThreads() {
     LEFT JOIN xenforo.xf_phrase
     ON xenforo.xf_phrase.title = CONCAT('thread_prefix.', prefix_id)
     WHERE FIND_IN_SET(node_id, ?)
-    AND post_date >= ?`, [ccSubs.join(','), 0]);
+    AND post_date >= ?`, [ccSubIDs.join(','), 0]);
     // Math.floor(Date.now() / 1000 - ccTimeInterval)
 
     // cast to meaningful array
@@ -166,10 +167,17 @@ export async function findNewThreads() {
         }
         // otherwise, upsert the row with the new values
         else {
-            await pool.query('INSERT INTO chatot.cc_status (thread_id, stage, progress) VALUES ($1, $2, $3) ON CONFLICT (thread_id) DO UPDATE SET stage=$1, progress=$2', [thread.thread_id, stage, progress]);
+            await pool.query('INSERT INTO chatot.cc_status (thread_id, stage, progress) VALUES ($1, $2, $3) ON CONFLICT (thread_id) DO UPDATE SET stage=$2, progress=$3', [thread.thread_id, stage, progress]);
         }
         
 
     }
 
+}
+
+
+export function validateCCTier(tier: string) {
+    // make sure what they entered is a valid entry
+    const valid = ccIntObj.some(pair => pair.value === tier.toLowerCase());
+    return valid;
 }
