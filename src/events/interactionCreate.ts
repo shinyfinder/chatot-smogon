@@ -25,6 +25,47 @@ export const clientEvent: eventHandler = {
             // if it's not a command of this bot, return
             if (!command) return;
 
+            // check for any cooldowns
+            // first unpack, the Collection from the client
+            const { cmdCooldowns } = interaction.client;
+
+            // if this command has a cooldown parameter, 
+            // see if this command is keyed in the collection (is on CD)
+            // if it's not, create a new entry
+            if (command.cooldown) {
+                const now = Date.now();
+
+                if (!cmdCooldowns.has(command.data.name)) {
+                    // create a collection to contain the serverID / last-used-time pairs
+                    const serverCD: Collection<string, number> = new Collection();
+                    // populate the collection
+                    serverCD.set(interaction.guildId ?? '', now);
+                    // add it to the client collection
+                    cmdCooldowns.set(command.data.name, serverCD);
+                }
+                else {
+                    // get the server cooldowns for this command
+                    const cooldowns = cmdCooldowns.get(command.data.name);
+                    const lastUsed = cooldowns?.get(interaction.guildId ?? '');
+
+                    // calc the expiration timestamp
+                    const expTime = lastUsed ? lastUsed + command.cooldown * 1000 : 0;
+
+                    // if it's on cooldown, alert and return
+                    if (now < expTime) {
+                        const expiredTimestamp = Math.round(expTime / 1000);
+                        await interaction.reply({ content: `Command is on cooldown. You can use it again <t:${expiredTimestamp}:R>.`, ephemeral: true });
+                        return;
+                    }
+                    // otherwise, update the timestamp
+                    else {
+                        const serverCD: Collection<string, number> = new Collection();
+                        serverCD.set(interaction.guildId ?? '', now);
+                        cmdCooldowns.set(command.data.name, serverCD);
+                    }
+                }
+            }
+
             // by here, it's one of this bot's commands, so do it.
             // wrap the execution in a try/catch so that errors are handled and won't cause the bot to crash
             try {

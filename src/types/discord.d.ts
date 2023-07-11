@@ -8,5 +8,6 @@ import { SlashCommand } from './slash-command-base';
 declare module 'discord.js' {
     export interface Client {
         commands: Collection<string, SlashCommand>
+        cmdCooldowns: Collection<string, Collection<string, number>>
     }
 }
