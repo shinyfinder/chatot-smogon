@@ -19,6 +19,8 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteracti
 export interface SlashCommand {
     global: boolean;
     guilds: string[];
+    // in seconds
+    cooldown?: number;
     data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
     autocomplete? (interaction: AutocompleteInteraction): Promise<void>;
     execute (interaction: ChatInputCommandInteraction): Promise<void>;
