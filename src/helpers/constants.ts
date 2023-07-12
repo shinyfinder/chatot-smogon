@@ -56,118 +56,146 @@ const ccSubs = [
     
 ];
 
-const ccSubObj: { [key: string] : { [key: string ] : string[] } } = {
-    'https://www.smogon.com/forums/forums/ou-analyses.758/' : {
+export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url: string } } = {
+    '758' : {
         gens: ['9', 'any'],
         tiers: ['ou'],
+        url: 'https://www.smogon.com/forums/forums/ou-analyses.758/',
     },
-    'https://www.smogon.com/forums/forums/ubers-analyses.759/' : {
+    '759' : {
         gens: ['9'],
         tiers: ['ubers'],
+        url: 'https://www.smogon.com/forums/forums/ubers-analyses.759/',
     },
-    'https://www.smogon.com/forums/forums/past-generation-ubers-analyses.539/' : {
+    '539' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
         tiers: ['ubers'],
+        url: 'https://www.smogon.com/forums/forums/past-generation-ubers-analyses.539/',
     },
-    'https://www.smogon.com/forums/forums/uu-analyses.772/' : {
+    '772' : {
         gens: ['9'],
         tiers: ['uu'],
+        url: 'https://www.smogon.com/forums/forums/uu-analyses.772/',
     },
-    'https://www.smogon.com/forums/forums/past-generation-uu-analyses.576/' : {
+    '576' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
         tiers: ['uu'],
+        url: 'https://www.smogon.com/forums/forums/past-generation-uu-analyses.576/',
     },
-    'https://www.smogon.com/forums/forums/nu-analyses.774/' : {
+    '774' : {
         gens: ['9'],
         tiers: ['nu'],
+        url: 'https://www.smogon.com/forums/forums/nu-analyses.774/',
     },
-    'https://www.smogon.com/forums/forums/past-generation-nu-analyses.587/' : {
+    '587' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
         tiers: ['nu'],
+        url: 'https://www.smogon.com/forums/forums/past-generation-nu-analyses.587/',
     },
-    'https://www.smogon.com/forums/forums/pu-analyses.775/' : {
+    '775' : {
         gens: ['9'],
         tiers: ['pu'],
+        url: 'https://www.smogon.com/forums/forums/pu-analyses.775/',
     },
-    'https://www.smogon.com/forums/forums/past-generation-pu-analyses.844/' : {
+    '844' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
         tiers: ['pu'],
+        url: 'https://www.smogon.com/forums/forums/past-generation-pu-analyses.844/',
     },
-    'https://www.smogon.com/forums/forums/lc-analyses.760/' : {
+    '760' : {
         gens: ['9'],
         tiers: ['lc'],
+        url: 'https://www.smogon.com/forums/forums/lc-analyses.760/',
     },
-    'https://www.smogon.com/forums/forums/past-generation-lc-analyses.540/' : {
+    '540' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
         tiers: ['lc'],
+        url: 'https://www.smogon.com/forums/forums/past-generation-lc-analyses.540/',
     },
-    'https://www.smogon.com/forums/forums/doubles-ou-analyses.761/' : {
+    '761' : {
         gens: ['9'],
         tiers: ['dou'],
+        url: 'https://www.smogon.com/forums/forums/doubles-ou-analyses.761/',
     },
-    'https://www.smogon.com/forums/forums/past-gen-doubles-ou-analyses.541/' : {
+    '541' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
         tiers: ['dou'],
+        url: 'https://www.smogon.com/forums/forums/past-gen-doubles-ou-analyses.541/',
     },
-    'https://www.smogon.com/forums/forums/monotype-analyses.762/' : {
+    '762' : {
         gens: ['9'],
         tiers: ['mono'],
+        url: 'https://www.smogon.com/forums/forums/monotype-analyses.762/',
     },
-    'https://www.smogon.com/forums/forums/past-generation-monotype-analyses.660/' : {
+    '660' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
         tiers: ['mono'],
+        url: 'https://www.smogon.com/forums/forums/past-generation-monotype-analyses.660/',
     },
-    'https://www.smogon.com/forums/forums/om-analyses.763/' : {
+    '763' : {
         gens: ['9'],
         tiers: ['nfe', 'aaa', '2v2', 'gg', 'ag', 'bg', 'm&m', 'stab', 'zu'],
+        url: 'https://www.smogon.com/forums/forums/om-analyses.763/',
     },
-    'https://www.smogon.com/forums/forums/past-generation-om-analyses.770/' : {
+    '770' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
         tiers: ['nfe', 'aaa', '2v2', 'gg', 'ag', 'bg', 'm&m', 'stab', 'zu'],
+        url: 'https://www.smogon.com/forums/forums/past-generation-om-analyses.770/',
     },
-    'https://www.smogon.com/forums/forums/1v1-analyses.764/' : {
+    '764' : {
         gens: ['9'],
         tiers: ['1v1'],
+        url: 'https://www.smogon.com/forums/forums/1v1-analyses.764/',
     },
-    'https://www.smogon.com/forums/forums/past-generation-1v1-analyses.476/' : {
+    '476' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
         tiers: ['1v1'],
+        url: 'https://www.smogon.com/forums/forums/past-generation-1v1-analyses.476/',
     },
-    'https://www.smogon.com/forums/forums/national-dex-analyses.765/' : {
+    '765' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
         tiers: ['natdex ou', 'natdex ag'],
+        url: 'https://www.smogon.com/forums/forums/national-dex-analyses.765/',
     },
-    'https://www.smogon.com/forums/forums/natdex-mono-analyses.828/' : {
+    '828' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
         tiers: ['natdex mono'],
+        url: 'https://www.smogon.com/forums/forums/natdex-mono-analyses.828/',
     },
-    'https://www.smogon.com/forums/forums/natdex-uu-analyses.839/' : {
+    '839' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
         tiers: ['natdex uu'],
+        url: 'https://www.smogon.com/forums/forums/natdex-uu-analyses.839/',
     },
-    'https://www.smogon.com/forums/forums/cap-analyses.768/' : {
+    '768' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
         tiers: ['cap'],
+        url: 'https://www.smogon.com/forums/forums/cap-analyses.768/',
     },
-    'https://www.smogon.com/forums/forums/battle-stadium-analyses.766/' : {
+    '766' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
         tiers: ['bss'],
+        url: 'https://www.smogon.com/forums/forums/battle-stadium-analyses.766/',
     },
-    'https://www.smogon.com/forums/forums/vgc-analyses.767/' : {
+    '767' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
         tiers: ['vgc'],
+        url: 'https://www.smogon.com/forums/forums/vgc-analyses.767/',
     },
-    'https://www.smogon.com/forums/forums/past-generation-analyses.148/' : {
+    '148' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
         tiers: ['ou'],
+        url: 'https://www.smogon.com/forums/forums/past-generation-analyses.148/',
     },
-    'https://www.smogon.com/forums/forums/rby-other-tier-analyses.512/' : {
+    '512' : {
         gens: ['1'],
         tiers: ['nu', 'pu', 'stadium ou', 'tradebacks ou', 'uu', 'ubers'],
+        url: 'https://www.smogon.com/forums/forums/rby-other-tier-analyses.512/',
     },
-    'https://www.smogon.com/forums/forums/pokemon-lets-go-analyses.608/' : {
+    '608' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
         tiers: ['lgpe ou'],
+        url: 'https://www.smogon.com/forums/forums/pokemon-lets-go-analyses.608/',
     },
 };
 
@@ -183,6 +211,18 @@ export const ccSubIDs: string[] = ccSubs.map(sub => {
     }
 });
 
+/*
+const ccSubMetaMap: { [key: string] : { gens : string[], tiers: string[], url: string } } = {};
+for (const [key, val] of Object.entries(ccSubObj)) {
+    const regexMatch = key.match(/^(?:https?:\/\/)?(?:www\.)?smogon\.com\/forums\/forums\/(?:(.*?)\.)?(\d+)\/?$/);
+    if (regexMatch !== null) {
+        const id = regexMatch[regexMatch.length - 1];
+        ccSubMetaMap[id] = { ...val, url: key };
+    }
+}
+
+export { ccSubMetaMap };
+*/
 
 /**
  * List of supported metas for C&C integration
@@ -223,4 +263,4 @@ const ccIntegrationMeta = [
     'All',
 ];
 
-export const ccIntObj = ccIntegrationMeta.map(meta => ({ name: meta, value: meta.toLowerCase() }));
+export const ccMetaObj = ccIntegrationMeta.map(meta => ({ name: meta, value: meta.toLowerCase() }));

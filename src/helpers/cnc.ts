@@ -2,10 +2,10 @@
  * Functions related to C&C integration
  */
 import { pool, sqlPool } from './createPool.js';
-import { ccTimeInterval, ccSubIDs, ccIntObj } from './constants.js';
-import { APIRole, ChatInputCommandInteraction, PrivateThreadChannel, PublicThreadChannel, Role, TextChannel } from 'discord.js';
+import { ccTimeInterval, ccSubIDs, ccMetaObj, ccSubObj } from './constants.js';
+import { APIRole, ChannelType, ChatInputCommandInteraction, Client, PrivateThreadChannel, PublicThreadChannel, Role, TextChannel } from 'discord.js';
 
-export async function findNewThreads() {
+export async function findNewThreads(client: Client) {
     /**
      * Look for new threads in the relevant subforums
      * 
@@ -79,13 +79,11 @@ export async function findNewThreads() {
             const genRE = thread.phrase_text.match(/(?<=Gen )\d/);
             if (genRE) {
                 gen = genRE[0];
-                tier = 'OU';
             }
         }
         // rby other
         else if (thread.phrase_text && ['NU', 'PU', 'Stadium OU', 'Tradebacks OU', 'UU', 'Ubers'].includes(thread.phrase_text)) {
             tier = thread.phrase_text;
-            gen = '1';
         }
         // no tag
         else {
@@ -133,16 +131,80 @@ export async function findNewThreads() {
 
         }
 
+        const gens: {[key: string]: string} = {
+            'sv': '9',
+            '9': '9',
+            'swsh': '8',
+            'ss': '8',
+            '8': '8',
+            'usum': '7',
+            'usm': '7',
+            'sm': '7',
+            '7': '7',
+            'oras': '6',
+            'xy': '6',
+            '6': '6',
+            'b2w2': '5',
+            'bw2': '5',
+            'bw': '5',
+            '5': '5',
+            'hgss': '4',
+            'dpp': '4',
+            'dp': '4',
+            '4': '4',
+            'rse': '3',
+            'rs': '3',
+            'adv': '3',
+            '3': '3',
+            'gsc': '2',
+            'gs': '2',
+            '2': '2',
+            'rby': '1',
+            'rb': '1',
+            '1': '1',
+        };
+        // determine the gen if we haven't already
+        // past gen OMs are special in that we also have to get the gen from the title
+        // everywhere else(?) is determined by either the thread location or prefix
+        if (gen === '') {
+            // old gen OMs
+            if (thread.node_id === 770) {
+                // try to find the gen from the title
+                const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|RS|ADV|GSC|GS|RBY|RB))*\b/i;
+                const matchArr = thread.title.match(genRegex);
+
+                // if there was a match from the regex test...
+                if (matchArr !== null) {
+                    const genDesr = (matchArr[3] || matchArr[4]).toLowerCase();
+                    gen = gens[genDesr];
+                }
+                // else, no gen was specified, give up
+            }
+            // otherwise get the gen from the map
+            else {
+                const genArr = ccSubObj[thread.node_id.toString()].gens;
+                gen = genArr[genArr.length - 1];
+            }
+        }
+
+        // get the tier if we haven't already
+        if (tier === '') {
+            const tierArr = ccSubObj[thread.node_id.toString()].tiers;
+            tier = tierArr[tierArr.length - 1];
+        }
 
         // we have all the data we need, so interact with the cache
         // first, poll the db for this thread id to see if anything changed
         const oldThreadDataPG = await pool.query('SELECT stage, progress FROM chatot.cc_status WHERE thread_id =$1', [thread.thread_id]);
         const oldThreadData: { stage: string, progress: string }[] | [] = oldThreadDataPG.rows;
 
-        /**
-         * TODO publish to discord on change
-         */
-        
+        if (!oldThreadData.length || stage !== oldThreadData[0].stage || progress !== oldThreadData[0].progress) {
+            await alertCCStatus(thread.thread_id, stage, progress, gen, tier, client);
+        }
+        else {
+            return;
+        }
+
         // update the db
         // if done, delete the row so we don't clog up the db
         if (stage === 'Done') {
@@ -161,6 +223,34 @@ export async function findNewThreads() {
 
 export function validateCCTier(tier: string) {
     // make sure what they entered is a valid entry
-    const valid = ccIntObj.some(pair => pair.value === tier.toLowerCase());
+    const valid = ccMetaObj.some(pair => pair.value === tier.toLowerCase());
     return valid;
+}
+
+
+async function alertCCStatus(threadid: number, stage: string, progress: string, gen: string, tier: string, client: Client) {
+    // select by gen and tier
+    // then alert progress
+
+    // get the discord channels setup to receive alerts
+    const alertChansPG = await pool.query('SELECT serverid, channelid, role FROM chatot.ccprefs WHERE tier=$1 AND gen=$2', [tier, gen]);
+    const alertChans: { serverid: string, channelid: string, role: string }[] | [] = alertChansPG.rows;
+
+    // if there are no channels setup to receive QC 
+    if (!alertChans.length) {
+        return;
+    }
+
+    // fetch the channel so we can post to it
+    for (const alertChan of alertChans) {
+        const chan = await client.channels.fetch(alertChan.channelid);
+
+        // typecheck chan
+        if (!chan || !(chan.type === ChannelType.GuildText || chan.type === ChannelType.PublicThread || chan.type === ChannelType.PrivateThread)) {
+            return;
+        }
+        // post
+        await chan.send(`Update to thread <https://www.smogon.com/forums/threads/${threadid}/>\n\nStatus: ${stage} ${progress}`);
+        return;
+    }
 }
