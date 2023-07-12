@@ -414,17 +414,12 @@ export const command: SlashCommand = {
                 .setLabel('Gen 9')
                 .setStyle(ButtonStyle.Secondary);
 
-            const genAny = new ButtonBuilder()
-                .setCustomId(`any${randInt}`)
-                .setLabel('Any')
-                .setStyle(ButtonStyle.Secondary);
-
             // build the action rows
             const row1 = new ActionRowBuilder<ButtonBuilder>()
                 .addComponents(gen1, gen2, gen3, gen4, gen5);
 
             const row2 = new ActionRowBuilder<ButtonBuilder>()
-                .addComponents(gen6, gen7, gen8, gen9, genAny);
+                .addComponents(gen6, gen7, gen8, gen9);
             
             const row3 = new ActionRowBuilder<ButtonBuilder>()
                 .addComponents(submit, cancel);
@@ -455,73 +450,43 @@ export const command: SlashCommand = {
                     // filter out only the buttons that were clicked (style = primary)
                     const primBtn = oldActionRowComps.filter(comp => comp instanceof ButtonComponent && comp.style === ButtonStyle.Primary) as ButtonComponent[];
 
-                    // if any gen was selected, just store that
-                    // otherwise, store a row for each gen
-                    const choseAny = primBtn.some(btn => btn.customId?.includes('any'));
-                    let hadError = false;
+                    let hadError = false;                    
+                    // loop over the list of buttons to get the gen numbers that were clicked
+                    // begin the transaction with the db
+                    const pgClient = await pool.connect();
+                    try {
+                        // start
+                        await pgClient.query('BEGIN');
+                        // delete
+                        await pgClient.query('DELETE FROM chatot.ccprefs WHERE channelid=$1', [channel.id]);
+                        // insert
+                        for (const btn of primBtn) {
+                            // get the gen number from the customid of the button
+                            const genNum = btn.customId?.match(/(?<=gen)\d/);
 
-                    if (choseAny) {
-                        // query the pool with a transaction
-                        const pgClient = await pool.connect();
-                        try {
-                            // start
-                            await pgClient.query('BEGIN');
-                            // delete
-                            await pgClient.query('DELETE FROM chatot.ccprefs WHERE channelid=$1', [channel.id]);
-                            // insert
-                            await pool.query('INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen) VALUES ($1, $2, $3, $4, $5)', [interaction.guildId, channel.id, tier, role?.id, 'any']);
-                            // end
-                            await pgClient.query('COMMIT');
-                        }
-                        catch (e) {
-                            await pgClient.query('ROLLBACK');
-                            hadError = true;
-                            // if this errors we have bigger problems, so log it
-                            console.error(e);
-                            await i.editReply('An error occurred and your preferences were not saved');
-                        }
-                        finally {
-                            pgClient.release();
-                        }
-                        
-                    }
-                    else {
-                        // loop over the list of buttons to get the gen numbers that were clicked
-                        // begin the transaction with the db
-                        const pgClient = await pool.connect();
-                        try {
-                            // start
-                            await pgClient.query('BEGIN');
-                            // delete
-                            await pgClient.query('DELETE FROM chatot.ccprefs WHERE channelid=$1', [channel.id]);
-                            // insert
-                            for (const btn of primBtn) {
-                                // get the gen number from the customid of the button
-                                const genNum = btn.customId?.match(/(?<=gen)\d/);
-
-                                // this should never happen
-                                if (!genNum) {
-                                    continue;
-                                }
-
-                                // push to db
-                                await pool.query('INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen) VALUES ($1, $2, $3, $4, $5)', [interaction.guildId, channel.id, tier, role?.id, genNum[0]]);
-
+                            // this should never happen
+                            if (!genNum) {
+                                continue;
                             }
-                            // end
-                            await pgClient.query('COMMIT');
+
+                            // push to db
+                            await pool.query('INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen) VALUES ($1, $2, $3, $4, $5)', [interaction.guildId, channel.id, tier, role?.id, genNum[0]]);
+
                         }
-                        catch (e) {
-                            await pgClient.query('ROLLBACK');
-                            hadError = true;
-                            // if this errors we have bigger problems, so log it
-                            console.error(e);
-                            await i.editReply('An error occurred and your preferences were not saved');
-                        }
-                        finally {
-                            pgClient.release();
-                        }
+                        // end
+                        await pgClient.query('COMMIT');
                     }
+                    catch (e) {
+                        await pgClient.query('ROLLBACK');
+                        hadError = true;
+                        // if this errors we have bigger problems, so log it
+                        console.error(e);
+                        await i.editReply('An error occurred and your preferences were not saved');
+                    }
+                    finally {
+                        pgClient.release();
+                    }
+                    
                     if (!hadError) {
                         await i.editReply('Preferences updated');
                     }

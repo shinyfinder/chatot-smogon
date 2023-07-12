@@ -48,6 +48,9 @@ export async function findNewThreads() {
         // we care about: QC ready (tag changed to QC), QC progress, and done
         let stage = '';
         let progress = '';
+        let gen = '';
+        let tier = '';
+
         if (thread.phrase_text === 'WIP') {
             stage = 'WIP';
         }
@@ -67,45 +70,24 @@ export async function findNewThreads() {
         else if (thread.phrase_text === 'Resource' || thread.phrase_text === 'Announcement') {
             continue;
         }
-        // we also need to check for oldgen/oms
-        // oldgens
-        /**
-         * RBY Other
-         * 
-         * NU
-         * PU
-         * Stadium OU
-         * Tradebacks OU
-         * UU
-         * Ubers
-         * 
-         * LGPE
-         * standard
-         * 
-         * 
-         * Past Gen
-         * Gen 1-8
-         */
-
-        /**
-         * OMs
-         * 
-         * NFE
-         * AAA
-         * 2v2
-         * GG
-         * AG
-         * BH
-         * M&M
-         * STAB
-         * ZU
-         * 
-         * Past Gen
-         * PH
-         * 
-         */
-        // and no tag
-        // the tag isn't helpful to determine the stage, so we'll need to parse the title
+        // OM / pastgen OM
+        else if (thread.phrase_text && ['NFE', 'AAA', '2v2', 'GG', 'AG', 'BH', 'M&M', 'STAB', 'ZU', 'PH'].includes(thread.phrase_text)) {
+            tier = thread.phrase_text;
+        }
+        // past gens
+        else if (thread.phrase_text && ['Gen 1', 'Gen 2', 'Gen 3', 'Gen 4', 'Gen 5', 'Gen 6', 'Gen 7', 'Gen 8'].includes(thread.phrase_text)) {
+            const genRE = thread.phrase_text.match(/(?<=Gen )\d/);
+            if (genRE) {
+                gen = genRE[0];
+                tier = 'OU';
+            }
+        }
+        // rby other
+        else if (thread.phrase_text && ['NU', 'PU', 'Stadium OU', 'Tradebacks OU', 'UU', 'Ubers'].includes(thread.phrase_text)) {
+            tier = thread.phrase_text;
+            gen = '1';
+        }
+        // no tag
         else {
             // regex match results in [match, 'qc/gp', '0/1'][] format
             // const progressions = [...thread.title.matchAll(/(QC|GP)?:?\s?\d\s?\/\s?\d/gi)];
@@ -150,6 +132,7 @@ export async function findNewThreads() {
             }
 
         }
+
 
         // we have all the data we need, so interact with the cache
         // first, poll the db for this thread id to see if anything changed

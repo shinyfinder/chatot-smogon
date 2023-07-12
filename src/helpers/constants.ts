@@ -56,9 +56,9 @@ const ccSubs = [
     
 ];
 
-const ccSubObj: { [key: string] : { [key: string ] :  string[] } } = {
+const ccSubObj: { [key: string] : { [key: string ] : string[] } } = {
     'https://www.smogon.com/forums/forums/ou-analyses.758/' : {
-        gens: ['9'],
+        gens: ['9', 'any'],
         tiers: ['ou'],
     },
     'https://www.smogon.com/forums/forums/ubers-analyses.759/' : {
@@ -134,19 +134,42 @@ const ccSubObj: { [key: string] : { [key: string ] :  string[] } } = {
         tiers: ['1v1'],
     },
     'https://www.smogon.com/forums/forums/national-dex-analyses.765/' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'any'],
+        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
         tiers: ['natdex ou', 'natdex ag'],
     },
     'https://www.smogon.com/forums/forums/natdex-mono-analyses.828/' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'any'],
+        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
         tiers: ['natdex mono'],
     },
     'https://www.smogon.com/forums/forums/natdex-uu-analyses.839/' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'any'],
+        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
         tiers: ['natdex uu'],
     },
-    
-}
+    'https://www.smogon.com/forums/forums/cap-analyses.768/' : {
+        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        tiers: ['cap'],
+    },
+    'https://www.smogon.com/forums/forums/battle-stadium-analyses.766/' : {
+        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        tiers: ['bss'],
+    },
+    'https://www.smogon.com/forums/forums/vgc-analyses.767/' : {
+        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        tiers: ['vgc'],
+    },
+    'https://www.smogon.com/forums/forums/past-generation-analyses.148/' : {
+        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
+        tiers: ['ou'],
+    },
+    'https://www.smogon.com/forums/forums/rby-other-tier-analyses.512/' : {
+        gens: ['1'],
+        tiers: ['nu', 'pu', 'stadium ou', 'tradebacks ou', 'uu', 'ubers'],
+    },
+    'https://www.smogon.com/forums/forums/pokemon-lets-go-analyses.608/' : {
+        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        tiers: ['lgpe ou'],
+    },
+};
 
 // extract and export the subforum ids
 export const ccSubIDs: string[] = ccSubs.map(sub => {
@@ -183,7 +206,6 @@ const ccIntegrationMeta = [
     'AG',
     'CAP',
     'LGPE OU',
-    'BDSP OU',
     '2v2',
     'BH',
     'M&M',
