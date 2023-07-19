@@ -175,7 +175,7 @@ await loadRRMessages(client);
 setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)), 1000 * 60 * 60 * 24);
 
 // schedule checking for new/updated QC threads
-setInterval(() => void findNewThreads(client).catch(e => errorHandler(e)), ccTimeInterval);
+setInterval(() => void findNewThreads(client).catch(e => errorHandler(e)), ccTimeInterval * 1000);
 
 /**
  * Everything is done, so create a new net.Server listending on fd 3

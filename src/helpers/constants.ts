@@ -42,23 +42,17 @@ const allowedMetas = [
 export const allowedMetasObj = allowedMetas.map(meta => ({ name: meta, value: meta.toLowerCase() }));
 
 /**
- * Time interval for checking for new C&C threads (ms)
+ * Time interval for checking for new C&C threads (s)
  */
-export const ccTimeInterval = 15 * 1000;
+export const ccTimeInterval = 15;
 
 /**
  * List of subforums containing analyses
  */
-const ccSubs = [
-    'https://www.smogon.com/forums/forums/wi-fi.1/',
-    'https://www.smogon.com/forums/forums/wi-fi.2/',
-    'https://www.smogon.com/forums/forums/ou-analyses.758/',
-    
-];
 
 export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url: string } } = {
     '758' : {
-        gens: ['9', 'any'],
+        gens: ['9'],
         tiers: ['ou'],
         url: 'https://www.smogon.com/forums/forums/ou-analyses.758/',
     },
@@ -200,6 +194,7 @@ export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url
 };
 
 // extract and export the subforum ids
+/*
 export const ccSubIDs: string[] = ccSubs.map(sub => {
     const regexMatch = sub.match(/^(?:https?:\/\/)?(?:www\.)?smogon\.com\/forums\/forums\/(?:(.*?)\.)?(\d+)\/?$/);
     if (regexMatch !== null) {
@@ -210,6 +205,7 @@ export const ccSubIDs: string[] = ccSubs.map(sub => {
         return '';
     }
 });
+*/
 
 /*
 const ccSubMetaMap: { [key: string] : { gens : string[], tiers: string[], url: string } } = {};

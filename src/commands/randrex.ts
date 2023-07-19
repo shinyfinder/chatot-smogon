@@ -41,7 +41,7 @@ export const command: SlashCommand = {
         }
 
         // fetch the messagesin the channel
-        const messages = await rexChan.messages.fetch();
+        const messages = await rexChan.messages.fetch({ limit: 100 });
 
         // pick a random message
         const randMsg = messages.random();

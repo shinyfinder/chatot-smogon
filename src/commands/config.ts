@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, ChannelType, AutocompleteInteraction, ButtonBuilder, ButtonStyle, ButtonInteraction, ActionRowBuilder, ButtonComponent, ComponentType } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
-import { ccIntObj } from '../helpers/constants.js';
+import { ccMetaObj } from '../helpers/constants.js';
 import { validateCCTier } from '../helpers/cnc.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 
@@ -154,7 +154,7 @@ export const command: SlashCommand = {
             const filteredOut: {name: string, value: string }[] = [];
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
-            for (const pair of ccIntObj) {
+            for (const pair of ccMetaObj) {
                 if (filteredOut.length < 25) {
                     if (pair.value.includes(enteredText)) {
                         filteredOut.push(pair);
@@ -470,7 +470,7 @@ export const command: SlashCommand = {
                             }
 
                             // push to db
-                            await pool.query('INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen) VALUES ($1, $2, $3, $4, $5)', [interaction.guildId, channel.id, tier, role?.id, genNum[0]]);
+                            await pgClient.query('INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen) VALUES ($1, $2, $3, $4, $5)', [interaction.guildId, channel.id, tier, role?.id, genNum[0]]);
 
                         }
                         // end

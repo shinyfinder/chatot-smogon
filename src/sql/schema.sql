@@ -114,6 +114,11 @@ CREATE TABLE chatot.ccprefs (
     PRIMARY KEY (serverid, channelid, gen)
 );
 
+CREATE TABLE chatot.lastcheck (
+    topic text,
+    tstamp timestamptz,
+    PRIMARY KEY (topic)
+);
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------
