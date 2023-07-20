@@ -4,9 +4,9 @@ import { pool } from './createPool.js';
  * Helper file to instantiate the connection to the postgres pool
  */
 interface ICCData {
-    threads: { thread_id: number, stage: string, progress: string }[] | null,
+    threads: { thread_id: number, stage: string, progress: string }[],
     lastcheck: string | null,
-    alertchans: IAlertChans[] | null,
+    alertchans: IAlertChans[],
 }
 
 export interface IAlertChans {
@@ -36,9 +36,9 @@ export async function loadCCData() {
         (SELECT serverid, channelid, tier, role, gen FROM chatot.ccprefs)
 
         SELECT json_build_object(
-            'threads', (SELECT JSON_AGG(cc_status.*) FROM cc_status),
+            'threads', (SELECT COALESCE(JSON_AGG(cc_status.*), '[]') FROM cc_status),
             'lastcheck', (SELECT * FROM time_stamp),
-            'alertchans', (SELECT JSON_AGG(alert_chans.*) FROM alert_chans)
+            'alertchans', (SELECT COALESCE(JSON_AGG(alert_chans.*), '[]') FROM alert_chans)
         ) AS data`, ['c&c']);
     
     // unpack and update cache
@@ -52,6 +52,7 @@ export async function loadCCData() {
  * @returns Custom prefix cache
  */
 export function updateCCAlertChans(alertData: IAlertChans[]) {
+    /*
     // if there isn't anything in the cache, just use the new values
     if (oldData.alertchans === null) {
         oldData.alertchans = alertData;
@@ -66,6 +67,14 @@ export function updateCCAlertChans(alertData: IAlertChans[]) {
         // then append the new values
         oldData.alertchans = otherChans.concat(alertData);
     }
+    */
+    // like the SQL query, remove the channels that were targeted
+    // filter out only the entries where the channel isn't the one being targeted (i.e. get all of the other channels)
+    // users can only target 1 channel at a time with the config command, so just take the first entry since it'll be the same for all
+    const otherChans = oldData.alertchans.filter(row => row.channelid !== alertData[0].channelid);
+
+    // then append the new values
+    oldData.alertchans = otherChans.concat(alertData);
     
     return oldData;
 }
@@ -104,15 +113,15 @@ export async function updateLastCheck(now: number) {
  */
 export function updateCCThreads(id: number, stage: string, progress: string) {
     // if the stage is done and there's a cache, remove it from the cache
-    if (stage === 'Done' && oldData.threads) {
+    if (stage === 'Done' && oldData.threads.length) {
         oldData.threads = oldData.threads.filter(data => data.thread_id !== id);
     }
     // if the stage is done and nothing is cached, then we don't need to do anything
-    else if (stage === 'Done' && !oldData.threads) {
+    else if (stage === 'Done' && !oldData.threads.length) {
         return;
     }
     // if there's a cache and the stage isn't done, then upsert the row
-    else if (oldData.threads) {
+    else if (oldData.threads.length) {
         // get everything but the element with this thread id
         const otherThreads = oldData.threads.filter(data => data.thread_id !== id);
         // add in the new info

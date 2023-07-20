@@ -13,7 +13,7 @@ import { oldData, updateCCThreads, updateLastCheck } from './manageCCCache.js';
  */
 export async function checkCCUpdates(client: Client) { 
     // unpack the data we need
-    const oldThreadIds = oldData.threads ? oldData.threads.map(thread => thread.thread_id) : [];
+    const oldThreadIds = oldData.threads.map(thread => thread.thread_id);
     
     let lastCheckUnix = 0;
     const now = Date.now();
@@ -242,27 +242,17 @@ export async function checkCCUpdates(client: Client) {
 
         // we have all the data we need, so compare with the cache
         // first, determine whether this thread was previously cached
-        if (oldData.threads) {
-            const oldThreadData = oldData.threads.filter(othread => othread.thread_id === thread.thread_id);
-            // if there's a change or it's new, try to alert on discord
-            if (!oldThreadData.length || stage !== oldThreadData[0].stage || progress !== oldThreadData[0].progress) {
-                await alertCCStatus(thread.thread_id, stage, progress, gen, tier, client);
-                // update the cache in memory with the new values
-                updateCCThreads(thread.thread_id, stage, progress);
-            }
-            // otherwise, there's nothing to update, so skip over this thread
-            else {
-                continue;
-            }
-        }
-        // if there is no cache, then this thread must be new
-        // so try to alert discord
-        else {
+        const oldThreadData = oldData.threads.filter(othread => othread.thread_id === thread.thread_id);
+        // if there's a change or it's new, try to alert on discord
+        if (!oldThreadData.length || stage !== oldThreadData[0].stage || progress !== oldThreadData[0].progress) {
             await alertCCStatus(thread.thread_id, stage, progress, gen, tier, client);
-            // then update the cache in memory
+            // update the cache in memory with the new values
             updateCCThreads(thread.thread_id, stage, progress);
         }
-        
+        // otherwise, there's nothing to update, so skip over this thread
+        else {
+            continue;
+        }
 
         // update the db of cached statuses
         // if done, delete the row so we don't clog up the db
@@ -273,8 +263,6 @@ export async function checkCCUpdates(client: Client) {
         else {
             await pool.query('INSERT INTO chatot.ccstatus (thread_id, stage, progress) VALUES ($1, $2, $3) ON CONFLICT (thread_id) DO UPDATE SET stage=$2, progress=$3', [thread.thread_id, stage, progress]);
         }
-        
-
     }
 
     // everything's done, so update the last checked time
@@ -312,10 +300,10 @@ async function alertCCStatus(threadid: number, stage: string, progress: string, 
     // get the discord channels setup to receive alerts
 
     // check if there are any channels setup to receive alerts for this thread
-    const alertChans = oldData.alertchans?.filter(data => data.tier === tier.toLowerCase() && data.gen === gen);
+    const alertChans = oldData.alertchans.filter(data => data.tier === tier.toLowerCase() && data.gen === gen);
 
-    // if there are no channels setup to receive QC 
-    if (alertChans === undefined || !alertChans.length) {
+    // if there are no channels setup to receive this update, return
+    if (!alertChans.length) {
         return;
     }
 
@@ -372,10 +360,18 @@ async function alertCCStatus(threadid: number, stage: string, progress: string, 
  * @returns Array of objects containing thread info (thread id, node id, title, prefix)
  */
 async function pollCCForums(lastCheckTime: number, cachedIDArr: number[]) {
-    // make sure the array lengths are non zero so the query doesn't error out
-    // IDs can't be negative, so it's safe to use those as dummy values
-    const nodeIds = Object.keys(ccSubObj).length ? Object.keys(ccSubObj) : ['-1'];
-    const cachedIDs = cachedIDArr.length ? cachedIDArr : [-1];
+    // extract the subforum ids
+    const nodeIds = Object.keys(ccSubObj);
+    
+    // if there are no subforums to monitor, just return
+    // this should never be the case
+    if (!nodeIds.length) {
+        return [];
+    }
+
+    // create a guard so that empty set is not passed into the query
+    // we dont want to return because there could be a new thread despite there not being anything in the cache
+    const cachedIDGuard = cachedIDArr.length ? cachedIDArr : [-1];
 
     const [newThreads] = await sqlPool.execute(`
     SELECT thread_id, node_id, xenforo.xf_thread.title, phrase_text
@@ -383,7 +379,7 @@ async function pollCCForums(lastCheckTime: number, cachedIDArr: number[]) {
     LEFT JOIN xenforo.xf_phrase
     ON xenforo.xf_phrase.title = CONCAT('thread_prefix.', prefix_id)
     WHERE (node_id IN ("${nodeIds.join('", "')}") AND post_date >= ${lastCheckTime})
-    OR thread_id IN ("${cachedIDs.join('", "')}")`);
+    OR thread_id IN ("${cachedIDArr.join('", "')}")`);
 
     // cast to meaningful array
     const threadData = newThreads as {
