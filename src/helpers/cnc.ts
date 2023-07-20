@@ -2,68 +2,36 @@
  * Functions related to C&C integration
  */
 import { pool, sqlPool } from './createPool.js';
-import { ccTimeInterval, ccMetaObj, ccSubObj } from './constants.js';
+import { ccTimeInterval, ccMetaObj, ccSubObj, OMPrefix, pastGenPrefix, rbyOtherPrefix, gens } from './constants.js';
 import { ChannelType, Client } from 'discord.js';
-
+import { oldData, updateCCThreads, updateLastCheck } from './manageCCCache.js';
 
 /**
  * Finds new C&C threads posted to the relevent subforums.
  * New thread ids are cached so their progress is tracked.
  * @param client discord js client object
  */
-export async function findNewThreads(client: Client) {
-    // poll the cache so we know which threads we're already tracking and can query the forum db for updates
-    const oldThreadDataPG = await pool.query('SELECT thread_id, stage, progress FROM chatot.ccstatus');
-    const oldThreadData: { thread_id: number, stage: string, progress: string }[] | [] = oldThreadDataPG.rows;
-    const oldThreadIds = oldThreadData.map(thread => thread.thread_id);
-
-    // poll the last cc check table so we know the last time we checked
-    const lastCheckPG = await pool.query('SELECT tstamp FROM chatot.lastcheck WHERE topic=$1', ['c&c']);
-    const lastCheckRow: { tstamp: Date }[] | [] = lastCheckPG.rows;
+export async function checkCCUpdates(client: Client) { 
+    // unpack the data we need
+    const oldThreadIds = oldData.threads ? oldData.threads.map(thread => thread.thread_id) : [];
     
     let lastCheckUnix = 0;
     const now = Date.now();
-    // if you found a match in the table (which should always be the case)
+
+    // if you found a match in the table
     // use that as the last check time, converted to UNIX format so it can be used to query the forum table
-    if (lastCheckRow.length) {
-        const lastCheckDate = new Date(lastCheckRow[0].tstamp).valueOf();
+    if (oldData.lastcheck) {
+        const lastCheckDate = new Date(oldData.lastcheck).valueOf();
         lastCheckUnix = Math.floor(lastCheckDate / 1000);
     }
     // if you didn't get a match, assume the last check was the current time minus the interval (boot time)
     else {
-        lastCheckUnix = Math.floor(Date.now() / 1000 - ccTimeInterval);
+        lastCheckUnix = Math.floor(now / 1000 - ccTimeInterval);
     }
 
-    /**
-     * Look for new threads in the relevant subforums
-     * 
-     * thread_id and node_id are the unique ids of the thread and subforum, respectively
-     * post_date is the unix timestamp (sec) the thread was made
-     * prefix_id is the id of the prefix on the thread
-     * phrase_text is the words the prefix uses (QC, GP, Done, WIP, etc)
-     * 
-     * The data is spread out between 2 tables -- xf_thread, and xf_phrase
-     * phrase_text is stored using the prefix id, with the format 'thread_prefix.PREFIX_ID'
-     * FIND_IN_SET returns only the nodes we care about
-     * 
-     * We only want to find threads made after our last scan or were preciously cached for tracking
-     */
-    const [newThreads] = await sqlPool.execute(`
-    SELECT thread_id, node_id, xenforo.xf_thread.title, phrase_text
-    FROM xenforo.xf_thread
-    LEFT JOIN xenforo.xf_phrase
-    ON xenforo.xf_phrase.title = CONCAT('thread_prefix.', prefix_id)
-    WHERE (FIND_IN_SET(node_id, ?) AND post_date >= ?)
-    OR FIND_IN_SET(thread_id, ?)`, [Object.keys(ccSubObj).join(','), lastCheckUnix, oldThreadIds.join(',')]);
-
-    // cast to meaningful array
-    const threadData = newThreads as {
-        thread_id: number,
-        node_id: number,
-        title: string,
-        phrase_text: string | null,
-    }[] | [];
-
+    // poll the xf tables to get the thread data we care about
+    const threadData = await pollCCForums(lastCheckUnix, oldThreadIds);
+    
     // if you didn't get a match, there's nothing to do
     // so update the check time and return
     if (!threadData.length) {
@@ -100,18 +68,18 @@ export async function findNewThreads(client: Client) {
             continue;
         }
         // OM / pastgen OM
-        else if (thread.phrase_text && ['NFE', 'AAA', '2v2', 'GG', 'AG', 'BH', 'M&M', 'STAB', 'ZU', 'PH'].includes(thread.phrase_text)) {
+        else if (thread.phrase_text && OMPrefix.includes(thread.phrase_text)) {
             tier = thread.phrase_text;
         }
         // past gens
-        else if (thread.phrase_text && ['Gen 1', 'Gen 2', 'Gen 3', 'Gen 4', 'Gen 5', 'Gen 6', 'Gen 7', 'Gen 8'].includes(thread.phrase_text)) {
+        else if (thread.phrase_text && pastGenPrefix.includes(thread.phrase_text)) {
             const genRE = thread.phrase_text.match(/(?<=Gen )\d/);
             if (genRE) {
                 gen = genRE[0];
             }
         }
         // rby other
-        else if (thread.phrase_text && ['NU', 'PU', 'Stadium OU', 'Tradebacks OU', 'UU', 'Ubers'].includes(thread.phrase_text)) {
+        else if (thread.phrase_text && rbyOtherPrefix.includes(thread.phrase_text)) {
             tier = thread.phrase_text;
         }
         
@@ -238,39 +206,7 @@ export async function findNewThreads(client: Client) {
 
         }
 
-        // create a map of gen numbers to abbreviations
-        const gens: {[key: string]: string} = {
-            'sv': '9',
-            '9': '9',
-            'swsh': '8',
-            'ss': '8',
-            '8': '8',
-            'usum': '7',
-            'usm': '7',
-            'sm': '7',
-            '7': '7',
-            'oras': '6',
-            'xy': '6',
-            '6': '6',
-            'b2w2': '5',
-            'bw2': '5',
-            'bw': '5',
-            '5': '5',
-            'hgss': '4',
-            'dpp': '4',
-            'dp': '4',
-            '4': '4',
-            'rse': '3',
-            'rs': '3',
-            'adv': '3',
-            '3': '3',
-            'gsc': '2',
-            'gs': '2',
-            '2': '2',
-            'rby': '1',
-            'rb': '1',
-            '1': '1',
-        };
+        
         // determine the gen if we haven't already
         // past gen OMs are special in that we also have to get the gen from the title
         // everywhere else(?) is determined by either the thread location or prefix
@@ -305,15 +241,28 @@ export async function findNewThreads(client: Client) {
         }
 
         // we have all the data we need, so compare with the cache
-        const oldData = oldThreadData.filter(othread => othread.thread_id === thread.thread_id);
-        // if there's a change or it's new, try to alert on discord
-        if (!oldData.length || stage !== oldData[0].stage || progress !== oldData[0].progress) {
-            await alertCCStatus(thread.thread_id, stage, progress, gen, tier, client);
+        // first, determine whether this thread was previously cached
+        if (oldData.threads) {
+            const oldThreadData = oldData.threads.filter(othread => othread.thread_id === thread.thread_id);
+            // if there's a change or it's new, try to alert on discord
+            if (!oldThreadData.length || stage !== oldThreadData[0].stage || progress !== oldThreadData[0].progress) {
+                await alertCCStatus(thread.thread_id, stage, progress, gen, tier, client);
+                // update the cache in memory with the new values
+                updateCCThreads(thread.thread_id, stage, progress);
+            }
+            // otherwise, there's nothing to update, so skip over this thread
+            else {
+                continue;
+            }
         }
-        // otherwise, there's nothing to update, so skip over this thread
+        // if there is no cache, then this thread must be new
+        // so try to alert discord
         else {
-            continue;
+            await alertCCStatus(thread.thread_id, stage, progress, gen, tier, client);
+            // then update the cache in memory
+            updateCCThreads(thread.thread_id, stage, progress);
         }
+        
 
         // update the db of cached statuses
         // if done, delete the row so we don't clog up the db
@@ -331,9 +280,8 @@ export async function findNewThreads(client: Client) {
     // everything's done, so update the last checked time
     // we use the time this command was triggered rather than the time it finished since processing is non-zero.
     await updateLastCheck(now);
-    
-
 }
+
 
 /**
  * Validates the user input against the list of possible choices for the tier field in /config cc.
@@ -345,17 +293,6 @@ export function validateCCTier(tier: string) {
     // make sure what they entered is a valid entry
     const valid = ccMetaObj.some(pair => pair.value === tier.toLowerCase());
     return valid;
-}
-
-
-/**
- * Manages the cache of the last c&c check timestamp.
- * Times are stored as the timestamptz data type
- * @param now Unix timestamp (in ms)
- */
-async function updateLastCheck(now: number) {
-    await pool.query('INSERT INTO chatot.lastcheck (topic, tstamp) VALUES ($1, to_timestamp($2)) ON CONFLICT (topic) DO UPDATE SET tstamp = to_timestamp($2)', ['c&c', now / 1000]);
-    return;
 }
 
 
@@ -373,11 +310,12 @@ async function alertCCStatus(threadid: number, stage: string, progress: string, 
     // then alert progress
 
     // get the discord channels setup to receive alerts
-    const alertChansPG = await pool.query('SELECT serverid, channelid, role FROM chatot.ccprefs WHERE tier=$1 AND gen=$2', [tier.toLowerCase(), gen]);
-    const alertChans: { serverid: string, channelid: string, role: string }[] | [] = alertChansPG.rows;
+
+    // check if there are any channels setup to receive alerts for this thread
+    const alertChans = oldData.alertchans?.filter(data => data.tier === tier && data.gen === gen);
 
     // if there are no channels setup to receive QC 
-    if (!alertChans.length) {
+    if (alertChans === undefined || !alertChans.length) {
         return;
     }
 
@@ -413,4 +351,48 @@ async function alertCCStatus(threadid: number, stage: string, progress: string, 
         await chan.send(alertmsg);
         return;
     }
+}
+
+
+/**
+ * Looks for new/updates threads in the relevant C&C subforums
+ * 
+ * thread_id and node_id are the unique ids of the thread and subforum, respectively
+ * post_date is the unix timestamp (sec) the thread was made
+ * prefix_id is the id of the prefix on the thread
+ * phrase_text is the words the prefix uses (QC, GP, Done, WIP, etc)
+ * 
+ * The data is spread out between 2 tables -- xf_thread, and xf_phrase
+ * phrase_text is stored using the prefix id, with the format 'thread_prefix.PREFIX_ID'
+ * FIND_IN_SET returns only the nodes we care about
+ * 
+ * We only want to find threads made after our last scan or were preciously cached for tracking
+ * @param lastCheckTime UNIX timestamp of when we last polled for C&C updates
+ * @param cachedIDArr Array of thread IDs that are being monitored for updates
+ * @returns Array of objects containing thread info (thread id, node id, title, prefix)
+ */
+async function pollCCForums(lastCheckTime: number, cachedIDArr: number[]) {
+    // make sure the array lengths are non zero so the query doesn't error out
+    // IDs can't be negative, so it's safe to use those as dummy values
+    const nodeIds = Object.keys(ccSubObj).length ? Object.keys(ccSubObj) : ['-1'];
+    const cachedIDs = cachedIDArr.length ? cachedIDArr : [-1];
+
+    const [newThreads] = await sqlPool.execute(`
+    SELECT thread_id, node_id, xenforo.xf_thread.title, phrase_text
+    FROM xenforo.xf_thread
+    LEFT JOIN xenforo.xf_phrase
+    ON xenforo.xf_phrase.title = CONCAT('thread_prefix.', prefix_id)
+    WHERE (node_id IN ("${nodeIds.join('", "')}") AND post_date >= ${lastCheckTime})
+    OR thread_id IN ("${cachedIDs.join('", "')}")`);
+
+    // cast to meaningful array
+    const threadData = newThreads as {
+        thread_id: number,
+        node_id: number,
+        title: string,
+        phrase_text: string | null,
+    }[] | [];
+
+    return threadData;
+
 }

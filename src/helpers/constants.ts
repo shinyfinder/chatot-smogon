@@ -193,32 +193,6 @@ export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url
     },
 };
 
-// extract and export the subforum ids
-/*
-export const ccSubIDs: string[] = ccSubs.map(sub => {
-    const regexMatch = sub.match(/^(?:https?:\/\/)?(?:www\.)?smogon\.com\/forums\/forums\/(?:(.*?)\.)?(\d+)\/?$/);
-    if (regexMatch !== null) {
-        const id = regexMatch[regexMatch.length - 1];
-        return id;
-    }
-    else {
-        return '';
-    }
-});
-*/
-
-/*
-const ccSubMetaMap: { [key: string] : { gens : string[], tiers: string[], url: string } } = {};
-for (const [key, val] of Object.entries(ccSubObj)) {
-    const regexMatch = key.match(/^(?:https?:\/\/)?(?:www\.)?smogon\.com\/forums\/forums\/(?:(.*?)\.)?(\d+)\/?$/);
-    if (regexMatch !== null) {
-        const id = regexMatch[regexMatch.length - 1];
-        ccSubMetaMap[id] = { ...val, url: key };
-    }
-}
-
-export { ccSubMetaMap };
-*/
 
 /**
  * List of supported metas for C&C integration
@@ -260,3 +234,48 @@ const ccIntegrationMeta = [
 ];
 
 export const ccMetaObj = ccIntegrationMeta.map(meta => ({ name: meta, value: meta.toLowerCase() }));
+
+
+/**
+ * Thread Prefixes
+ */
+export const OMPrefix = ['NFE', 'AAA', '2v2', 'GG', 'AG', 'BH', 'M&M', 'STAB', 'ZU', 'PH'];
+export const pastGenPrefix = ['Gen 1', 'Gen 2', 'Gen 3', 'Gen 4', 'Gen 5', 'Gen 6', 'Gen 7', 'Gen 8'];
+export const rbyOtherPrefix = ['NU', 'PU', 'Stadium OU', 'Tradebacks OU', 'UU', 'Ubers'];
+
+/**
+ * Gens
+ */
+// create a map of gen numbers to abbreviations
+export const gens: {[key: string]: string} = {
+    'sv': '9',
+    '9': '9',
+    'swsh': '8',
+    'ss': '8',
+    '8': '8',
+    'usum': '7',
+    'usm': '7',
+    'sm': '7',
+    '7': '7',
+    'oras': '6',
+    'xy': '6',
+    '6': '6',
+    'b2w2': '5',
+    'bw2': '5',
+    'bw': '5',
+    '5': '5',
+    'hgss': '4',
+    'dpp': '4',
+    'dp': '4',
+    '4': '4',
+    'rse': '3',
+    'rs': '3',
+    'adv': '3',
+    '3': '3',
+    'gsc': '2',
+    'gs': '2',
+    '2': '2',
+    'rby': '1',
+    'rb': '1',
+    '1': '1',
+};

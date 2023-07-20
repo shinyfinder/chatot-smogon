@@ -4,6 +4,7 @@ import { pool } from '../helpers/createPool.js';
 import { ccMetaObj } from '../helpers/constants.js';
 import { validateCCTier } from '../helpers/cnc.js';
 import { getRandInt } from '../helpers/getRandInt.js';
+import { IAlertChans, updateCCAlertChans } from '../helpers/manageCCCache.js';
 
 /**
  * Sets up the requirements for a user to be considered verified within the discord server
@@ -450,7 +451,9 @@ export const command: SlashCommand = {
                     // filter out only the buttons that were clicked (style = primary)
                     const primBtn = oldActionRowComps.filter(comp => comp instanceof ButtonComponent && comp.style === ButtonStyle.Primary) as ButtonComponent[];
 
-                    let hadError = false;                    
+                    let hadError = false;         
+                    const alertChanData: IAlertChans[] = [];
+
                     // loop over the list of buttons to get the gen numbers that were clicked
                     // begin the transaction with the db
                     const pgClient = await pool.connect();
@@ -472,6 +475,16 @@ export const command: SlashCommand = {
                             // push to db
                             await pgClient.query('INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen) VALUES ($1, $2, $3, $4, $5)', [interaction.guildId, channel.id, tier, role?.id, genNum[0]]);
 
+                            // push to an array of data so we can update the cache in memory
+                            alertChanData.push({
+                                // this should never be null since we already type checked it before
+                                serverid: interaction.guildId ?? '',
+                                channelid: channel.id,
+                                tier: tier,
+                                role: role?.id,
+                                gen: genNum[0],
+                            });
+
                         }
                         // end
                         await pgClient.query('COMMIT');
@@ -484,9 +497,13 @@ export const command: SlashCommand = {
                         await i.editReply('An error occurred and your preferences were not saved');
                     }
                     finally {
+                        // BE FREE, CLIENT!
                         pgClient.release();
+
+                        // update the cache in memory of the discord alert chans
+                        updateCCAlertChans(alertChanData);
                     }
-                    
+                    // if we completed everything, let them know
                     if (!hadError) {
                         await i.editReply('Preferences updated');
                     }
