@@ -41,7 +41,7 @@ export const command: SlashCommand = {
         }
 
         // fetch the messagesin the channel
-        const messages = await rexChan.messages.fetch();
+        const messages = await rexChan.messages.fetch({ limit: 100 });
 
         // pick a random message
         const randMsg = messages.random();
@@ -57,7 +57,11 @@ export const command: SlashCommand = {
 
         // and post
         if (img) {
-            await interaction.followUp(img.url);
+            const ext = img.contentType ? img.contentType.split('/')[1] : 'png';
+            await interaction.followUp({ files: [{
+                attachment: img.url,
+                name: `SPOILER_img.${ext}`,
+            }] });
         }
         else {
             await interaction.followUp('Cannot find image in message');
