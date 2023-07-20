@@ -312,7 +312,7 @@ async function alertCCStatus(threadid: number, stage: string, progress: string, 
     // get the discord channels setup to receive alerts
 
     // check if there are any channels setup to receive alerts for this thread
-    const alertChans = oldData.alertchans?.filter(data => data.tier === tier && data.gen === gen);
+    const alertChans = oldData.alertchans?.filter(data => data.tier === tier.toLowerCase() && data.gen === gen);
 
     // if there are no channels setup to receive QC 
     if (alertChans === undefined || !alertChans.length) {
@@ -331,16 +331,16 @@ async function alertCCStatus(threadid: number, stage: string, progress: string, 
         // we only want to post for QC updates and done
         let alertmsg = '';
         if (stage === 'GP' && (progress.split('/')[0] === '0' || progress.split('/')[0] === '?')) {
-            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${threadid}/>\n\nStatus: Ready for GP`;
+            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${threadid}/>\nStatus: **Ready for GP**`;
         }
         else if (stage === 'QC' && progress.split('/')[0] === '0') {
-            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${threadid}/>\n\nStatus: Ready for QC`;
+            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${threadid}/>\nStatus: **Ready for QC**`;
         }
         else if (!(stage === 'QC' || stage === 'Done')) {
             return;
         }
         else {
-            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${threadid}/>\n\nStatus: ${stage} ${progress}`;
+            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${threadid}/>\nStatus: **${stage} ${progress}**`;
         }
 
         // prepend with a ping on the role, if desired
