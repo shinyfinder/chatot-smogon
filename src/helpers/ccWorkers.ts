@@ -1,7 +1,7 @@
 /**
  * Functions related to C&C integration
  */
-import { ccTimeInterval, ccSubObj, OMPrefix, pastGenPrefix, rbyOtherPrefix, gens, cclockout } from './constants.js';
+import { ccTimeInterval, ccSubObj, OMPrefix, pastGenPrefix, rbyOtherPrefix, gens } from './constants.js';
 import { ChannelType, Client } from 'discord.js';
 import { loadCCData, updateLastCheck, pollCCForums, updateCCCache } from './ccQueries.js';
 import { IParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
@@ -14,13 +14,6 @@ import { IParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
  * @param client discord js client object
  */
 export async function checkCCUpdates(client: Client) {
-    // make sure the C&C functions aren't locked out
-    if (cclockout.flag) {
-        return;
-    }
-    // enable the lock so the ccstatus table isn't modified from elsewhere
-    cclockout.flag = true;
-
     // poll the database of cached cc threads, last check timestamp, and current alert chans
     const oldData = await loadCCData();
 
@@ -48,7 +41,6 @@ export async function checkCCUpdates(client: Client) {
     // so update the check time and return
     if (!threadData.length) {
         await updateLastCheck(now);
-        cclockout.flag = false;
         return;
     }
 
@@ -75,9 +67,6 @@ export async function checkCCUpdates(client: Client) {
     // everything's done, so update the last checked time
     // we use the time this command was triggered rather than the time it finished since processing is non-zero.
     await updateLastCheck(now);
-
-    // release the lock
-    cclockout.flag = false;
 }
 
 
@@ -117,10 +106,10 @@ async function alertCCStatus(newData: IParsedThreadData, oldData: ICCData, clien
         // post
         // we only want to post for QC updates and done
         let alertmsg = '';
-        if (newData.stage === 'GP' && (newData.progress.split('/')[0] === '0' || newData.progress.split('/')[0] === '?')) {
+        if (newData.stage === 'GP' && newData.progress.startsWith('0')) {
             alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **Ready for GP**`;
         }
-        else if (newData.stage === 'QC' && newData.progress.split('/')[0] === '0') {
+        else if (newData.stage === 'QC' && newData.progress.startsWith('0')) {
             alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **Ready for QC**`;
         }
         else if (!(newData.stage === 'QC' || newData.stage === 'Done')) {
@@ -276,7 +265,7 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
                 // if both sides of the / are the same, up the stage by 1
                 if (qcProgArr[0] === qcProgArr[1]) {
                     stage = 'GP';
-                    progress = '?/?';
+                    progress = '0/?';
                 }
                 // otherwise, we're still in QC
                 else {

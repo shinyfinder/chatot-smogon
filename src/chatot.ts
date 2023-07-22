@@ -16,7 +16,7 @@ import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
 import { checkCCUpdates } from './helpers/ccWorkers.js';
-import { ccTimeInterval, cclockout } from './helpers/constants.js';
+import { ccTimeInterval } from './helpers/constants.js';
 
 /**
  * Load in the environment variables
@@ -176,7 +176,7 @@ await loadRRMessages(client);
 setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)), 1000 * 60 * 60 * 24);
 
 // schedule checking for new/updated QC threads
-setInterval(() => void checkCCUpdates(client).catch(e => (cclockout.flag = false, errorHandler(e))), ccTimeInterval * 1000);
+setInterval(() => void checkCCUpdates(client).catch(e => errorHandler(e)), ccTimeInterval * 1000);
 
 /**
  * Everything is done, so create a new net.Server listending on fd 3

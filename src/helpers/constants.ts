@@ -300,9 +300,3 @@ export const gens: {[key: string]: string} = {
     'rb': '1',
     '1': '1',
 };
-
-/**
- * C&C Lockout flag so differen't parts of the code don't try to modify the same rows in the db
- */
-
-export const cclockout = { flag: false };
