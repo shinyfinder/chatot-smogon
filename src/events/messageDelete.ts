@@ -26,6 +26,11 @@ export const clientEvent: eventHandler = {
             return;
         }
 
+        // if it's a deleted light-bot message from wifi, ignore
+        if (message.guildId === '265293623778607104' && message.content.startsWith('$')) {
+            return;
+        }
+
         // determine if the channel is ignored from logging in the server by first querying the db
         const ignorePG = await pool.query('SELECT ignoreid, deletescope from chatot.logprefs WHERE serverid=$1', [message.guildId]);
         const dbmatches: { ignoreid: string, deletescope: string }[] | [] = ignorePG.rows;
