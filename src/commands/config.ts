@@ -1,6 +1,10 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, ChannelType } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, ChannelType, AutocompleteInteraction, ButtonBuilder, ButtonStyle, ButtonInteraction, ActionRowBuilder, ButtonComponent, ComponentType } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
+import { ccMetaObj } from '../helpers/constants.js';
+import { validateCCTier } from '../helpers/validateCCTier.js';
+import { getRandInt } from '../helpers/getRandInt.js';
+import { IAlertChans } from '../types/cc';
 
 /**
  * Sets up the requirements for a user to be considered verified within the discord server
@@ -118,8 +122,54 @@ export const command: SlashCommand = {
             .addStringOption(option =>
                 option.setName('gen')
                 .setDescription('Which gen to automatically link to when using /dex. i.e. rb, ss, sv')
+                .setRequired(false)))
+                
+        /**
+         * C&C
+         */
+        .addSubcommand(new SlashCommandSubcommandBuilder()
+            .setName('cc')
+            .setDescription('Configures where to log C&C thread status updates')
+            .addChannelOption(option =>
+                option.setName('channel')
+                .setDescription('The channel to which C&C thread status updates are posted')
+                .setRequired(true)
+                .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread))
+            .addStringOption(option =>
+                option.setName('tier')
+                .setDescription('The tier to monitor C&C thread status updates for')
+                .setAutocomplete(true)
+                .setRequired(true))
+            .addRoleOption(option =>
+                option.setName('role')
+                .setDescription('The role to ping')
                 .setRequired(false))),
 
+    // prompt the user with autocomplete options since there are too many tiers to have a selectable list
+    async autocomplete(interaction: AutocompleteInteraction) {
+        const focusedOption = interaction.options.getFocused(true);
+
+        if (focusedOption.name === 'tier') {
+            const enteredText = focusedOption.value.toLowerCase();
+
+            const filteredOut: {name: string, value: string }[] = [];
+            // filter the options shown to the user based on what they've typed in
+            // everything is cast to lower case to handle differences in case
+            for (const pair of ccMetaObj) {
+                if (filteredOut.length < 25) {
+                    if (pair.value.includes(enteredText)) {
+                        filteredOut.push(pair);
+                    }
+                }
+                else {
+                    break;
+                }
+            }
+
+            await interaction.respond(filteredOut);
+        }
+    },
+    
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply({ ephemeral: true });
@@ -282,6 +332,226 @@ export const command: SlashCommand = {
             await pool.query('INSERT INTO chatot.dexdefaults (serverid, format, gen) VALUES ($1, $2, $3) ON CONFLICT (serverid) DO UPDATE SET format=EXCLUDED.format, gen=EXCLUDED.gen', [interaction.guildId, format.toLowerCase(), gen.toLowerCase()]);
             // let them know we updated it
             await interaction.followUp('Defaults set');
+        }
+
+
+        /**
+         * C&C INTEGRATION
+         */
+        
+        else if (interaction.options.getSubcommand() === 'cc') {
+            // get inputs
+            const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
+            const tier = interaction.options.getString('tier', true);
+            const role = interaction.options.getRole('role');
+
+            // validate the autocomplete entry
+            const valid = validateCCTier(tier);
+            
+            // if it's not valid, return and let them know
+            if (!valid) {
+                await interaction.followUp('I did not understand that meta or I am not setup to track it. Please choose one from the list');
+                return;
+            }
+
+            // otherwise, followup with a prompt for them to choose the gen
+            // since you can have multigens, the best way of multiple options is buttons
+            // generate random int to uniquely id buttons for this interaction scope
+            const randInt = getRandInt(0, 65535);
+
+            // build the different logging buttons
+            const submit = new ButtonBuilder()
+                .setCustomId(`submit${randInt}`)
+                .setLabel('Submit')
+                .setStyle(ButtonStyle.Success);
+
+            const cancel = new ButtonBuilder()
+                .setCustomId(`cancel${randInt}`)
+                .setLabel('Cancel')
+                .setStyle(ButtonStyle.Danger);
+
+            const gen1 = new ButtonBuilder()
+                .setCustomId(`gen1-${randInt}`)
+                .setLabel('Gen 1')
+                .setStyle(ButtonStyle.Secondary);
+
+            const gen2 = new ButtonBuilder()
+                .setCustomId(`gen2-${randInt}`)
+                .setLabel('Gen 2')
+                .setStyle(ButtonStyle.Secondary);
+
+            const gen3 = new ButtonBuilder()
+                .setCustomId(`gen3-${randInt}`)
+                .setLabel('Gen 3')
+                .setStyle(ButtonStyle.Secondary);
+
+            const gen4 = new ButtonBuilder()
+                .setCustomId(`gen4-${randInt}`)
+                .setLabel('Gen 4')
+                .setStyle(ButtonStyle.Secondary);
+
+            const gen5 = new ButtonBuilder()
+                .setCustomId(`gen5-${randInt}`)
+                .setLabel('Gen 5')
+                .setStyle(ButtonStyle.Secondary);
+
+            const gen6 = new ButtonBuilder()
+                .setCustomId(`gen6-${randInt}`)
+                .setLabel('Gen 6')
+                .setStyle(ButtonStyle.Secondary);
+
+            const gen7 = new ButtonBuilder()
+                .setCustomId(`gen7-${randInt}`)
+                .setLabel('Gen 7')
+                .setStyle(ButtonStyle.Secondary);
+
+            const gen8 = new ButtonBuilder()
+                .setCustomId(`gen8-${randInt}`)
+                .setLabel('Gen 8')
+                .setStyle(ButtonStyle.Secondary);
+
+            const gen9 = new ButtonBuilder()
+                .setCustomId(`gen9-${randInt}`)
+                .setLabel('Gen 9')
+                .setStyle(ButtonStyle.Secondary);
+
+            // build the action rows
+            const row1 = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(gen1, gen2, gen3, gen4, gen5);
+
+            const row2 = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(gen6, gen7, gen8, gen9);
+            
+            const row3 = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(submit, cancel);
+
+            // post the message with the buttons to get their input
+            const btnReponse = await interaction.followUp({
+                content: 'Select the gens that should be logged to this channel',
+                components: [row1, row2, row3],
+            });
+
+            // setup a filter so that we only receive interactions from the user who initiated this sequence
+            const collectionFilter = (btnInt: ButtonInteraction) => btnInt.user.id === interaction.user.id;
+            
+            // wait for them to interact with the buttons
+            const collector = btnReponse.createMessageComponentCollector({ componentType: ComponentType.Button, filter: collectionFilter, time: 5 * 60 * 1000 });
+
+            collector.on('collect', async (i) => {
+                await i.deferUpdate();
+
+                if (i.customId === `submit${randInt}`) {
+                    // get the action rows from the current message
+                    const oldActionRowComps = i.message.components.flatMap(row => row.components);
+
+                    // update the old message to tell them we're working on it
+                    // we do this second so we don't lose the buttons
+                    await i.editReply({ content: 'Processing...', components: [] });
+
+                    // filter out only the buttons that were clicked (style = primary)
+                    const primBtn = oldActionRowComps.filter(comp => comp instanceof ButtonComponent && comp.style === ButtonStyle.Primary) as ButtonComponent[];
+
+                    let hadError = false;         
+                    const alertChanData: IAlertChans[] = [];
+
+                    // loop over the list of buttons to get the gen numbers that were clicked
+                    // begin the transaction with the db
+                    const pgClient = await pool.connect();
+                    try {
+                        // start
+                        await pgClient.query('BEGIN');
+                        // delete
+                        await pgClient.query('DELETE FROM chatot.ccprefs WHERE channelid=$1', [channel.id]);
+                        // insert
+                        for (const btn of primBtn) {
+                            // get the gen number from the customid of the button
+                            const genNum = btn.customId?.match(/(?<=gen)\d/);
+
+                            // this should never happen
+                            if (!genNum) {
+                                continue;
+                            }
+
+                            // push to db
+                            await pgClient.query('INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen) VALUES ($1, $2, $3, $4, $5)', [interaction.guildId, channel.id, tier, role?.id, genNum[0]]);
+
+                            // push to an array of data so we can update the cache in memory
+                            alertChanData.push({
+                                // this should never be null since we already type checked it before
+                                serverid: interaction.guildId ?? '',
+                                channelid: channel.id,
+                                tier: tier,
+                                role: role?.id,
+                                gen: genNum[0],
+                            });
+
+                        }
+                        // end
+                        await pgClient.query('COMMIT');
+                    }
+                    catch (e) {
+                        await pgClient.query('ROLLBACK');
+                        hadError = true;
+                        // if this errors we have bigger problems, so log it
+                        console.error(e);
+                        await i.editReply('An error occurred and your preferences were not saved');
+                    }
+                    finally {
+                        // BE FREE, CLIENT!
+                        pgClient.release();
+                    }
+                    // if we completed everything, let them know
+                    if (!hadError) {
+                        await i.editReply('Preferences updated');
+                    }
+                }
+                else if (i.customId === `cancel${randInt}`) {
+                    await i.editReply({ content: 'Process cancelled', components: [] });
+                    return;
+                }
+                else {
+                    // rebuild the buttons so that the one clicked toggles between secondary and primary styles
+                    const newActionRows: ActionRowBuilder<ButtonBuilder>[] = [];
+
+                    // extract the old action rows from the message
+                    const oldActionRows = i.message.components.map(row => row);
+
+                    for (const oldActionRow of oldActionRows) {
+                        const newRow = new ActionRowBuilder<ButtonBuilder>();
+                        
+                        // loop over the buttons in the old row so we can assign them to the new
+                        for (const oldBtn of oldActionRow.components) {
+                            if (oldBtn instanceof ButtonComponent) {
+                                const newBtn = ButtonBuilder.from(oldBtn);
+                                /**
+                                 * toggle the style on the new button if it's the same one that was clicked
+                                 */ 
+                                let buttonStyle = 0;
+                                // if it was the button that was clicked, toggle the style
+                                // unless they click the cancel or subtmit buttons
+                                if (oldBtn.customId === i.customId) { 
+                                    buttonStyle = oldBtn.style === ButtonStyle.Primary ? ButtonStyle.Secondary : ButtonStyle.Primary;
+                                }
+                                // otherwise, keep the old style
+                                else {
+                                    buttonStyle = oldBtn.style;
+                                }
+                                // assign the style to the button
+                                newBtn.setStyle(buttonStyle);
+                                // add the button to the row
+                                newRow.addComponents(newBtn);
+                            }
+                        }
+                        // add the row to the array of rows
+                        newActionRows.push(newRow);
+                    }
+
+                    // update the message
+                    await i.editReply({ components: newActionRows });
+                }
+                
+            });
+            
         }
     },
 };

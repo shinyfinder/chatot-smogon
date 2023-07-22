@@ -15,6 +15,8 @@ import { loadDex } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
+import { checkCCUpdates } from './helpers/ccWorkers.js';
+import { ccTimeInterval } from './helpers/constants.js';
 
 /**
  * Load in the environment variables
@@ -149,7 +151,8 @@ createPool();
  * Cache the info from the db so we don't overload postgres with queries
  * This includes updating the command state and deploying the commands,
  * loading the list of custom commands,
- * and loading the Pokemon names from the dex
+ * loading the Pokemon names from the dex,
+ * and loading the data required for C&C monitoring
  */
 await Promise.all([updateState(client), loadCustoms(), loadDex()]);
 
@@ -166,9 +169,14 @@ await client.login(config.TOKEN);
 
 await loadRRMessages(client);
 
+/**
+ * Schedule timers
+ */
 // schedule a timer to post updates the public rater list every so often (in ms)
 setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)), 1000 * 60 * 60 * 24);
 
+// schedule checking for new/updated QC threads
+setInterval(() => void checkCCUpdates(client).catch(e => errorHandler(e)), ccTimeInterval * 1000);
 
 /**
  * Everything is done, so create a new net.Server listending on fd 3

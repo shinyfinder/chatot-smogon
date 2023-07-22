@@ -97,6 +97,28 @@ CREATE TABLE chatot.logprefs (
     PRIMARY KEY (serverid, ignoreid)
 );
 
+
+CREATE TABLE chatot.ccstatus (
+    thread_id integer,
+    stage text,
+    progress text,
+    PRIMARY KEY (thread_id)
+);
+
+CREATE TABLE chatot.ccprefs (
+    serverid varchar(20),
+    channelid varchar(20),
+    tier text,
+    role varchar(20),
+    gen text,
+    PRIMARY KEY (serverid, channelid, gen)
+);
+
+CREATE TABLE chatot.lastcheck (
+    topic text,
+    tstamp timestamptz,
+    PRIMARY KEY (topic)
+);
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------
