@@ -2,9 +2,9 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, 
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 import { ccMetaObj } from '../helpers/constants.js';
-import { validateCCTier } from '../helpers/cnc.js';
+import { validateCCTier } from '../helpers/validateCCTier.js';
 import { getRandInt } from '../helpers/getRandInt.js';
-import { IAlertChans, updateCCAlertChans } from '../helpers/manageCCCache.js';
+import { IAlertChans } from '../types/cc';
 
 /**
  * Sets up the requirements for a user to be considered verified within the discord server
@@ -499,9 +499,6 @@ export const command: SlashCommand = {
                     finally {
                         // BE FREE, CLIENT!
                         pgClient.release();
-
-                        // update the cache in memory of the discord alert chans
-                        updateCCAlertChans(alertChanData);
                     }
                     // if we completed everything, let them know
                     if (!hadError) {
