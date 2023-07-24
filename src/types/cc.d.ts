@@ -5,7 +5,7 @@ export interface IXFStatusQuery {
     phrase_text: string | null,
 }
 
-export interface IParsedThreadData {
+export interface IXFParsedThreadData {
     thread_id: number,
     node_id: number,
     title: string,
@@ -24,8 +24,13 @@ export interface IAlertChans {
     gen: string
 }
 
+export interface ICCStatus {
+    thread_id: number,
+    stage: string,
+    progress: string
+}
+
 export interface ICCData {
-    threads: { thread_id: number, stage: string, progress: string }[],
-    lastcheck: string | null,
+    threads: ICCStatus[],
     alertchans: IAlertChans[],
 }

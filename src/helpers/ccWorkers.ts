@@ -1,10 +1,10 @@
 /**
  * Functions related to C&C integration
  */
-import { ccTimeInterval, ccSubObj, OMPrefix, pastGenPrefix, rbyOtherPrefix, gens } from './constants.js';
+import { ccSubObj, OMPrefix, pastGenPrefix, rbyOtherPrefix, gens } from './constants.js';
 import { ChannelType, Client } from 'discord.js';
-import { loadCCData, updateLastCheck, pollCCForums, updateCCCache } from './ccQueries.js';
-import { IParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
+import { loadCCData, pollCCForums, updateCCCache } from './ccQueries.js';
+import { IXFParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
 
 
 /**
@@ -14,43 +14,27 @@ import { IParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
  * @param client discord js client object
  */
 export async function checkCCUpdates(client: Client) {
-    // poll the database of cached cc threads, last check timestamp, and current alert chans
+    // poll the database of cached cc threads, and current alert chans
     const oldData = await loadCCData();
-
-    // unpack the data we need
-    const oldThreadIds = oldData.threads.map(thread => thread.thread_id);
     
-    let lastCheckUnix = 0;
-    const now = Date.now();
-
-    // if you found a match in the table
-    // use that as the last check time, converted to UNIX format so it can be used to query the forum table
-    if (oldData.lastcheck) {
-        const lastCheckDate = new Date(oldData.lastcheck).valueOf();
-        lastCheckUnix = Math.floor(lastCheckDate / 1000);
-    }
-    // if you didn't get a match, assume the last check was the current time minus the interval (boot time)
-    else {
-        lastCheckUnix = Math.floor(now / 1000 - ccTimeInterval);
-    }
-
     // poll the xf tables to get the thread data we care about
-    const threadData = await pollCCForums(lastCheckUnix, oldThreadIds);
+    const threadData = await pollCCForums();
     
-    // if you didn't get a match, there's nothing to do
-    // so update the check time and return
+    // if you didn't get a match, there's nothing in the forums
+    // so empty the cache because nothing is there
     if (!threadData.length) {
-        await updateLastCheck(now);
+        await uncacheRemovedThreads(threadData, oldData);
         return;
     }
 
-    // parse the fetched thread info and check for changes, alerting on discord if necessary
+    // parse the fetched thread info
     const parsedThreadData = parseCCStage(threadData);
 
     // loop over the list of threads and update discord/the cache if they're updated/new
     for (const newThreadData of parsedThreadData) {
         // first, determine whether this thread was previously cached
         const oldThreadData = oldData.threads.filter(othread => othread.thread_id === newThreadData.thread_id);
+
         // if there's a change or it's new, try to alert on discord
         if (!oldThreadData.length || newThreadData.stage !== oldThreadData[0].stage || newThreadData.progress !== oldThreadData[0].progress) {
             await alertCCStatus(newThreadData, oldData, client);
@@ -60,13 +44,33 @@ export async function checkCCUpdates(client: Client) {
             continue;
         }
 
-        // update the db of cached statuses
+        // update the db of cached statuses with the new values
         await updateCCCache(newThreadData);
     }
 
-    // everything's done, so update the last checked time
-    // we use the time this command was triggered rather than the time it finished since processing is non-zero.
-    await updateLastCheck(now);
+    // check for threads moved out of the forum, or deleted(?)
+    await uncacheRemovedThreads(threadData, oldData);
+
+}
+
+
+/**
+ * Removes threads that have been moved out of the C&C forums from the cache
+ * @param currentData Query result from polling C&C thread data from the xf tables
+ * @param cachedData Query result from polling C&C thread data from the pg tables
+ */
+export async function uncacheRemovedThreads(currentData: IXFStatusQuery[], cachedData: ICCData) {
+    // get the list of thread IDs currently in the nodes we care about
+    const currentThreadIDs = currentData.map(data => data.thread_id);
+
+    // compare that list with the list from the cache
+    // any IDs that are cached but no longer present should be removed from the cache
+    const cachedRemoved = cachedData.threads.filter(othread => !currentThreadIDs.includes(othread.thread_id));
+
+    // if you found some, remove them from the cache
+    for (const oldThreadData of cachedRemoved) {
+        await updateCCCache(oldThreadData, true);
+    }
 }
 
 
@@ -76,7 +80,7 @@ export async function checkCCUpdates(client: Client) {
  * @param oldData Object containing the result of the PG query, including json of the cached old data, last check timestamp, and json of alert channels
  * @param client Discord js client object
  */
-async function alertCCStatus(newData: IParsedThreadData, oldData: ICCData, client: Client) {
+async function alertCCStatus(newData: IXFParsedThreadData, oldData: ICCData, client: Client) {
     // to be safe, cast each element in the tier array to lower case
     const newTierLower = newData.tier.map(tier => tier.toLowerCase());
 
@@ -137,7 +141,7 @@ async function alertCCStatus(newData: IParsedThreadData, oldData: ICCData, clien
  * @returns Parsed data array of objects for each thread indiciating the C&C stage and progress
  */
 export function parseCCStage(threadData: IXFStatusQuery[]) {
-    const parsedThreadData: IParsedThreadData[] = [];
+    const parsedThreadData: IXFParsedThreadData[] = [];
     
     // loop over the list of provided threads to figure out the state of each
     for (const thread of threadData) {
