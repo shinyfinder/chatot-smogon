@@ -23,12 +23,56 @@ export async function checkCCUpdates(client: Client) {
     // if you didn't get a match, there's nothing in the forums
     // so empty the cache because nothing is there
     if (!threadData.length) {
+        /**
+         * ########
+         * DIAG HACK
+         * #########
+         */
+        const devChan = await client.channels.fetch('1040378543626002445');
+        if (devChan && devChan.type === ChannelType.GuildText) {
+            await devChan.send('Query failed, no results found.');
+        }
+        else {
+            console.log('Could not fetch dev channel. XF query failed');
+        }
+        /**
+         * ########
+         * END DIAG HACK
+         * #########
+         */
+        
+
         await uncacheRemovedThreads(threadData, oldData);
         return;
     }
 
     // parse the fetched thread info
-    const parsedThreadData = parseCCStage(threadData);
+    /**
+     * DIAG HACK
+     * Added client and made parseCCStage awaitable
+     */
+    const parsedThreadData = await parseCCStage(threadData, client);
+
+    /**
+     * #########
+     * DIAG HACK
+     * #########
+     */
+    if (!parsedThreadData.length) {
+        const devChan = await client.channels.fetch('1040378543626002445');
+        if (devChan && devChan.type === ChannelType.GuildText) {
+            await devChan.send('Unable to parse any data from the xf query');
+        }
+        else {
+            console.log('Could not fetch dev channel. Could not parse XF query result');
+        }
+    }
+    
+    /**
+     * #############
+     * END DIAG HACK
+     * #############
+     */
 
     // loop over the list of threads and update discord/the cache if they're updated/new
     for (const newThreadData of parsedThreadData) {
@@ -87,6 +131,29 @@ async function alertCCStatus(newData: IXFParsedThreadData, oldData: ICCData, cli
     // check if there are any channels setup to receive alerts for this thread
     const alertChans = oldData.alertchans.filter(chanData => newTierLower.includes(chanData.tier) && newData.gen.includes(chanData.gen));
 
+
+    /**
+     * #########
+     * DIAG HACK
+     * #########
+     */
+    
+    const devChan = await client.channels.fetch('1040378543626002445');
+    if (devChan && devChan.type === ChannelType.GuildText) {
+        await devChan.send(`${JSON.stringify(alertChans)}`);
+    }
+    else {
+        console.log(`Could not fetch dev channel while trying to alert. ${alertChans.join(', ')}`);
+    }
+    
+    
+    /**
+     * #############
+     * END DIAG HACK
+     * #############
+     */
+
+
     // if there are no channels setup to receive this update, return
     if (!alertChans.length) {
         return;
@@ -117,7 +184,12 @@ async function alertCCStatus(newData: IXFParsedThreadData, oldData: ICCData, cli
             alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **Ready for QC**`;
         }
         else if (!(newData.stage === 'QC' || newData.stage === 'Done')) {
-            return;
+            /**
+             * DIAG HACK
+             * alert instead of return
+             */
+            alertmsg = 'Not QC or Done';
+            // return;
         }
         else {
             alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **${newData.stage} ${newData.progress}**`;
@@ -128,7 +200,17 @@ async function alertCCStatus(newData: IXFParsedThreadData, oldData: ICCData, cli
             alertmsg = `<@&${alertChan.role}> `.concat(alertmsg);
         }
 
-        await chan.send(alertmsg);
+        /**
+         * DIAG HACK
+         * Added try/catch
+         */
+        try {
+            await chan.send(alertmsg);
+        }
+        catch (e) {
+            console.error(e);
+        }
+        
         processedIDs.push(alertChan.channelid);
     }
 }
@@ -140,7 +222,7 @@ async function alertCCStatus(newData: IXFParsedThreadData, oldData: ICCData, cli
  * @param threadData Array of objects containing the thread information retrieved from the db query
  * @returns Parsed data array of objects for each thread indiciating the C&C stage and progress
  */
-export function parseCCStage(threadData: IXFStatusQuery[]) {
+export async function parseCCStage(threadData: IXFStatusQuery[], client: Client) {
     const parsedThreadData: IXFParsedThreadData[] = [];
     
     // loop over the list of provided threads to figure out the state of each
@@ -314,6 +396,28 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
         if (!gen.length) {
             // old gen OMs
             if (thread.node_id === 770) {
+
+                /**
+                 * #########
+                 * DIAG HACK
+                 * #########
+                 */
+                
+                const devChan = await client.channels.fetch('1040378543626002445');
+                if (devChan && devChan.type === ChannelType.GuildText) {
+                    await devChan.send(`OM Old Gen Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
+                }
+                else {
+                    console.log(`Could not fetch dev channel. OM Old Gen Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
+                }
+            
+                
+                /**
+                 * #############
+                 * END DIAG HACK
+                 * #############
+                 */
+
                 // try to find the gen from the title
                 const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|RS|ADV|GSC|GS|RBY|RB))*\b/i;
                 const matchArr = thread.title.match(genRegex);
@@ -330,6 +434,26 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
             }
             // otherwise get the gen from the thread map
             else {
+                /**
+                 * #########
+                 * DIAG HACK
+                 * #########
+                 */
+                if (thread.node_id === 763) {
+                    const devChan = await client.channels.fetch('1040378543626002445');
+                    if (devChan && devChan.type === ChannelType.GuildText) {
+                        await devChan.send(`OM Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
+                    }
+                    else {
+                        console.log(`Could not fetch dev channel. OM Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
+                    }
+                }
+                
+                /**
+                 * #############
+                 * END DIAG HACK
+                 * #############
+                 */
                 gen = ccSubObj[thread.node_id.toString()].gens;
             }
         }
@@ -339,6 +463,27 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
             tier = ccSubObj[thread.node_id.toString()].tiers;
         }
 
+
+        /**
+         * #########
+         * DIAG HACK
+         * #########
+         */
+        if (thread.node_id === 763) {
+            const devChan = await client.channels.fetch('1040378543626002445');
+            if (devChan && devChan.type === ChannelType.GuildText) {
+                await devChan.send(`OM Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
+            }
+            else {
+                console.log(`Could not fetch dev channel. OM Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
+            }
+        }
+        
+        /**
+         * #############
+         * END DIAG HACK
+         * #############
+         */
        
         // push the data to the holding array
         parsedThreadData.push({

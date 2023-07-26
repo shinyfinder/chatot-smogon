@@ -27,7 +27,11 @@ export const command: SlashCommand = {
         const threadData = await pollCCForums();
 
         // parse the retrieved threads to determine their status
-        const parsedThreadData = parseCCStage(threadData);
+        /**
+         * DIAG HACK
+         * Added await and client
+         */
+        const parsedThreadData = await parseCCStage(threadData, interaction.client);
 
         // update the database with all of the threads
         for (const parsedThread of parsedThreadData) {

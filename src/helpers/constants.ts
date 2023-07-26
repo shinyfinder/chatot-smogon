@@ -44,7 +44,7 @@ export const allowedMetasObj = allowedMetas.map(meta => ({ name: meta, value: me
 /**
  * Time interval for checking for new C&C threads (s)
  */
-export const ccTimeInterval = 15;
+export const ccTimeInterval = 60;
 
 /**
  * List of subforums containing analyses
