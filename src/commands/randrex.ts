@@ -8,7 +8,7 @@ import { SlashCommand } from '../types/slash-command-base';
 export const command: SlashCommand = {
     global: false,
     // main cord and om cord
-    guilds: ['192713314399289344', '262990512636559362', '474308055408967681'],
+    guilds: ['192713314399289344', '262990512636559362', '474308055408967681', '235082371743875072'],
     // cd in seconds
     cooldown: 10,
     // setup the slash command builder
