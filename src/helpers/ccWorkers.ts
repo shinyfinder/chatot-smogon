@@ -194,7 +194,7 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
             stage = 'Done';
         }
         // if it's a resource or an announcement, skip
-        else if (thread.phrase_text === 'Resource' || thread.phrase_text === 'Announcement') {
+        else if (thread.phrase_text === 'Resource' || thread.phrase_text === 'Announcement' || thread.phrase_text === 'Project') {
             continue;
         }
         // OM / pastgen OM
