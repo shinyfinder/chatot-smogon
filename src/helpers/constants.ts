@@ -42,9 +42,9 @@ const allowedMetas = [
 export const allowedMetasObj = allowedMetas.map(meta => ({ name: meta, value: meta.toLowerCase() }));
 
 /**
- * Time interval for checking for new C&C threads (s)
+ * Time interval for checking for new C&C threads (sec)
  */
-export const ccTimeInterval = 60;
+export const ccTimeInterval = 15;
 
 /**
  * List of subforums containing analyses
@@ -255,6 +255,9 @@ const ccIntegrationMeta = [
 ];
 
 export const ccMetaObj = ccIntegrationMeta.map(meta => ({ name: meta, value: meta.toLowerCase() }));
+
+// lockout cc functions to prevent concurrency issues
+export const cclockout: { flag: boolean } = { flag: false };
 
 
 /**

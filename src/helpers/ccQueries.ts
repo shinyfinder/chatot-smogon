@@ -36,17 +36,24 @@ export async function loadCCData() {
  * @param data Thread information parsed for C&C status and progress
  * @param prune Boolean whether to remove the row from the database
  */
-export async function updateCCCache(data: IXFParsedThreadData | ICCStatus, prune = false) {
+export async function updateCCCache(data: IXFParsedThreadData[] | ICCStatus[], prune = false) {
     // delete the row so we don't clog up the db
     if (prune) {
-        await pool.query('DELETE FROM chatot.ccstatus WHERE thread_id=$1', [data.thread_id]);
+        const ids = data.map(d => d.thread_id);
+        await pool.query('DELETE FROM chatot.ccstatus WHERE thread_id = ANY($1)', [ids]);
     }
     // otherwise, upsert the row with the new values
     else {
-        await pool.query('INSERT INTO chatot.ccstatus (thread_id, stage, progress) VALUES ($1, $2, $3) ON CONFLICT (thread_id) DO UPDATE SET stage=$2, progress=$3', [data.thread_id, data.stage, data.progress]);
-    }
+        const ids = data.map(d => d.thread_id);
+        const stages = data.map(d => d.stage);
+        const progresses = data.map(d => d.progress);
 
-    return;
+        await pool.query(`
+        INSERT INTO chatot.ccstatus (thread_id, stage, progress)
+        VALUES (UNNEST($1::integer[]), UNNEST($2::text[]), UNNEST($3::text[]))
+        ON CONFLICT (thread_id)
+        DO UPDATE SET stage=EXCLUDED.stage, progress=EXCLUDED.progress`, [ids, stages, progresses]);
+    }
 }
 
 

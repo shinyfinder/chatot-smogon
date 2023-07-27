@@ -5,7 +5,8 @@ import { ccSubObj, OMPrefix, pastGenPrefix, rbyOtherPrefix, gens } from './const
 import { ChannelType, Client } from 'discord.js';
 import { loadCCData, pollCCForums, updateCCCache } from './ccQueries.js';
 import { IXFParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
-
+import { cclockout, ccTimeInterval } from './constants.js';
+import { errorHandler } from './errorHandler.js';
 
 /**
  * Finds new and updated C&C threads posted to the relevent subforums.
@@ -14,6 +15,15 @@ import { IXFParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
  * @param client discord js client object
  */
 export async function checkCCUpdates(client: Client) {
+    // if we're locked out (the synccc slash command is running), return
+    // otherwise, engage the lock
+    if (cclockout.flag) {
+        return;
+    }
+    else {
+        cclockout.flag = true;
+    }
+
     // poll the database of cached cc threads, and current alert chans
     const oldData = await loadCCData();
     
@@ -22,78 +32,41 @@ export async function checkCCUpdates(client: Client) {
     
     // if you didn't get a match, there's nothing in the forums
     // so empty the cache because nothing is there
+    // this should never be the case
     if (!threadData.length) {
-        /**
-         * ########
-         * DIAG HACK
-         * #########
-         */
-        const devChan = await client.channels.fetch('1040378543626002445');
-        if (devChan && devChan.type === ChannelType.GuildText) {
-            await devChan.send('Query failed, no results found.');
-        }
-        else {
-            console.log('Could not fetch dev channel. XF query failed');
-        }
-        /**
-         * ########
-         * END DIAG HACK
-         * #########
-         */
-        
-
         await uncacheRemovedThreads(threadData, oldData);
+        // release the lock
+        cclockout.flag = false;
         return;
     }
 
     // parse the fetched thread info
-    /**
-     * DIAG HACK
-     * Added client and made parseCCStage awaitable
-     */
-    const parsedThreadData = await parseCCStage(threadData, client);
+    const parsedThreadData = parseCCStage(threadData);
 
-    /**
-     * #########
-     * DIAG HACK
-     * #########
-     */
-    if (!parsedThreadData.length) {
-        const devChan = await client.channels.fetch('1040378543626002445');
-        if (devChan && devChan.type === ChannelType.GuildText) {
-            await devChan.send('Unable to parse any data from the xf query');
+    // filter out the threads from the most recent xf poll that are updated so we can update their values in the db
+    // we want to get the threads where the thread ID matches the old, but the stage or the progress is different
+    // or where the id is present in new but not old
+    const updatedThreads: IXFParsedThreadData[] = [];
+    for (const nthread of parsedThreadData) {
+        if (!oldData.threads.some(othread => othread.thread_id === nthread.thread_id)) {
+            updatedThreads.push(nthread);
         }
-        else {
-            console.log('Could not fetch dev channel. Could not parse XF query result');
+        else if (oldData.threads.some(othread => nthread.thread_id === othread.thread_id && (nthread.stage !== othread.stage || nthread.progress !== othread.progress))) {
+            updatedThreads.push(nthread);
         }
     }
-    
-    /**
-     * #############
-     * END DIAG HACK
-     * #############
-     */
 
-    // loop over the list of threads and update discord/the cache if they're updated/new
-    for (const newThreadData of parsedThreadData) {
-        // first, determine whether this thread was previously cached
-        const oldThreadData = oldData.threads.filter(othread => othread.thread_id === newThreadData.thread_id);
+    // update the cache 
+    await updateCCCache(updatedThreads);
 
-        // if there's a change or it's new, try to alert on discord
-        if (!oldThreadData.length || newThreadData.stage !== oldThreadData[0].stage || newThreadData.progress !== oldThreadData[0].progress) {
-            await alertCCStatus(newThreadData, oldData, client);
-        }
-        // otherwise, there's nothing to update, so skip over this thread
-        else {
-            continue;
-        }
-
-        // update the db of cached statuses with the new values
-        await updateCCCache(newThreadData);
-    }
+    // alert for each new change
+    await alertCCStatus(updatedThreads, oldData, client);
 
     // check for threads moved out of the forum, or deleted(?)
     await uncacheRemovedThreads(threadData, oldData);
+
+    // release the lock
+    cclockout.flag = false;
 
 }
 
@@ -112,9 +85,7 @@ export async function uncacheRemovedThreads(currentData: IXFStatusQuery[], cache
     const cachedRemoved = cachedData.threads.filter(othread => !currentThreadIDs.includes(othread.thread_id));
 
     // if you found some, remove them from the cache
-    for (const oldThreadData of cachedRemoved) {
-        await updateCCCache(oldThreadData, true);
-    }
+    await updateCCCache(cachedRemoved, true);
 }
 
 
@@ -124,95 +95,68 @@ export async function uncacheRemovedThreads(currentData: IXFStatusQuery[], cache
  * @param oldData Object containing the result of the PG query, including json of the cached old data, last check timestamp, and json of alert channels
  * @param client Discord js client object
  */
-async function alertCCStatus(newData: IXFParsedThreadData, oldData: ICCData, client: Client) {
-    // to be safe, cast each element in the tier array to lower case
-    const newTierLower = newData.tier.map(tier => tier.toLowerCase());
+async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData, client: Client) {
+    for (const newData of newDataArr) {
+        // to be safe, cast each element in the tier array to lower case
+        const newTierLower = newData.tier.map(tier => tier.toLowerCase());
 
-    // check if there are any channels setup to receive alerts for this thread
-    const alertChans = oldData.alertchans.filter(chanData => newTierLower.includes(chanData.tier) && newData.gen.includes(chanData.gen));
+        // check if there are any channels setup to receive alerts for this thread
+        const alertChans = oldData.alertchans.filter(chanData => newTierLower.includes(chanData.tier) && newData.gen.includes(chanData.gen));
 
-
-    /**
-     * #########
-     * DIAG HACK
-     * #########
-     */
-    
-    const devChan = await client.channels.fetch('1040378543626002445');
-    if (devChan && devChan.type === ChannelType.GuildText) {
-        await devChan.send(`${JSON.stringify(alertChans)}`);
-    }
-    else {
-        console.log(`Could not fetch dev channel while trying to alert. ${alertChans.join(', ')}`);
-    }
-    
-    
-    /**
-     * #############
-     * END DIAG HACK
-     * #############
-     */
-
-
-    // if there are no channels setup to receive this update, return
-    if (!alertChans.length) {
-        return;
-    }
-
-    // store the list of processed channel ids so we don't alert each one multiple times
-    const processedIDs: string[] = [];
-
-    // fetch the channel so we can post to it
-    for (const alertChan of alertChans) {
-        if (processedIDs.includes(alertChan.channelid)) {
+        // if there are no channels setup to receive this update, skip
+        if (!alertChans.length) {
             continue;
         }
 
-        const chan = await client.channels.fetch(alertChan.channelid);
+        // fetch the channel so we can post to it
+        for (const alertChan of alertChans) {
+            // ideally we don't one one failed message (i.e. missing perms) to kill the rest
+            // so try/catch the send so that even if 1 fails, the rest can try to be updated
+            try {
+                const chan = await client.channels.fetch(alertChan.channelid);
 
-        // typecheck chan
-        if (!chan || !(chan.type === ChannelType.GuildText || chan.type === ChannelType.PublicThread || chan.type === ChannelType.PrivateThread)) {
-            return;
-        }
-        // post
-        // we only want to post for QC updates and done
-        let alertmsg = '';
-        if (newData.stage === 'GP' && newData.progress.startsWith('0')) {
-            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **Ready for GP**`;
-        }
-        else if (newData.stage === 'QC' && newData.progress.startsWith('0')) {
-            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **Ready for QC**`;
-        }
-        else if (!(newData.stage === 'QC' || newData.stage === 'Done')) {
-            /**
-             * DIAG HACK
-             * alert instead of return
-             */
-            alertmsg = 'Not QC or Done';
-            // return;
-        }
-        else {
-            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **${newData.stage} ${newData.progress}**`;
-        }
+                // typecheck chan
+                if (!chan || !(chan.type === ChannelType.GuildText || chan.type === ChannelType.PublicThread || chan.type === ChannelType.PrivateThread)) {
+                    continue;
+                }
+                // post
+                // we only want to post for QC updates and done
+                let alertmsg = '';
+                // for the sake of not doublling up when someone goes from QC 2/2 -> GP 0/1, check the old data for the thread
+                const oldStatus = oldData.threads.find(othread => othread.thread_id === newData.thread_id);
 
-        // prepend with a ping on the role, if desired
-        if (alertChan.role) {
-            alertmsg = `<@&${alertChan.role}> `.concat(alertmsg);
-        }
+                if (newData.stage === 'GP' && newData.progress.startsWith('0')) {
+                    if (oldStatus && oldStatus.stage === 'GP' && oldStatus.progress === '0/?') {
+                        continue;
+                    }
+                    else {
+                        alertmsg = `Thread updated:\n${newData.phrase_text ?? '[]'} | ${newData.title}\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **Ready for GP**`;
+                    }
+                    
+                }
+                else if (newData.stage === 'QC' && newData.progress.startsWith('0')) {
+                    alertmsg = `Thread updated:\n${newData.phrase_text ?? '[]'} | ${newData.title}\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **Ready for QC**`;
+                }
+                else if (!(newData.stage === 'QC' || newData.stage === 'Done')) {
+                    continue;
+                }
+                else {
+                    alertmsg = `Thread updated:\n${newData.phrase_text ?? '[]'} | ${newData.title}\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **${newData.stage} ${newData.progress}**`;
+                }
 
-        /**
-         * DIAG HACK
-         * Added try/catch
-         */
-        try {
-            await chan.send(alertmsg);
+                // prepend with a ping on the role, if desired
+                if (alertChan.role) {
+                    alertmsg = `<@&${alertChan.role}> `.concat(alertmsg);
+                }
+                // post alert to cord
+                await chan.send(alertmsg);
+            }
+            catch (e) {
+                errorHandler(e);
+            }
         }
-        catch (e) {
-            console.error(e);
-        }
-        
-        processedIDs.push(alertChan.channelid);
     }
+    
 }
 
 
@@ -222,7 +166,7 @@ async function alertCCStatus(newData: IXFParsedThreadData, oldData: ICCData, cli
  * @param threadData Array of objects containing the thread information retrieved from the db query
  * @returns Parsed data array of objects for each thread indiciating the C&C stage and progress
  */
-export async function parseCCStage(threadData: IXFStatusQuery[], client: Client) {
+export function parseCCStage(threadData: IXFStatusQuery[]) {
     const parsedThreadData: IXFParsedThreadData[] = [];
     
     // loop over the list of provided threads to figure out the state of each
@@ -396,28 +340,6 @@ export async function parseCCStage(threadData: IXFStatusQuery[], client: Client)
         if (!gen.length) {
             // old gen OMs
             if (thread.node_id === 770) {
-
-                /**
-                 * #########
-                 * DIAG HACK
-                 * #########
-                 */
-                
-                const devChan = await client.channels.fetch('1040378543626002445');
-                if (devChan && devChan.type === ChannelType.GuildText) {
-                    await devChan.send(`OM Old Gen Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
-                }
-                else {
-                    console.log(`Could not fetch dev channel. OM Old Gen Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
-                }
-            
-                
-                /**
-                 * #############
-                 * END DIAG HACK
-                 * #############
-                 */
-
                 // try to find the gen from the title
                 const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|RS|ADV|GSC|GS|RBY|RB))*\b/i;
                 const matchArr = thread.title.match(genRegex);
@@ -434,26 +356,6 @@ export async function parseCCStage(threadData: IXFStatusQuery[], client: Client)
             }
             // otherwise get the gen from the thread map
             else {
-                /**
-                 * #########
-                 * DIAG HACK
-                 * #########
-                 */
-                if (thread.node_id === 763) {
-                    const devChan = await client.channels.fetch('1040378543626002445');
-                    if (devChan && devChan.type === ChannelType.GuildText) {
-                        await devChan.send(`OM Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
-                    }
-                    else {
-                        console.log(`Could not fetch dev channel. OM Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
-                    }
-                }
-                
-                /**
-                 * #############
-                 * END DIAG HACK
-                 * #############
-                 */
                 gen = ccSubObj[thread.node_id.toString()].gens;
             }
         }
@@ -462,28 +364,6 @@ export async function parseCCStage(threadData: IXFStatusQuery[], client: Client)
         if (!tier.length) {
             tier = ccSubObj[thread.node_id.toString()].tiers;
         }
-
-
-        /**
-         * #########
-         * DIAG HACK
-         * #########
-         */
-        if (thread.node_id === 763) {
-            const devChan = await client.channels.fetch('1040378543626002445');
-            if (devChan && devChan.type === ChannelType.GuildText) {
-                await devChan.send(`OM Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
-            }
-            else {
-                console.log(`Could not fetch dev channel. OM Thread ${thread.thread_id} : ${thread.phrase_text ?? 'No tag'} | ${thread.title}\nStage: ${stage}\nProgress: ${progress}\nGen: ${gen.join(',')}\nTier: ${tier.join(',')}`);
-            }
-        }
-        
-        /**
-         * #############
-         * END DIAG HACK
-         * #############
-         */
        
         // push the data to the holding array
         parsedThreadData.push({
@@ -499,3 +379,18 @@ export async function parseCCStage(threadData: IXFStatusQuery[], client: Client)
     }
     return parsedThreadData;
 }
+
+
+/**
+ * Recursively creates a timer to check for updates on C&C status
+ * @param client Discord js client object
+ */
+export function createCCTimer(client: Client) {
+    setTimeout(() => {
+        void checkCCUpdates(client)
+            .catch(e => errorHandler(e))
+            .finally(() => createCCTimer(client));
+    }, ccTimeInterval * 1000);
+    
+}
+
