@@ -4,7 +4,7 @@
 import { ccSubObj, OMPrefix, pastGenPrefix, rbyOtherPrefix, gens } from './constants.js';
 import { ChannelType, Client } from 'discord.js';
 import { loadCCData, pollCCForums, updateCCCache } from './ccQueries.js';
-import { IXFParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
+import { IXFParsedThreadData, ICCData, IXFStatusQuery, IAlertChans } from '../types/cc';
 import { cclockout, ccTimeInterval } from './constants.js';
 import { errorHandler } from './errorHandler.js';
 
@@ -92,7 +92,7 @@ export async function uncacheRemovedThreads(currentData: IXFStatusQuery[], cache
 /**
  * Posts an update to the relevant discord channel
  * @param newData Object containing the parsed thread information regarding its C&C status
- * @param oldData Object containing the result of the PG query, including json of the cached old data, last check timestamp, and json of alert channels
+ * @param oldData Object containing the result of the PG query, including json of the cached old data, and json of alert channels
  * @param client Discord js client object
  */
 async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData, client: Client) {
@@ -102,14 +102,21 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
 
         // check if there are any channels setup to receive alerts for this thread
         const alertChans = oldData.alertchans.filter(chanData => newTierLower.includes(chanData.tier) && newData.gen.includes(chanData.gen));
-
+        
         // if there are no channels setup to receive this update, skip
         if (!alertChans.length) {
             continue;
         }
 
+        // holder for chan ids so we don't alert each chan multiple times for the same thread
+        const processedChans: string[] = [];
+
         // fetch the channel so we can post to it
         for (const alertChan of alertChans) {
+            if (processedChans.includes(alertChan.channelid)) {
+                continue;
+            }
+
             // ideally we don't one one failed message (i.e. missing perms) to kill the rest
             // so try/catch the send so that even if 1 fails, the rest can try to be updated
             try {
@@ -144,12 +151,36 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
                     alertmsg = `Thread updated:\n${newData.phrase_text ?? '[]'} | ${newData.title}\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **${newData.stage} ${newData.progress}**`;
                 }
 
+                
                 // prepend with a ping on the role, if desired
-                if (alertChan.role) {
-                    alertmsg = `<@&${alertChan.role}> `.concat(alertmsg);
+                // there should only be at most 1
+                // first, check to see if there's a role targeting this specific stage
+                let pingRole: string | null | undefined;
+                const targetedRoleRow = alertChans.filter(achan => achan.channelid === alertChan.channelid && achan.stage.toLowerCase() === newData.stage.toLowerCase());
+
+                
+                if (targetedRoleRow.length) {
+                    pingRole = targetedRoleRow[0].role;
                 }
+                // if you didn't find one, check again but look for target any
+                else {
+                    const allRoleRow = alertChans.filter(achan => achan.channelid === alertChan.channelid && achan.stage.toLowerCase() === 'all');
+                    if (allRoleRow.length) {
+                        pingRole = allRoleRow[0].role;
+                    }
+                }
+                
+                // don't ping for GP ready
+                if (pingRole && newData.stage !== 'GP') {
+                    alertmsg = `<@&${pingRole}> `.concat(alertmsg);
+                }
+
                 // post alert to cord
                 await chan.send(alertmsg);
+
+                // add the thread id to the list of processed
+                processedChans.push(alertChan.channelid);
+
             }
             catch (e) {
                 errorHandler(e);
