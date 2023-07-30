@@ -145,8 +145,24 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
                 }
 
                 // prepend with a ping on the role, if desired
-                if (alertChan.role) {
-                    alertmsg = `<@&${alertChan.role}> `.concat(alertmsg);
+                // there should only be at most 1
+                // first, check to see if there's a role targeting this specific stage
+                let pingRole: string | null | undefined;
+                const targetedRoleRow = alertChans.filter(achan => achan.channelid === alertChan.channelid && achan.stage.toLowerCase() === alertChan.stage.toLowerCase());
+
+                // if you didn't find one, check again but look for target any
+                if (!targetedRoleRow.length) {
+                    const allRoleRow = alertChans.filter(achan => achan.channelid === alertChan.channelid && achan.stage.toLowerCase() === 'all');
+                    if (allRoleRow.length) {
+                        pingRole = allRoleRow[0].role;
+                    }
+                }
+                else {
+                    pingRole = targetedRoleRow[0].role;
+                }
+                
+                if (pingRole) {
+                    alertmsg = `<@&${pingRole}> `.concat(alertmsg);
                 }
                 // post alert to cord
                 await chan.send(alertmsg);

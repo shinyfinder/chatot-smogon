@@ -18,7 +18,7 @@ export async function loadCCData() {
         (SELECT thread_id, stage, progress FROM chatot.ccstatus),
 
         alert_chans AS
-        (SELECT serverid, channelid, tier, role, gen FROM chatot.ccprefs)
+        (SELECT serverid, channelid, tier, role, gen, stage FROM chatot.ccprefs)
 
         SELECT json_build_object(
             'threads', (SELECT COALESCE(JSON_AGG(cc_status.*), '[]') FROM cc_status),
@@ -67,7 +67,7 @@ export async function updateCCCache(data: IXFParsedThreadData[] | ICCStatus[], p
  * 
  * The data is spread out between 2 tables -- xf_thread, and xf_phrase
  * phrase_text is stored using the prefix id, with the format 'thread_prefix.PREFIX_ID'
- * FIND_IN_SET returns only the nodes we care about
+ * IN returns only the nodes we care about, making use of indexes
  * 
  * @returns Array of objects containing thread info (thread id, node id, title, prefix)
  */
