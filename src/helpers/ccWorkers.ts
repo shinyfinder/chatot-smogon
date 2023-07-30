@@ -218,11 +218,7 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
             // regex match results in [match, 'qc/gp', '0/1'][] format
             const progressions = [...thread.title.matchAll(/(QC|GP).{0,3}(\d\s?\/\s?\d)/gi)];
             
-            // general progression is WIP, QC, GP, done
-            if (!progressions.length) {
-                stage = 'WIP';
-            }
-            else if (thread.title.toLowerCase().includes('done')) {
+            if (thread.title.toLowerCase().includes('done')) {
                 stage = 'Done';
             }
             // if you match both, you have to parse each to see what stage you're really in
