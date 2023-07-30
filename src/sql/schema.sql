@@ -105,10 +105,6 @@ CREATE TABLE chatot.ccstatus (
     PRIMARY KEY (thread_id)
 );
 
--- ALTER TABLE chatot.ccprefs DROP CONSTRAINT ccprefs_pkey;
--- CREATE TYPE chatot.ccstagealert AS enum ('qc', 'done', 'all');
--- ALTER TABLE chatot.ccprefs ADD COLUMN stage chatot.ccstagealert DEFAULT 'all';
--- ALTER TABLE chatot.ccprefs ADD PRIMARY KEY (serverid, channelid, tier, gen, stage);
 
 CREATE TYPE chatot.ccstagealert AS enum ('qc', 'done', 'all');
 CREATE TABLE chatot.ccprefs (
