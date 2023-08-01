@@ -1,3 +1,11 @@
+/**
+ * Types for C&C integration
+ */
+
+
+/**
+ * SQL query result for polling the xf tables for the C&C subforums
+ */
 export interface IXFStatusQuery {
     thread_id: number,
     node_id: number,
@@ -5,6 +13,10 @@ export interface IXFStatusQuery {
     phrase_text: string | null,
 }
 
+
+/**
+ * XF Query result + thread titles parsed for gen/tier/stage/progress
+ */
 export interface IXFParsedThreadData {
     thread_id: number,
     node_id: number,
@@ -16,20 +28,30 @@ export interface IXFParsedThreadData {
     progress: string,
 }
 
+/**
+ * PG query result containing the results from the query on chatot.ccprefs
+ */
 export interface IAlertChans {
     serverid: string,
     channelid: string,
     tier: string,
     role: string | undefined | null,
-    gen: string
+    gen: string,
+    stage: string,
 }
 
+/**
+ * Query result containing the results from the query on chatot.ccstatus
+ */
 export interface ICCStatus {
     thread_id: number,
     stage: string,
     progress: string
 }
 
+/**
+ * Object interface that combines the pg queries into a single json object
+ */
 export interface ICCData {
     threads: ICCStatus[],
     alertchans: IAlertChans[],
