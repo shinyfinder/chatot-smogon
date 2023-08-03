@@ -117,7 +117,7 @@ CREATE TABLE chatot.ccprefs (
     PRIMARY KEY (serverid, channelid, gen, stage)
 );
 
--- Currently unused
+-- lastcheck currently unused
 CREATE TABLE chatot.lastcheck (
     topic text,
     tstamp timestamptz,

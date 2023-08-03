@@ -141,11 +141,10 @@ export function createCATimer(client: Client) {
 function getAttachmentPath(id: number, hash: string) {
     let filepath = '';
     if (config.MODE === 'dev') {
-        const baseFolder = new URL('../../../', import.meta.url);
-        filepath = `${baseFolder.pathname}/chatot-attachments/internal_data/attachments/${Math.floor(id / 1000)}/${id}-${hash}.data`;
+        filepath = `${config.INTERNAL_DATA_PATH}/attachments/${Math.floor(id / 1000)}/${id}-${hash}.data`;
     }
     else {
-        filepath = `/var/lib/xenforo/internal_data/attachments/${Math.floor(id / 1000)}/${id}-${hash}.data`;
+        filepath = `${config.INTERNAL_DATA_PATH}/attachments/${Math.floor(id / 1000)}/${id}-${hash}.data`;
     }
 
     return filepath;
