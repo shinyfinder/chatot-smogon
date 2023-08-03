@@ -40,21 +40,14 @@ export const command: SlashCommand = {
             return;
         }
 
-        // fetch the messagesin the channel
+        // fetch the messages in the channel
         const messages = await rexChan.messages.fetch({ limit: 100 });
 
-        // pick a random message
-        const randMsg = messages.random();
-
-        // typecheck
-        if (!randMsg) {
-            await interaction.followUp('Cannot fetch messages within the channel');
-            return;
-        }
+        // get all of the attachments
+        const attachments = messages.flatMap(msg => msg.attachments);
         
-        // pick a random attachment
-        const img = randMsg.attachments.random();
-
+        const img = attachments.random();
+        
         // and post
         if (img) {
             const ext = img.contentType ? img.contentType.split('/')[1] : 'png';

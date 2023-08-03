@@ -15,8 +15,8 @@ import { loadDex } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
-import { checkCCUpdates, createCCTimer } from './helpers/ccWorkers.js';
-import { ccTimeInterval } from './helpers/constants.js';
+import { createCCTimer } from './helpers/ccWorkers.js';
+import { createCATimer } from './helpers/caWorkers.js';
 
 /**
  * Load in the environment variables
@@ -177,6 +177,7 @@ setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)
 
 // schedule checking for new/updated QC threads
 createCCTimer(client);
+createCATimer(client);
 
 /**
  * Everything is done, so create a new net.Server listending on fd 3

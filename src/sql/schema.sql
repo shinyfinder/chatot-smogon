@@ -123,6 +123,13 @@ CREATE TABLE chatot.lastcheck (
     tstamp timestamptz,
     PRIMARY KEY (topic)
 );
+
+CREATE TABLE chatot.castatus (
+    thread_id integer, 
+    phrase_text text,
+    PRIMARY KEY (thread_id)
+);
+
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------
