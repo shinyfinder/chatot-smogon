@@ -256,8 +256,11 @@ const ccIntegrationMeta = [
 
 export const ccMetaObj = ccIntegrationMeta.map(meta => ({ name: meta, value: meta.toLowerCase() }));
 
-// lockout cc functions to prevent concurrency issues
-export const cclockout: { flag: boolean } = { flag: false };
+// lockout functions to prevent concurrency issues
+export const lockout: { [key: string]: boolean } = {
+    'cc': false,
+    'ca': false,
+};
 
 
 /**
@@ -303,3 +306,15 @@ export const gens: {[key: string]: string} = {
     'rb': '1',
     '1': '1',
 };
+
+
+/**
+ * CUSTOM AVATAR SUBS
+ * Array of subforum ids
+ */
+export const caSubs = [845];
+
+/**
+ * Time interval for checking for new CA threads (sec)
+ */
+export const caTimeInterval = 15;

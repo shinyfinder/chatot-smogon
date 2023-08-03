@@ -126,7 +126,7 @@ CREATE TABLE chatot.lastcheck (
 
 CREATE TABLE chatot.castatus (
     thread_id integer, 
-    stage text,
+    phrase_text text,
     PRIMARY KEY (thread_id)
 );
 

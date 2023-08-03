@@ -4,8 +4,8 @@
 import { ccSubObj, OMPrefix, pastGenPrefix, rbyOtherPrefix, gens } from './constants.js';
 import { ChannelType, Client } from 'discord.js';
 import { loadCCData, pollCCForums, updateCCCache } from './ccQueries.js';
-import { IXFParsedThreadData, ICCData, IXFStatusQuery, IAlertChans } from '../types/cc';
-import { cclockout, ccTimeInterval } from './constants.js';
+import { IXFParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
+import { lockout, ccTimeInterval } from './constants.js';
 import { errorHandler } from './errorHandler.js';
 
 /**
@@ -15,13 +15,13 @@ import { errorHandler } from './errorHandler.js';
  * @param client discord js client object
  */
 export async function checkCCUpdates(client: Client) {
-    // if we're locked out (the synccc slash command is running), return
+    // if we're locked out (the syncdb slash command is running), return
     // otherwise, engage the lock
-    if (cclockout.flag) {
+    if (lockout.cc) {
         return;
     }
     else {
-        cclockout.flag = true;
+        lockout.cc = true;
     }
 
     // poll the database of cached cc threads, and current alert chans
@@ -36,7 +36,7 @@ export async function checkCCUpdates(client: Client) {
     if (!threadData.length) {
         await uncacheRemovedThreads(threadData, oldData);
         // release the lock
-        cclockout.flag = false;
+        lockout.cc = false;
         return;
     }
 
@@ -66,7 +66,7 @@ export async function checkCCUpdates(client: Client) {
     await uncacheRemovedThreads(threadData, oldData);
 
     // release the lock
-    cclockout.flag = false;
+    lockout.cc = false;
 
 }
 
