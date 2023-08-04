@@ -415,7 +415,7 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
 export function createCCTimer(client: Client) {
     setTimeout(() => {
         void checkCCUpdates(client)
-            .catch(e => errorHandler(e))
+            .catch(e => (errorHandler(e), lockout.cc = false))
             .finally(() => createCCTimer(client));
     }, ccTimeInterval * 1000);
     

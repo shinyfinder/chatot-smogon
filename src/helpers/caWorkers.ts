@@ -95,31 +95,38 @@ async function alertCAStatus(newDataArr: IXFCAStatus[], client: Client) {
         targetChan = '1135599889825415168';
     }
 
-    const chan = await client.channels.fetch(targetChan);
+    // wrap in a try/catch block so that if anything errors we can process as many as we can
+    try {
+        const chan = await client.channels.fetch(targetChan);
 
-    // typecheck chan
-    if (!chan || !(chan.type === ChannelType.GuildText || chan.type === ChannelType.PublicThread || chan.type === ChannelType.PrivateThread)) {
-        return;
-    }
+        // typecheck chan
+        if (!chan || !(chan.type === ChannelType.GuildText || chan.type === ChannelType.PublicThread || chan.type === ChannelType.PrivateThread)) {
+            return;
+        }
 
-    for (const newData of newDataArr) {
-        if (newData.phrase_text === 'QC') {
-            // get the attachment
-            if (newData.filename && newData.data_id && newData.file_hash) {
-                // determine the path to the attachment
-                const filepath = getAttachmentPath(newData.data_id, newData.file_hash);
-                // build the attachment 
-                const attachment = new AttachmentBuilder(filepath, { name: newData.filename });
-                // send
-                await chan.send({ content: `${newData.title} ready for QC <@&1132969853087658045>\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>`, files: [attachment] });
-            }
-            else {
-                await chan.send(`${newData.title} ready for QC <@&1132969853087658045>\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>`);
+        for (const newData of newDataArr) {
+            if (newData.phrase_text === 'QC') {
+                // get the attachment
+                if (newData.filename && newData.data_id && newData.file_hash) {
+                    // determine the path to the attachment
+                    const filepath = getAttachmentPath(newData.data_id, newData.file_hash);
+                    // build the attachment 
+                    const attachment = new AttachmentBuilder(filepath, { name: newData.filename });
+                    // send
+                    await chan.send({ content: `${newData.title} ready for QC <@&1132969853087658045>\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>`, files: [attachment] });
+                }
+                else {
+                    await chan.send(`${newData.title} ready for QC <@&1132969853087658045>\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>`);
+                }
+                
             }
             
         }
-        
     }
+    catch (e) {
+        errorHandler(e);
+    }
+    
     
 }
 
@@ -131,7 +138,7 @@ async function alertCAStatus(newDataArr: IXFCAStatus[], client: Client) {
 export function createCATimer(client: Client) {
     setTimeout(() => {
         void checkCAs(client)
-            .catch(e => errorHandler(e))
+            .catch(e => (errorHandler(e), lockout.ca = false))
             .finally(() => createCATimer(client));
     }, (caTimeInterval + Math.random()) * 1000);
     
