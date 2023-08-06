@@ -5,7 +5,8 @@ import { ccSubObj, OMPrefix, pastGenPrefix, rbyOtherPrefix, gens } from './const
 import { ChannelType, Client } from 'discord.js';
 import { loadCCData, pollCCForums, updateCCCache } from './ccQueries.js';
 import { IXFParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
-
+import { lockout, ccTimeInterval } from './constants.js';
+import { errorHandler } from './errorHandler.js';
 
 /**
  * Finds new and updated C&C threads posted to the relevent subforums.
@@ -14,6 +15,15 @@ import { IXFParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
  * @param client discord js client object
  */
 export async function checkCCUpdates(client: Client) {
+    // if we're locked out (the syncdb slash command is running), return
+    // otherwise, engage the lock
+    if (lockout.cc) {
+        return;
+    }
+    else {
+        lockout.cc = true;
+    }
+
     // poll the database of cached cc threads, and current alert chans
     const oldData = await loadCCData();
     
@@ -22,34 +32,41 @@ export async function checkCCUpdates(client: Client) {
     
     // if you didn't get a match, there's nothing in the forums
     // so empty the cache because nothing is there
+    // this should never be the case
     if (!threadData.length) {
         await uncacheRemovedThreads(threadData, oldData);
+        // release the lock
+        lockout.cc = false;
         return;
     }
 
     // parse the fetched thread info
     const parsedThreadData = parseCCStage(threadData);
 
-    // loop over the list of threads and update discord/the cache if they're updated/new
-    for (const newThreadData of parsedThreadData) {
-        // first, determine whether this thread was previously cached
-        const oldThreadData = oldData.threads.filter(othread => othread.thread_id === newThreadData.thread_id);
-
-        // if there's a change or it's new, try to alert on discord
-        if (!oldThreadData.length || newThreadData.stage !== oldThreadData[0].stage || newThreadData.progress !== oldThreadData[0].progress) {
-            await alertCCStatus(newThreadData, oldData, client);
+    // filter out the threads from the most recent xf poll that are updated so we can update their values in the db
+    // we want to get the threads where the thread ID matches the old, but the stage or the progress is different
+    // or where the id is present in new but not old
+    const updatedThreads: IXFParsedThreadData[] = [];
+    for (const nthread of parsedThreadData) {
+        if (!oldData.threads.some(othread => othread.thread_id === nthread.thread_id)) {
+            updatedThreads.push(nthread);
         }
-        // otherwise, there's nothing to update, so skip over this thread
-        else {
-            continue;
+        else if (oldData.threads.some(othread => nthread.thread_id === othread.thread_id && (nthread.stage !== othread.stage || nthread.progress !== othread.progress))) {
+            updatedThreads.push(nthread);
         }
-
-        // update the db of cached statuses with the new values
-        await updateCCCache(newThreadData);
     }
+
+    // update the cache 
+    await updateCCCache(updatedThreads);
+
+    // alert for each new change
+    await alertCCStatus(updatedThreads, oldData, client);
 
     // check for threads moved out of the forum, or deleted(?)
     await uncacheRemovedThreads(threadData, oldData);
+
+    // release the lock
+    lockout.cc = false;
 
 }
 
@@ -68,69 +85,109 @@ export async function uncacheRemovedThreads(currentData: IXFStatusQuery[], cache
     const cachedRemoved = cachedData.threads.filter(othread => !currentThreadIDs.includes(othread.thread_id));
 
     // if you found some, remove them from the cache
-    for (const oldThreadData of cachedRemoved) {
-        await updateCCCache(oldThreadData, true);
-    }
+    await updateCCCache(cachedRemoved, true);
 }
 
 
 /**
  * Posts an update to the relevant discord channel
  * @param newData Object containing the parsed thread information regarding its C&C status
- * @param oldData Object containing the result of the PG query, including json of the cached old data, last check timestamp, and json of alert channels
+ * @param oldData Object containing the result of the PG query, including json of the cached old data, and json of alert channels
  * @param client Discord js client object
  */
-async function alertCCStatus(newData: IXFParsedThreadData, oldData: ICCData, client: Client) {
-    // to be safe, cast each element in the tier array to lower case
-    const newTierLower = newData.tier.map(tier => tier.toLowerCase());
+async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData, client: Client) {
+    for (const newData of newDataArr) {
+        // to be safe, cast each element in the tier array to lower case
+        const newTierLower = newData.tier.map(tier => tier.toLowerCase());
 
-    // check if there are any channels setup to receive alerts for this thread
-    const alertChans = oldData.alertchans.filter(chanData => newTierLower.includes(chanData.tier) && newData.gen.includes(chanData.gen));
-
-    // if there are no channels setup to receive this update, return
-    if (!alertChans.length) {
-        return;
-    }
-
-    // store the list of processed channel ids so we don't alert each one multiple times
-    const processedIDs: string[] = [];
-
-    // fetch the channel so we can post to it
-    for (const alertChan of alertChans) {
-        if (processedIDs.includes(alertChan.channelid)) {
+        // check if there are any channels setup to receive alerts for this thread
+        const alertChans = oldData.alertchans.filter(chanData => newTierLower.includes(chanData.tier) && newData.gen.includes(chanData.gen));
+        
+        // if there are no channels setup to receive this update, skip
+        if (!alertChans.length) {
             continue;
         }
 
-        const chan = await client.channels.fetch(alertChan.channelid);
+        // holder for chan ids so we don't alert each chan multiple times for the same thread
+        const processedChans: string[] = [];
 
-        // typecheck chan
-        if (!chan || !(chan.type === ChannelType.GuildText || chan.type === ChannelType.PublicThread || chan.type === ChannelType.PrivateThread)) {
-            return;
-        }
-        // post
-        // we only want to post for QC updates and done
-        let alertmsg = '';
-        if (newData.stage === 'GP' && newData.progress.startsWith('0')) {
-            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **Ready for GP**`;
-        }
-        else if (newData.stage === 'QC' && newData.progress.startsWith('0')) {
-            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **Ready for QC**`;
-        }
-        else if (!(newData.stage === 'QC' || newData.stage === 'Done')) {
-            return;
-        }
-        else {
-            alertmsg = `Update to thread <https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **${newData.stage} ${newData.progress}**`;
-        }
+        // fetch the channel so we can post to it
+        for (const alertChan of alertChans) {
+            if (processedChans.includes(alertChan.channelid)) {
+                continue;
+            }
 
-        // prepend with a ping on the role, if desired
-        if (alertChan.role) {
-            alertmsg = `<@&${alertChan.role}> `.concat(alertmsg);
-        }
+            // ideally we don't one one failed message (i.e. missing perms) to kill the rest
+            // so try/catch the send so that even if 1 fails, the rest can try to be updated
+            try {
+                const chan = await client.channels.fetch(alertChan.channelid);
 
-        await chan.send(alertmsg);
-        processedIDs.push(alertChan.channelid);
+                // typecheck chan
+                if (!chan || !(chan.type === ChannelType.GuildText || chan.type === ChannelType.PublicThread || chan.type === ChannelType.PrivateThread)) {
+                    continue;
+                }
+                // post
+                // we only want to post for QC updates and done
+                let alertmsg = '';
+                // for the sake of not doublling up when someone goes from QC 2/2 -> GP 0/1, check the old data for the thread
+                const oldStatus = oldData.threads.find(othread => othread.thread_id === newData.thread_id);
+
+                if (newData.stage === 'GP' && newData.progress.startsWith('0')) {
+                    if (oldStatus && oldStatus.stage === 'GP' && oldStatus.progress === '0/?') {
+                        continue;
+                    }
+                    else {
+                        alertmsg = `Thread updated:\n${newData.phrase_text ?? '[]'} | ${newData.title}\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **Ready for GP**`;
+                    }
+                    
+                }
+                else if (newData.stage === 'QC' && newData.progress.startsWith('0')) {
+                    alertmsg = `Thread updated:\n${newData.phrase_text ?? '[]'} | ${newData.title}\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **Ready for QC**`;
+                }
+                else if (!(newData.stage === 'QC' || newData.stage === 'Done')) {
+                    continue;
+                }
+                else {
+                    alertmsg = `Thread updated:\n${newData.phrase_text ?? '[]'} | ${newData.title}\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>\nStatus: **${newData.stage} ${newData.progress}**`;
+                }
+
+                
+                // prepend with a ping on the role, if desired
+                // there should only be at most 1
+                // first, check to see if there's a role targeting this specific stage
+                let pingRole: string | null | undefined;
+                const targetedRoleRow = alertChans.filter(achan => achan.channelid === alertChan.channelid && achan.stage.toLowerCase() === newData.stage.toLowerCase());
+
+                
+                if (targetedRoleRow.length) {
+                    pingRole = targetedRoleRow[0].role;
+                }
+                // if you didn't find one, check again but look for target any
+                else {
+                    const allRoleRow = alertChans.filter(achan => achan.channelid === alertChan.channelid && achan.stage.toLowerCase() === 'all');
+                    if (allRoleRow.length) {
+                        pingRole = allRoleRow[0].role;
+                    }
+                }
+                
+                // don't ping for GP ready
+                if (pingRole && newData.stage !== 'GP') {
+                    alertmsg = `<@&${pingRole}> `.concat(alertmsg);
+                }
+
+                // post alert to cord
+                await chan.send(alertmsg);
+
+                // add the thread id to the list of processed
+                processedChans.push(alertChan.channelid);
+
+            }
+            catch (e) {
+                errorHandler(e);
+            }
+        }
     }
+    
 }
 
 
@@ -168,7 +225,7 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
             stage = 'Done';
         }
         // if it's a resource or an announcement, skip
-        else if (thread.phrase_text === 'Resource' || thread.phrase_text === 'Announcement') {
+        else if (thread.phrase_text === 'Resource' || thread.phrase_text === 'Announcement' || thread.phrase_text === 'Project') {
             continue;
         }
         // OM / pastgen OM
@@ -192,11 +249,7 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
             // regex match results in [match, 'qc/gp', '0/1'][] format
             const progressions = [...thread.title.matchAll(/(QC|GP).{0,3}(\d\s?\/\s?\d)/gi)];
             
-            // general progression is WIP, QC, GP, done
-            if (!progressions.length) {
-                stage = 'WIP';
-            }
-            else if (thread.title.toLowerCase().includes('done')) {
+            if (thread.title.toLowerCase().includes('done')) {
                 stage = 'Done';
             }
             // if you match both, you have to parse each to see what stage you're really in
@@ -338,7 +391,6 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
         if (!tier.length) {
             tier = ccSubObj[thread.node_id.toString()].tiers;
         }
-
        
         // push the data to the holding array
         parsedThreadData.push({
@@ -354,3 +406,18 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
     }
     return parsedThreadData;
 }
+
+
+/**
+ * Recursively creates a timer to check for updates on C&C status
+ * @param client Discord js client object
+ */
+export function createCCTimer(client: Client) {
+    setTimeout(() => {
+        void checkCCUpdates(client)
+            .catch(e => (errorHandler(e), lockout.cc = false))
+            .finally(() => createCCTimer(client));
+    }, ccTimeInterval * 1000);
+    
+}
+

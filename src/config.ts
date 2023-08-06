@@ -38,6 +38,7 @@ interface ENV {
     SQLPORT: number | undefined;
     SQLDATABASE: string | undefined;
     SQLSOCKETPATH: string | undefined;
+    INTERNAL_DATA_PATH: string | undefined;
     // ...
 }
 
@@ -64,6 +65,7 @@ interface Config {
     SQLPORT: number;
     SQLDATABASE: string;
     SQLSOCKETPATH: string;
+    INTERNAL_DATA_PATH: string;
     // ...
 }
 
@@ -90,6 +92,7 @@ const getConfig = (): ENV => {
         SQLPORT: parseInt(process.env.SQLPORT || '', 10),
         SQLDATABASE: process.env.SQLDATABASE,
         SQLSOCKETPATH: process.env.SQLSOCKETPATH || '',
+        INTERNAL_DATA_PATH: process.env.INTERNAL_DATA_PATH,
         // ...
     };
 };

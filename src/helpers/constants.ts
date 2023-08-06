@@ -42,7 +42,7 @@ const allowedMetas = [
 export const allowedMetasObj = allowedMetas.map(meta => ({ name: meta, value: meta.toLowerCase() }));
 
 /**
- * Time interval for checking for new C&C threads (s)
+ * Time interval for checking for new C&C threads (sec)
  */
 export const ccTimeInterval = 15;
 
@@ -256,6 +256,12 @@ const ccIntegrationMeta = [
 
 export const ccMetaObj = ccIntegrationMeta.map(meta => ({ name: meta, value: meta.toLowerCase() }));
 
+// lockout functions to prevent concurrency issues
+export const lockout: { [key: string]: boolean } = {
+    'cc': false,
+    'ca': false,
+};
+
 
 /**
  * Thread Prefixes
@@ -300,3 +306,15 @@ export const gens: {[key: string]: string} = {
     'rb': '1',
     '1': '1',
 };
+
+
+/**
+ * CUSTOM AVATAR SUBS
+ * Array of subforum ids
+ */
+export const caSubs = [845];
+
+/**
+ * Time interval for checking for new CA threads (sec)
+ */
+export const caTimeInterval = 15;

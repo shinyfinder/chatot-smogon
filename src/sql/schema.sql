@@ -105,20 +105,31 @@ CREATE TABLE chatot.ccstatus (
     PRIMARY KEY (thread_id)
 );
 
+
+CREATE TYPE chatot.ccstagealert AS enum ('qc', 'done', 'all');
 CREATE TABLE chatot.ccprefs (
     serverid varchar(20),
     channelid varchar(20),
     tier text,
     role varchar(20),
     gen text,
-    PRIMARY KEY (serverid, channelid, gen)
+    stage chatot.ccstagealert,
+    PRIMARY KEY (serverid, channelid, gen, stage)
 );
 
+-- lastcheck currently unused
 CREATE TABLE chatot.lastcheck (
     topic text,
     tstamp timestamptz,
     PRIMARY KEY (topic)
 );
+
+CREATE TABLE chatot.castatus (
+    thread_id integer, 
+    phrase_text text,
+    PRIMARY KEY (thread_id)
+);
+
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------

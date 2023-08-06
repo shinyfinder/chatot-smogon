@@ -7,7 +7,7 @@ import { SlashCommand } from '../types/slash-command-base';
  */
 export const command: SlashCommand = {
     global: false,
-    // main cord and om cord
+    // main cord, om cord, 1v1 cord, mono cord
     guilds: ['192713314399289344', '262990512636559362', '474308055408967681', '235082371743875072'],
     // cd in seconds
     cooldown: 10,
@@ -40,21 +40,14 @@ export const command: SlashCommand = {
             return;
         }
 
-        // fetch the messagesin the channel
+        // fetch the messages in the channel
         const messages = await rexChan.messages.fetch({ limit: 100 });
 
-        // pick a random message
-        const randMsg = messages.random();
-
-        // typecheck
-        if (!randMsg) {
-            await interaction.followUp('Cannot fetch messages within the channel');
-            return;
-        }
+        // get all of the attachments
+        const attachments = messages.flatMap(msg => msg.attachments);
         
-        // pick a random attachment
-        const img = randMsg.attachments.random();
-
+        const img = attachments.random();
+        
         // and post
         if (img) {
             const ext = img.contentType ? img.contentType.split('/')[1] : 'png';
