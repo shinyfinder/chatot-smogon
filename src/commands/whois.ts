@@ -123,8 +123,20 @@ export const command: SlashCommand = {
             // get the user input
             const username = interaction.options.getString('accountname', true);
 
+            // check the current guild first in an attempt to short circuit the search
+            const currentMembers = await interaction.guild.members.fetch();
+            const currentFound = currentMembers.filter(member => member.displayName === username.toLowerCase()).first();
+            if (currentFound) {
+                await interaction.followUp(`${currentFound.displayName}'s user id is ${currentFound.id}`);
+                return;
+            }
+
             // loop over the guilds the bot is in, looking for someone with that username
             for (const guild of interaction.client.guilds.cache.values()) {
+                // don't bother rechecking the current one
+                if (guild.id === interaction.guildId) {
+                    continue;
+                }
                 const memberList = await guild.members.fetch();
                 // as of now, member.displayname = user.username = name on account
                 // there isn't a way to retrieve display name
