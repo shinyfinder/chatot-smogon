@@ -157,9 +157,19 @@ export const command: SlashCommand = {
                     { name: 'Done', value: 'done' },
                 )
                 .setRequired(false))
+            .addIntegerOption(option =>
+                option.setName('cooldown')
+                .setDescription('The minimum number of hours between QC progress alerts. Default: 0; max: 12')
+                .setMinValue(0)
+                .setMaxValue(12)
+                .setRequired(false))
             .addBooleanOption(option =>
                 option.setName('remove')
                 .setDescription('Removes tracking of the provided info from the specified channel')
+                .setRequired(false))
+            .addBooleanOption(option =>
+                option.setName('removeall')
+                .setDescription('Removes all C&C tracking from the server')
                 .setRequired(false))),
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
@@ -363,7 +373,9 @@ export const command: SlashCommand = {
             const role = interaction.options.getRole('role');
             const stage = interaction.options.getString('stage') ?? 'all';
             const gen = interaction.options.getInteger('gen', true).toString();
+            const cooldown = interaction.options.getInteger('cooldown');
             const removeRow = interaction.options.getBoolean('remove');
+            const removeAllRows = interaction.options.getBoolean('removeall');
 
             // validate the autocomplete entry
             const valid = validateCCTier(tier);
@@ -375,7 +387,10 @@ export const command: SlashCommand = {
             }
 
             // insert into the table
-            if (removeRow) {
+            if (removeAllRows) {
+                await pool.query('DELETE FROM chatot.ccprefs WHERE serverid=$1', [interaction.guildId]);
+            }
+            else if (removeRow) {
                 await pool.query('DELETE FROM chatot.ccprefs WHERE serverid=$1 AND channelid=$2 AND tier=$3 AND gen=$4', [interaction.guildId, channel.id, tier, gen]);
             }
             else if (stage === 'all') {
@@ -387,7 +402,7 @@ export const command: SlashCommand = {
                     // delete -- delete everything because 'all' is incompat with the rest
                     await pgClient.query('DELETE FROM chatot.ccprefs WHERE serverid=$1 AND channelid=$2 AND tier=$3 AND gen=$4', [interaction.guildId, channel.id, tier, gen]);
                     // insert
-                    await pgClient.query('INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage) VALUES ($1, $2, $3, $4, $5, $6)', [interaction.guildId, channel.id, tier, role?.id, gen, stage]);
+                    await pgClient.query('INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage, cooldown) VALUES ($1, $2, $3, $4, $5, $6, $7)', [interaction.guildId, channel.id, tier, role?.id, gen, stage, cooldown]);
                     // end
                     await pgClient.query('COMMIT');
                 }
@@ -411,9 +426,10 @@ export const command: SlashCommand = {
                     await pgClient.query('DELETE FROM chatot.ccprefs WHERE serverid=$1 AND channelid=$2 AND tier=$3 AND gen=$4 AND stage=$5', [interaction.guildId, channel.id, tier, gen, 'all']);
                     // upsert
                     await pool.query(`INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage)
-                        VALUES ($1, $2, $3, $4, $5, $6)
+                        VALUES ($1, $2, $3, $4, $5, $6, $7)
                         ON CONFLICT (serverid, channelid, tier, gen, stage) DO UPDATE
-                        SET serverid=EXCLUDED.serverid, channelid=EXCLUDED.channelid, tier=EXCLUDED.tier, role=EXCLUDED.role, gen=EXCLUDED.gen, stage=EXCLUDED.stage`, [interaction.guildId, channel.id, tier, role?.id, gen, stage]);
+                        SET serverid=EXCLUDED.serverid, channelid=EXCLUDED.channelid, tier=EXCLUDED.tier, role=EXCLUDED.role, gen=EXCLUDED.gen, stage=EXCLUDED.stage, cooldown=EXCLUDED.cooldown`,
+                        [interaction.guildId, channel.id, tier, role?.id, gen, stage, cooldown]);
                     // end
                     await pgClient.query('COMMIT');
                 }

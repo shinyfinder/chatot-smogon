@@ -2,7 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcomman
 import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
 import config from '../config.js';
-import { stripDiscrim } from '../helpers/stripDiscrim.js';
+
 /**
  * Command to ban a user from every server the bot is in
  * Supports banning a single user or a group of users depending on the selected subcommand
@@ -60,7 +60,7 @@ export const command: SlashCommand = {
 
             
             // prompt the user to confirm
-            await interaction.reply(`You are about to ban ${stripDiscrim(user)} from every server I am in. Are you sure? (y/n)`);
+            await interaction.reply(`You are about to ban ${user.tag} from every server I am in. Are you sure? (y/n)`);
             const filter = (m: Message) => interaction.user.id === m.author.id;
             const confirmMsg = await interaction.channel?.awaitMessages({ filter, time: 60 * 1000, max: 1, errors: ['time'] });
             if (confirmMsg === undefined) {

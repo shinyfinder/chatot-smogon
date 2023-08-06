@@ -38,6 +38,7 @@ export interface IAlertChans {
     role: string | undefined | null,
     gen: string,
     stage: string,
+    cooldown: number | undefined,
 }
 
 /**
@@ -55,4 +56,13 @@ export interface ICCStatus {
 export interface ICCData {
     threads: ICCStatus[],
     alertchans: IAlertChans[],
+}
+
+/**
+ * Interface for the cooldown cache / table query
+ */
+interface ICCCooldown {
+    channelid: string,
+    identifier: string,
+    date: Date,
 }
