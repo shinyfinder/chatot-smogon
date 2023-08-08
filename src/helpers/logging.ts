@@ -1,6 +1,6 @@
 import { EmbedBuilder, Guild, ChannelType, User, Message } from 'discord.js';
 import { pool } from './createPool.js';
-import { stripDiscrim } from './stripDiscrim.js';
+
 /**
  * Group of functions helpful for logging 
  */
@@ -73,19 +73,19 @@ export async function postLogEvent(ogEmbed: EmbedBuilder, guild: Guild, event: l
         msgtarget - mod delete, self delete, edit
         */
         let targetChans: ILogChan[] = [];
-        if (event === 'ban' || event === 'kick' || event === 'timeout') {
+        if (event === loggedEventTypes.Ban || event === loggedEventTypes.Kick || event === loggedEventTypes.Timeout) {
             targetChans = logchan.filter(row => ['all', 'nonedits', 'modex', 'usertarget'].includes(row.logtype));
         }
-        else if (event === 'moddelete') {
+        else if (event === loggedEventTypes.ModDelete) {
             targetChans = logchan.filter(row => ['all', 'nonedits', 'modex', 'msgtarget'].includes(row.logtype));
         }
-        else if (event === 'selfdelete') {
+        else if (event === loggedEventTypes.SelfDelete) {
             targetChans = logchan.filter(row => ['all', 'nonedits', 'userex', 'msgtarget'].includes(row.logtype));
         }
-        else if (event === 'edit') {
+        else if (event === loggedEventTypes.Edit) {
             targetChans = logchan.filter(row => ['all', 'edits', 'userex', 'msgtarget'].includes(row.logtype));
         }
-        else if (event === 'boost') {
+        else if (event === loggedEventTypes.Boost) {
             targetChans = logchan.filter(row => ['all', 'nonedits', 'userex', 'usertarget'].includes(row.logtype));
         }
 
@@ -178,7 +178,7 @@ export async function echoPunishment(guild: Guild, target: User, reason: string,
             return;
         }
         // echo to the other chan
-        await punishChan.send(`${target.id} / ${stripDiscrim(target)} / ${punishment} / ${reason}`);
+        await punishChan.send(`${target.id} / ${target.tag} / ${punishment} / ${reason}`);
     }
 }
 
@@ -196,10 +196,10 @@ export function buildMsgDeleteEmbedParams(executor: User | string, message: Mess
     // set the embed description
     let description = '';
     if (executor === 'Self') {
-        description = `${stripDiscrim(message.author)} deleted their own message.`;
+        description = `${message.author.tag} deleted their own message.`;
     }
     else if (executor instanceof User) {
-        description = `${stripDiscrim(message.author)}'s message was deleted by ${stripDiscrim(executor)}.`;
+        description = `${message.author.tag}'s message was deleted by ${executor.tag}.`;
     }
 
     // set the embed color

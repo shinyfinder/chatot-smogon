@@ -1,5 +1,5 @@
 import { pool, sqlPool } from './createPool.js';
-import { ICCData, ICCStatus, IXFParsedThreadData, IXFStatusQuery } from '../types/cc';
+import { ICCCooldown, ICCData, ICCStatus, IXFParsedThreadData, IXFStatusQuery } from '../types/cc';
 import { ccSubObj } from './constants.js';
 
 /**
@@ -18,7 +18,7 @@ export async function loadCCData() {
         (SELECT thread_id, stage, progress FROM chatot.ccstatus),
 
         alert_chans AS
-        (SELECT serverid, channelid, tier, role, gen, stage FROM chatot.ccprefs)
+        (SELECT serverid, channelid, tier, role, gen, stage, cooldown FROM chatot.ccprefs)
 
         SELECT json_build_object(
             'threads', (SELECT COALESCE(JSON_AGG(cc_status.*), '[]') FROM cc_status),
@@ -93,4 +93,20 @@ export async function pollCCForums() {
 
     return threadData;
 
+}
+
+/**
+ * Polls the chatot.cooldown database to see if the QC alert is on cooldown
+ * @returns Array of cooldown objects
+ */
+export async function getCCAlertCooldowns() {
+    const cdPG = await pool.query('SELECT channelid, identifier, date FROM chatot.cooldown');
+    const cds: ICCCooldown[] | [] = cdPG.rows;
+    return cds;
+}
+
+
+export async function updateCCAlertCooldowns(chanid: string, id: string) {
+    await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2) ON CONFLICT (channelid, identifier) DO UPDATE SET channelid=EXCLUDED.channelid, identifier=EXCLUDED.identifier', [chanid, id]);
+    return;
 }

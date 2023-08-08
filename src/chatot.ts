@@ -17,13 +17,13 @@ import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
 import { createCCTimer } from './helpers/ccWorkers.js';
 import { createCATimer } from './helpers/caWorkers.js';
+import { loadCCCooldowns } from './helpers/manageCCCooldownCache.js';
+import config from './config.js';
 
 /**
- * Load in the environment variables
- * This is abstracted into a separate file to allow for any number of inputs (token, client id, and guild id are required)
+ * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
  * Env variables are saved in the ./.env file and accessed as config.VARIABLE_NAME
  */
-import config from './config.js';
 
 
 /**
@@ -154,7 +154,7 @@ createPool();
  * loading the Pokemon names from the dex,
  * and loading the data required for C&C monitoring
  */
-await Promise.all([updateState(client), loadCustoms(), loadDex()]);
+await Promise.all([updateState(client), loadCustoms(), loadDex(), loadCCCooldowns()]);
 
 
 /**
@@ -184,6 +184,7 @@ createCATimer(client);
  * Only do this in production so we can test in dev mode
  */
 if (config.MODE === 'production') {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const server = new net.Server().listen({ fd: 3 });
 }
 

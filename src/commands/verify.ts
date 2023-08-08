@@ -82,12 +82,16 @@ export const command: SlashCommand = {
             }
 
             // make sure the provided name is the same as the person using this command
-            let discordFieldUsername = userData[0].field_value;
+            const discordFieldUsername = userData[0].field_value;
+            /*
+            This was fixed as of discord.js v14.12.0
+            
             // if they didn't provide a #1234, assume they're on the new system
             // for now, the system appends #0 to users
             if (!discordFieldUsername.includes('#')) {
                 discordFieldUsername += '#0';
             }
+            */
 
             if (discordFieldUsername !== interaction.user.tag) {
                 await interaction.followUp('Your forum account does not have your Discord tag in your Identities. Did you enter your username correctly on your profile in the appropriate field? <https://www.smogon.com/forums/account/account-details>');

@@ -2,7 +2,6 @@ import { AuditLogEvent, Guild, GuildAuditLogsEntry } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { pool } from '../helpers/createPool.js';
 import config from '../config.js';
-import { stripDiscrim } from '../helpers/stripDiscrim.js';
 import { buildEmbed, postLogEvent, echoPunishment, embedField, loggedEventTypes } from '../helpers/logging.js';
 
 /**
@@ -42,7 +41,7 @@ export const clientEvent: eventHandler = {
 
             // set the inputs needed to build the embed
             const title = 'User Banned';
-            const description = `${stripDiscrim(target)} was banned from the server by ${stripDiscrim(executor)}.`;
+            const description = `${target.tag} was banned from the server by ${executor.tag}.`;
             const color = 0xED4245;
             const fields: embedField[] = [
                 { name: 'User', value: `<@${target.id}>` },
@@ -81,7 +80,7 @@ export const clientEvent: eventHandler = {
 
             // set the inputs needed to build the embed
             const title = 'User Unbanned';
-            const description = `${stripDiscrim(target)} was unbanned from the server by ${stripDiscrim(executor)}.`;
+            const description = `${target.tag} was unbanned from the server by ${executor.tag}.`;
             const color = 0x57F287;
             const fields: embedField[] = [
                 { name: 'User', value: `<@${target.id}>` },
@@ -115,7 +114,7 @@ export const clientEvent: eventHandler = {
 
             // set the inputs needed to build the embed
             const title = 'User Kicked';
-            const description = `${stripDiscrim(target)} was kicked from the server by ${stripDiscrim(executor)}.`;
+            const description = `${target.tag} was kicked from the server by ${executor.tag}.`;
             const color = 0xE67E22;
             const fields: embedField[] = [
                 { name: 'User', value: `<@${target.id}>` },
@@ -166,7 +165,7 @@ export const clientEvent: eventHandler = {
             if (changes[0].new === undefined) {
                 // set the inputs needed to build the embed
                 const title = 'Timeout Removed';
-                const description = `${stripDiscrim(target)}'s timeout was removed by ${stripDiscrim(executor)}.`;
+                const description = `${target.tag}'s timeout was removed by ${executor.tag}.`;
                 const color = 0xa29863;
                 const fields: embedField[] = [
                     { name: 'User', value: `<@${target.id}>`, inline: true },
@@ -181,6 +180,7 @@ export const clientEvent: eventHandler = {
                 return;
             }
             // else, determine how long the timeout is for
+            // eslint-disable-next-line @typescript-eslint/no-base-to-string
             const newTimeOut = new Date(changes[0].new.toString()).getTime();
             const currentTime = Date.now();
 
@@ -247,7 +247,7 @@ export const clientEvent: eventHandler = {
 
             // set the inputs needed to build the embed
             const title = 'User Timed Out';
-            const description = `${stripDiscrim(target)} was timed out by ${stripDiscrim(executor)}.`;
+            const description = `${target.tag} was timed out by ${executor.tag}.`;
             const color = 0xFFDB00;
             const fields: embedField[] = [
                 { name: 'User', value: `<@${target.id}>`, inline: true },

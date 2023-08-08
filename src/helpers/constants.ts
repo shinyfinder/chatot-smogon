@@ -152,17 +152,17 @@ export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url
         url: 'https://www.smogon.com/forums/forums/past-generation-1v1-analyses.476/',
     },
     '765' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        gens: ['9'],
         tiers: ['natdex ou', 'natdex ag'],
         url: 'https://www.smogon.com/forums/forums/national-dex-analyses.765/',
     },
     '828' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        gens: ['9'],
         tiers: ['natdex mono'],
         url: 'https://www.smogon.com/forums/forums/natdex-mono-analyses.828/',
     },
     '839' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        gens: ['9'],
         tiers: ['natdex uu'],
         url: 'https://www.smogon.com/forums/forums/natdex-uu-analyses.839/',
     },
@@ -202,12 +202,12 @@ export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url
         url: 'https://www.smogon.com/forums/forums/rby-other-tier-analyses.512/',
     },
     '608' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        gens: ['7'],
         tiers: ['lgpe ou'],
         url: 'https://www.smogon.com/forums/forums/pokemon-lets-go-analyses.608/',
     },
     '707' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+        gens: ['8'],
         tiers: ['bdsp ou'],
         url: 'https://www.smogon.com/forums/forums/bdsp-ou-analyses.707/',
     },
@@ -306,7 +306,6 @@ export const gens: {[key: string]: string} = {
     'rb': '1',
     '1': '1',
 };
-
 
 /**
  * CUSTOM AVATAR SUBS

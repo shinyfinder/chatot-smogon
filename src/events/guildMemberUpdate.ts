@@ -2,7 +2,6 @@ import { GuildMember } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import config from '../config.js';
 import { checkVerified } from '../helpers/checkVerified.js';
-import { stripDiscrim } from '../helpers/stripDiscrim.js';
 import { buildEmbed, postLogEvent, loggedEventTypes } from '../helpers/logging.js';
 
 /**
@@ -37,7 +36,7 @@ export const clientEvent: eventHandler = {
         if (!oldBoost && newBoost) {
             // build the embed
             const title = 'Nitro Boost Gained';
-            const description = `${stripDiscrim(newMember.user)} is now boosting! Their profile is <@${newMember.id}>`;
+            const description = `${newMember.user.tag} is now boosting! Their profile is <@${newMember.id}>`;
             const color = 0xFFBCFF;
             const embed = buildEmbed(title, { description: description, color: color });
 
@@ -50,7 +49,7 @@ export const clientEvent: eventHandler = {
         else if (oldBoost && !newBoost) {
             // build the embed
             const title = 'Nitro Boost Lost';
-            const description = `${stripDiscrim(newMember.user)} is no longer boosting. Their profile is <@${newMember.id}>`;
+            const description = `${newMember.user.tag} is no longer boosting. Their profile is <@${newMember.id}>`;
             const color = 0xFD00FD;
             const embed = buildEmbed(title, { description: description, color: color });
 
