@@ -193,7 +193,6 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
                 // otherwise, just alert
                 // the cooldown only applies to QC status
                 if (Date.now().valueOf() < nextAllowedValue && newData.stage === 'QC') {
-                    console.log('On cooldown');
                     continue;
                 }
                 else {
