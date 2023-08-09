@@ -1,6 +1,6 @@
+/* eslint-disable @typescript-eslint/no-base-to-string */
 import { DiscordAPIError, Collection } from 'discord.js';
 import { IErrorPack } from '../types/error';
-import { stripDiscrim } from './stripDiscrim.js';
 
 export function errorHandler(err: unknown) {
     // unpack the error message if it's a slash command error
@@ -36,7 +36,7 @@ export function errorHandler(err: unknown) {
             const intInfo = `This error occurred in the following interaction:
             Command: ${err.int.toString()}
             Guild: ${err.int.guild ? err.int.guild.name : 'None'}
-            User: ${stripDiscrim(err.int.user)} (${err.int.id})`;
+            User: ${err.int.user.tag} (${err.int.id})`;
             
             // log it
             console.error(intInfo);
@@ -53,6 +53,6 @@ export function errorHandler(err: unknown) {
  * @param errPack Object passed to the error handler
  * @returns Boolean 
  */
-function isErrPack(errPack: IErrorPack | unknown): errPack is IErrorPack {
+function isErrPack(errPack: unknown): errPack is IErrorPack {
     return (errPack as IErrorPack).err !== undefined;
 }

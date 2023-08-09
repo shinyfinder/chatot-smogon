@@ -1,7 +1,7 @@
 import { pool } from './createPool.js';
 
 /**
- * Helper file to instantiate the connection to the postgres pool
+ * Helper file to manage the memory cache of custom commands
  */
 interface customdb {
     serverid: string,

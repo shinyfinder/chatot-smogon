@@ -114,6 +114,7 @@ CREATE TABLE chatot.ccprefs (
     role varchar(20),
     gen text,
     stage chatot.ccstagealert,
+    cooldown int,
     PRIMARY KEY (serverid, channelid, gen, stage)
 );
 

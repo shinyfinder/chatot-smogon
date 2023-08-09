@@ -3,10 +3,11 @@
  */
 import { ccSubObj, OMPrefix, pastGenPrefix, rbyOtherPrefix, gens } from './constants.js';
 import { ChannelType, Client } from 'discord.js';
-import { loadCCData, pollCCForums, updateCCCache } from './ccQueries.js';
+import { loadCCData, pollCCForums, updateCCAlertCooldowns, updateCCCache } from './ccQueries.js';
 import { IXFParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
 import { lockout, ccTimeInterval } from './constants.js';
 import { errorHandler } from './errorHandler.js';
+import { ccCooldowns, updateCCCooldownMem } from './manageCCCooldownCache.js';
 
 /**
  * Finds new and updated C&C threads posted to the relevent subforums.
@@ -100,6 +101,11 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
         // to be safe, cast each element in the tier array to lower case
         const newTierLower = newData.tier.map(tier => tier.toLowerCase());
 
+        // if the tier or gen length is greater than 1, we couldn't figure out exactly which tier/gen it is, so don't alert
+        if (newTierLower.length > 1 || newData.gen.length > 1) {
+            continue;
+        }
+
         // check if there are any channels setup to receive alerts for this thread
         const alertChans = oldData.alertchans.filter(chanData => newTierLower.includes(chanData.tier) && newData.gen.includes(chanData.gen));
         
@@ -156,18 +162,19 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
                 // there should only be at most 1
                 // first, check to see if there's a role targeting this specific stage
                 let pingRole: string | null | undefined;
-                const targetedRoleRow = alertChans.filter(achan => achan.channelid === alertChan.channelid && achan.stage.toLowerCase() === newData.stage.toLowerCase());
-
+                let cooldown = 0;
+                const targetedRoleRow = alertChans.find(achan => achan.channelid === alertChan.channelid && achan.stage.toLowerCase() === newData.stage.toLowerCase());
+                const allRoleRow = alertChans.find(achan => achan.channelid === alertChan.channelid && achan.stage.toLowerCase() === 'all');
                 
-                if (targetedRoleRow.length) {
-                    pingRole = targetedRoleRow[0].role;
+                
+                if (targetedRoleRow) {
+                    pingRole = targetedRoleRow.role;
+                    cooldown = targetedRoleRow.cooldown ?? 0;
                 }
                 // if you didn't find one, check again but look for target any
-                else {
-                    const allRoleRow = alertChans.filter(achan => achan.channelid === alertChan.channelid && achan.stage.toLowerCase() === 'all');
-                    if (allRoleRow.length) {
-                        pingRole = allRoleRow[0].role;
-                    }
+                else if (allRoleRow) {
+                    pingRole = allRoleRow.role;
+                    cooldown = allRoleRow.cooldown ?? 0;
                 }
                 
                 // don't ping for GP ready
@@ -175,12 +182,35 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
                     alertmsg = `<@&${pingRole}> `.concat(alertmsg);
                 }
 
-                // post alert to cord
-                await chan.send(alertmsg);
+                // try to get the corresponding element in the alertCDs array
+                const identifier = `${newTierLower[0]}-${newData.gen[0]}`;
+                const matchingCD = ccCooldowns.find(cd => cd.channelid === chan.id && cd.identifier === identifier);
+
+                // if you got a match, get the last run timestamp
+                const nextAllowedValue = matchingCD ? matchingCD.date.valueOf() + (cooldown * 1000 * 60 * 60) : 0;
+
+                // if cooldown is defined (they want one) and it's currently later than the cooldown, alert
+                // otherwise, just alert
+                // the cooldown only applies to QC status
+                if (Date.now().valueOf() < nextAllowedValue && newData.stage === 'QC') {
+                    continue;
+                }
+                else {
+                    await chan.send(alertmsg);
+                }
+                
 
                 // add the thread id to the list of processed
                 processedChans.push(alertChan.channelid);
 
+                // update the entry to the cooldown object if this was a QC progress update
+                if (cooldown && newData.stage === 'QC') {
+                    // update the db
+                    await updateCCAlertCooldowns(chan.id, identifier);
+                    // update the mem cache
+                    updateCCCooldownMem(chan.id, identifier);
+                }
+                
             }
             catch (e) {
                 errorHandler(e);
@@ -365,8 +395,8 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
         // past gen OMs are special in that we also have to get the gen from the title
         // everywhere else(?) is determined by either the thread location or prefix
         if (!gen.length) {
-            // old gen OMs
-            if (thread.node_id === 770) {
+            // old gen OMs and CAP
+            if (thread.node_id === 770 || thread.node_id === 768) {
                 // try to find the gen from the title
                 const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|RS|ADV|GSC|GS|RBY|RB))*\b/i;
                 const matchArr = thread.title.match(genRegex);
