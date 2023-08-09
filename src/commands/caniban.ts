@@ -1,6 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, DiscordAPIError, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { stripDiscrim } from '../helpers/stripDiscrim.js';
 
 
 export const command: SlashCommand = {
@@ -64,10 +63,10 @@ export const command: SlashCommand = {
 
         // alert the results
         if (nonBanGuilds.length) {
-            await interaction.followUp(`${stripDiscrim(user)} cannot be banned from the following guilds:\n${nonBanGuilds.join(', ')}`);
+            await interaction.followUp(`${user.tag} cannot be banned from the following guilds:\n${nonBanGuilds.join(', ')}`);
         }
         else {
-            await interaction.followUp(`${stripDiscrim(user)} is bannable in every guild`);
+            await interaction.followUp(`${user.tag} is bannable in every guild`);
         }
     },
 };
