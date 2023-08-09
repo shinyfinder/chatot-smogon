@@ -70,7 +70,7 @@ export const command: SlashCommand = {
                     forumid = idArr[0].user_id;
                 }
                 else {
-                    await interaction.followUp('Profile not found. Please provide the URL or exact username of your forum profile.');
+                    await interaction.followUp('Profile not found. Please provide the URL or exact username of their forum profile.');
                     return;
                 }
                 

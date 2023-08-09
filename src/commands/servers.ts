@@ -16,13 +16,17 @@ export const command: SlashCommand = {
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
-        // get the list of guild IDs the bot is in
+        // get the list of guilds the bot is in
         const guildNames = interaction.client.guilds.cache.map(guild => guild.name);
 
         // sort them alphabetically
         guildNames.sort((a, b) => a.localeCompare(b, 'en-US', { ignorePunctuation: true }));
 
+        // get the list of guildIDs to check for duplicates
+        const guildIDs = interaction.client.guilds.cache.map(guild => guild.id);
+        const uniqGuildIDs = [...new Set(guildIDs)];
+
         // respond
-        await interaction.reply(`${guildNames.join(', ')}\n\nTotal: ${guildNames.length}`);
+        await interaction.reply(`${guildNames.join(', ')}\n\nTotal: ${guildNames.length} | Repeats: ${guildIDs.length - uniqGuildIDs.length}`);
     },
 };

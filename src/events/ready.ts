@@ -1,6 +1,6 @@
 import { Client } from 'discord.js';
 import { eventHandler } from '../types/event-base';
-
+import config from '../config.js';
 /**
  * on Ready handler
  *
@@ -22,7 +22,10 @@ export const clientEvent: eventHandler = {
             throw new Error('There was an issue logging in');
         }
         // success!
-        console.log(`<6>Ready! Logged in as ${client.user.tag}`);
+        if (config.MODE === 'dev') {
+            console.log(`<6>Ready! Logged in as ${client.user.tag}`);
+        }
+        
         return;
     },
 };
