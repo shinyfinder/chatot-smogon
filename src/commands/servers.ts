@@ -35,7 +35,7 @@ export const command: SlashCommand = {
         // print
         for (const susOwner of susOwnerIDs) {
             const susUser = await interaction.client.users.fetch(susOwner.ownerId);
-            await interaction.channel?.send((`${susOwner.name}: ${susUser.displayName} (${susUser.toString()})`));
+            await interaction.channel?.send((`${susOwner.name}: ${susUser.username} (${susUser.toString()})`));
         }
 
 
