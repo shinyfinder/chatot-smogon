@@ -2,6 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcomman
 import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
 import config from '../config.js';
+import { buildEmbed, postLogEvent, loggedEventTypes } from '../helpers/logging.js';
 
 /**
  * Command to ban a user from every server the bot is in
@@ -96,10 +97,28 @@ export const command: SlashCommand = {
                         });
                     }
                     catch (err) {
-                        failedBans = true;
-                        failedGuilds.push(guild.name);
                         // catch the errors and alert staff so they know which ones the user wasn't banned from
                         // continue, instead of throwing, so that we can ban from as many servers as we can
+                        
+                        failedBans = true;
+
+                        // store the guild name for error logging
+                        failedGuilds.push(guild.name);
+
+                        // try to send a message to their logging channel so they know we tried and they may have to tweak their settings
+                        // first, fetch the member of this guild so we can tell them who it is
+
+                        // set the inputs needed to build the embed
+                        const title = 'Failed Ban Attempt';
+                        const description = `I attempted to ban ${user.toString()} (${user.tag}), but was unsuccessful. Please ensure I have the Ban Users permission and that my role is above that of other users in the Roles menu. <https://support.discord.com/hc/en-us/articles/214836687-Role-Management-101>`;
+                        const color = 0xf00000;
+
+                        // build the discord embed
+                        const embed = buildEmbed(title, { description: description, color: color });
+
+                        // post the log to the logging channel
+                        await postLogEvent(embed, guild, loggedEventTypes.Ban);
+
                         continue;
                         
                     }
@@ -241,8 +260,25 @@ export const command: SlashCommand = {
                             else {
                                 // catch the errors and alert staff so they know which ones the user wasn't banned from
                                 // continue, instead of throwing, so that we can ban from as many servers as we can
-                                // await interaction.channel?.send(`I am unable to ban the user from guild ${guild.name}`);
+
+                                // store the guild name for error logging
                                 failedGuilds.push(guild.name);
+
+                                // try to send a message to their logging channel so they know we tried and they may have to tweak their settings
+                                // first, fetch the member of this guild so we can tell them who it is
+                                const user = await interaction.client.users.fetch(uid);
+
+                                // set the inputs needed to build the embed
+                                const title = 'Failed Ban Attempt';
+                                const description = `I attempted to ban ${user.toString()} (${user.tag}), but was unsuccessful. Please ensure I have the Ban Users permission and that my Role is above that of other users. <https://support.discord.com/hc/en-us/articles/214836687-Role-Management-101>`;
+                                const color = 0xf00;
+
+                                // build the discord embed
+                                const embed = buildEmbed(title, { description: description, color: color });
+
+                                // post the log to the logging channel
+                                await postLogEvent(embed, guild, loggedEventTypes.Ban);
+
                                 continue;
                             }
                             

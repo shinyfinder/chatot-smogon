@@ -7,7 +7,7 @@ import { SlashCommand } from '../types/slash-command-base';
  */
 export const command: SlashCommand = {
     global: false,
-    guilds: ['192713314399289344', '1040378543626002442'],
+    guilds: ['1040378543626002442'],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('servers')
@@ -16,6 +16,7 @@ export const command: SlashCommand = {
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
+        await interaction.deferReply();
         // get the list of guilds the bot is in
         const guildNames = interaction.client.guilds.cache.map(guild => guild.name);
 
@@ -26,7 +27,19 @@ export const command: SlashCommand = {
         const guildIDs = interaction.client.guilds.cache.map(guild => guild.id);
         const uniqGuildIDs = [...new Set(guildIDs)];
 
+        // get the suspicous servers
+        const susGuilds = interaction.client.guilds.cache.filter(g => g.name === 'Chatot Dev' || g.name === 'OU Draft Server');
+        // get their owners
+        const susOwnerIDs = susGuilds.map(({ name, ownerId }) => ({ name, ownerId }));
+
+        // print
+        for (const susOwner of susOwnerIDs) {
+            const susUser = await interaction.client.users.fetch(susOwner.ownerId);
+            await interaction.channel?.send((`${susOwner.name}: ${susUser.displayName} (${susUser.toString()})`));
+        }
+
+
         // respond
-        await interaction.reply(`${guildNames.join(', ')}\n\nTotal: ${guildNames.length} | Repeats: ${guildIDs.length - uniqGuildIDs.length}`);
+        await interaction.followUp(`${guildNames.join(', ')}\n\nTotal: ${guildNames.length} | Repeats: ${guildIDs.length - uniqGuildIDs.length}`);
     },
 };
