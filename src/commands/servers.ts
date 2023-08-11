@@ -28,7 +28,7 @@ export const command: SlashCommand = {
         const uniqGuildIDs = [...new Set(guildIDs)];
 
         // get the suspicous servers
-        const susGuilds = interaction.client.guilds.cache.filter(g => g.name === 'Chatot Dev' || g.name === 'OU Draft Server');
+        const susGuilds = interaction.client.guilds.cache.filter(g => g.name === 'Smogon' || g.name === 'OU Draft Server');
         // get their owners
         const susOwnerIDs = susGuilds.map(({ name, ownerId }) => ({ name, ownerId }));
 
