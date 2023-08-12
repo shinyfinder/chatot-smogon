@@ -3,6 +3,8 @@ import { SlashCommand } from '../types/slash-command-base';
 
 /**
  * Deletes messages in bulk from the specified channel
+ * This is currently a dev-only command
+ * Messages must be newer than 2 weeks
  */
 
 export const command: SlashCommand = {
@@ -26,7 +28,7 @@ export const command: SlashCommand = {
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
-        await interaction.deferReply();
+        await interaction.deferReply({ ephemeral: true });
         // get the user input
         const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText]);
         const num = interaction.options.getInteger('number', true);

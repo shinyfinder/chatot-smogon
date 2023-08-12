@@ -7,7 +7,7 @@ import { buildEmbed, buildMsgDeleteEmbedParams, postLogEvent, loggedEventTypes }
  * messageDelete handler
  *
  * Event handler for when a message is deleted.
- * Deleted messages have their author, content, and person who deleted the message logged to the specified channel in the config file.
+ * Deleted messages have their author, content, and person who deleted the message logged to the specified channel with /config logging.
  * Content information is supplied by the audit log.
  *
  * Note that there is no guarantee when the audit log is populated, nor an event when it is.
