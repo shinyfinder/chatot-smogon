@@ -172,7 +172,7 @@ export async function rmtMonitor(msg: Message) {
     }
 
     // Check for metas
-    const metaRegex = /\b(?:om ?|nd ?|National Dex ?)*(BH|AAA|MnM|STABmons|Godly Gift|GG|NFE|2v2|OMM|Mashup|PH|UU|AG|Monotype|Mono)\b/i;
+    const metaRegex = /\b(?:om ?|nd ?|National Dex ?)*(BH|AAA|MnM|STABmons|Godly Gift|GG|NFE|2v2|OMM|Mashup|PH|UU|AG|PiC|Inh|Monotype|Mono)\b/i;
     const metamatchArr = msg.content.match(metaRegex);
 
     // check to see if you're in the right channel and if you found a meta match
@@ -197,6 +197,12 @@ export async function rmtMonitor(msg: Message) {
             }
             else if (meta == 'stabmons') {
                 identifier = 'STABmons';
+            }
+            else if (meta === 'pic') {
+                identifier = 'PiC';
+            }
+            else if (meta === 'inh') {
+                identifier = 'Inh';
             }
             // bh, aaa, nfe, ph
             else {
@@ -235,6 +241,9 @@ export async function rmtMonitor(msg: Message) {
      * UU
      * AG
      * Mono
+     * PH
+     * Inh
+     * PiC
      */
 
 
