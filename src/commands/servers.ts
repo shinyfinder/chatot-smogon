@@ -23,6 +23,7 @@ export const command: SlashCommand = {
         // sort them alphabetically
         guildNames.sort((a, b) => a.localeCompare(b, 'en-US', { ignorePunctuation: true }));
 
+        /*
         // get the list of guildIDs to check for duplicates
         const guildIDs = interaction.client.guilds.cache.map(guild => guild.id);
         const uniqGuildIDs = [...new Set(guildIDs)];
@@ -41,5 +42,9 @@ export const command: SlashCommand = {
 
         // respond
         await interaction.followUp(`${guildNames.join(', ')}\n\nTotal: ${guildNames.length} | Repeats: ${guildIDs.length - uniqGuildIDs.length}`);
+        */
+
+        // respond
+        await interaction.followUp(`${guildNames.join(', ')}\n\nTotal: ${guildNames.length}`);
     },
 };
