@@ -3,6 +3,7 @@ import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
 import config from '../config.js';
 import { buildEmbed, postLogEvent, loggedEventTypes } from '../helpers/logging.js';
+import { errorHandler } from '../helpers/errorHandler.js';
 
 /**
  * Command to ban a user from every server the bot is in
@@ -117,8 +118,14 @@ export const command: SlashCommand = {
                         const embed = buildEmbed(title, { description: description, color: color });
 
                         // post the log to the logging channel
-                        await postLogEvent(embed, guild, loggedEventTypes.Ban);
-
+                        // wrap in its own try catch so that if this errors too the whole execution doesn't quit
+                        try {
+                            await postLogEvent(embed, guild, loggedEventTypes.Ban);
+                        }
+                        catch (e) {
+                            // if it errors, run it thru the error handler to make sure it's not something we need to address
+                            errorHandler(e);
+                        }
                         continue;
                         
                     }
@@ -271,13 +278,19 @@ export const command: SlashCommand = {
                                 // set the inputs needed to build the embed
                                 const title = 'Failed Ban Attempt';
                                 const description = `I attempted to ban ${user.toString()} (${user.tag}), but was unsuccessful. Please ensure I have the Ban Users permission and that my Role is above that of other users. <https://support.discord.com/hc/en-us/articles/214836687-Role-Management-101>`;
-                                const color = 0xf00;
+                                const color = 0xf00000;
 
                                 // build the discord embed
                                 const embed = buildEmbed(title, { description: description, color: color });
 
                                 // post the log to the logging channel
-                                await postLogEvent(embed, guild, loggedEventTypes.Ban);
+                                // wrap in a try catch in case this errors too
+                                try {
+                                    await postLogEvent(embed, guild, loggedEventTypes.Ban);
+                                }
+                                catch (e) {
+                                    errorHandler(e);
+                                }
 
                                 continue;
                             }
