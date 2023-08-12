@@ -161,6 +161,14 @@ export function validateMeta(meta: string, genIn: string): [boolean, string, str
                 channel = '1059657287293222912';
                 metaOut = 'PH';
                 break;
+            case 'pic':
+                channel = '1059657287293222912';
+                metaOut = 'PiC';
+                break;
+            case 'inh':
+                channel = '1059657287293222912';
+                metaOut = 'Inh';
+                break;
             default:
                 return [false, '', ''];
         }
