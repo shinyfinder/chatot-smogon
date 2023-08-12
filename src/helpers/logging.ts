@@ -52,7 +52,7 @@ export enum loggedEventTypes {
 /**
  * Logs to the log chan, if it exists
  */
-interface ILogChan {
+export interface ILogChan {
     channelid: string,
     logtype: string,
 }
