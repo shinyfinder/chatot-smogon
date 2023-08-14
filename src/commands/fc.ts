@@ -128,7 +128,12 @@ export const command: SlashCommand = {
             const fcArr = fcs.map(fc => fc.code);
 
             // done
-            await interaction.followUp(`${user.displayName}'s ${game} FC(s):\n${fcArr.join('\n')}`);
+            if (fcArr.length) {
+                await interaction.followUp(`${user.displayName}'s ${game} FC(s):\n${fcArr.join('\n')}`);
+            }
+            else {
+                await interaction.followUp(`No ${game} FCs found for ${user.displayName}`);
+            }
         }
         
     },
