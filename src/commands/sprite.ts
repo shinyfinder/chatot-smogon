@@ -9,8 +9,8 @@ import { dexdb, dexNames } from '../helpers/loadDex.js';
  *
  */
 export const command: SlashCommand = {
-    global: true,
-    guilds: [],
+    global: false,
+    guilds: ['265293623778607104'],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('sprite')
