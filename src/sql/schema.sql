@@ -131,6 +131,14 @@ CREATE TABLE chatot.castatus (
     PRIMARY KEY (thread_id)
 );
 
+CREATE TYPE chatot.fcgames AS enum ('3ds', 'home', 'switch', 'pogo');
+CREATE TABLE chatot.fc (
+    userid varchar(20),
+    game chatot.fcgames,
+    code text,
+    PRIMARY KEY (userid, game, code)
+);
+
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------
