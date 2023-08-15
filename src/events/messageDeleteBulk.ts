@@ -19,8 +19,17 @@ export const clientEvent: eventHandler = {
 
         // extract the info we care about
         for (const message of messages.values()) {
+            // if this message wasn't cached, skip it because there's nothing meaningful we can output
+            if (message.partial) {
+                continue;
+            }
             const strOut = `${message.createdAt.toString()} - ${message.author.username} (${message.author.id}) - ${message.content} - ${message.attachments.map(a => a.url).join(', ')}`;
             arrOut.push(strOut);
+        }
+
+        // return early if there's nothing in the holding array
+        if (!arrOut.length) {
+            return;
         }
 
         // add a header to define the syntax
