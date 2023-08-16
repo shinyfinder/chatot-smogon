@@ -3,9 +3,10 @@ import { SlashCommand } from '../types/slash-command-base';
 import { dexdb, dexNames } from '../helpers/loadDex.js';
 
 /**
- * Posts a link in the chat to the specified Pokemon analysis
+ * Posts an image in the chat of the specified Pokemon
  * @param pokemon Name of the pokemon
- * @param gen Which gen to pull up the analysis for
+ * @param gen Which gen to pull up the sprite for
+ * @param shiny Boolean to retrieve shiny sprites
  *
  */
 export const command: SlashCommand = {

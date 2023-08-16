@@ -2,9 +2,9 @@ import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 
 /**
- * Command to lookup information about a user
- * @param user Userid or forum profile URL to lookup
- *
+ * Unit converter
+ * @param thisnumber Number to convert
+ * @param to Output unit
  */
 export const command: SlashCommand = {
     global: true,

@@ -2,7 +2,8 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits }
 import { SlashCommand } from '../types/slash-command-base';
 import { buildEmbed, embedField } from '../helpers/logging.js';
 /**
- * Prints a list of servers the bot is in.
+ * Prints a list of servers the bot is in,
+ * or the details of the specified server.
  * Useful for knowing which servers the bot banned a user from in the case of gban
  */
 export const command: SlashCommand = {
