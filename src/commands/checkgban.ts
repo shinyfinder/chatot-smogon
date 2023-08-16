@@ -7,7 +7,7 @@ export const command: SlashCommand = {
     guilds: ['192713314399289344'],
     // setup the slash command builder
     data: new SlashCommandBuilder()
-        .setName('caniban')
+        .setName('checkgban')
         .setDescription('Checks each server for the ability to ban a user')
         .addUserOption(option =>
             option.setName('user')

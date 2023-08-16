@@ -95,11 +95,19 @@ export const command: SlashCommand = {
             }
         }
 
-        // if they want a shiny sprite, use PS
-        if (shiny) {
+
+        // determine if the mon they selected is a CAP mon
+        const isCapMon = dexdb.find(poke => poke.isnonstandard === 'CAP' && poke.alias === mon);
+
+        // if they want a shiny CAP mon sprite, use PS non-animated
+        if (shiny && isCapMon) {
             // use the gen number to find the folder
             let folderName = '';
-            if (gen <= 5) {
+            if (gen === 1) {
+                await interaction.followUp('Shiny sprites are unavailable in gen 1');
+                return;
+            }
+            else if (gen <= 5) {
                 folderName = `gen${gen}-shiny`;
             }
             else {
@@ -107,6 +115,31 @@ export const command: SlashCommand = {
             }
 
             url = `https://play.pokemonshowdown.com/sprites/${folderName}/${mon}.png`;
+        }
+        // if they want a shiny (non cap mon), use the PS animated when you can
+        // the non-animated sprites are missing some for newer games (i.e. basculegion)
+        // PS animated are only available gen > 4
+        else if (shiny && !isCapMon) {
+            let ext = 'png';
+            // use the gen number to find the folder
+            let folderName = '';
+            if (gen === 1) {
+                await interaction.followUp('Shiny sprites are unavailable in gen 1');
+                return;
+            }
+            else if (gen < 5) {
+                folderName = `gen${gen}-shiny`;
+            }
+            else if (gen === 5) {
+                folderName = 'gen5ani-shiny';
+                ext = 'gif';
+            }
+            else {
+                folderName = 'ani-shiny';
+                ext = 'gif';
+            }
+
+            url = `https://play.pokemonshowdown.com/sprites/${folderName}/${mon}.${ext}`;
         }
         // otherwise, use the dex
         else {
