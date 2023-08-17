@@ -35,10 +35,16 @@ async function checkCAs(client: Client) {
     }
 
     // filter out the threads from the most recent xf poll that are updated so we can update their values in the db
-    // we want to get the threads where the thread ID matches the old, but the stage is different
-    // or where the id is present in new but not old
     const updatedThreads: IXFCAStatus[] = [];
     for (const nthread of newCAStatus) {
+        // sometimes redirects or multiple attachments will cause the thread to show up multiple times
+        // so ensure we only process a thread once
+        if (updatedThreads.some(uthread => uthread.thread_id === nthread.thread_id)) {
+            continue;
+        }
+
+        // we want to get the threads where the thread ID matches the old, but the stage is different
+        // or where the id is present in new but not old
         if (!oldCAStatus.some(othread => othread.thread_id === nthread.thread_id)) {
             updatedThreads.push(nthread);
         }
