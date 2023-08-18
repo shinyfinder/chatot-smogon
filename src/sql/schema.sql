@@ -139,6 +139,14 @@ CREATE TABLE chatot.fc (
     PRIMARY KEY (userid, game, code)
 );
 
+CREATE TABLE chatot.reminders (
+    userid varchar(20),
+    loc varchar(20),
+    tstamp timestamptz,
+    msg text,
+    PRIMARY KEY (userid, msg)
+);
+
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------

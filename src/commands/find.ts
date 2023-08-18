@@ -53,7 +53,7 @@ export const command: SlashCommand = {
             const memberList = await guild.members.fetch();
 
             // filter out the users we care about
-            const matchingMembers = memberList.filter(member => member.nickname?.toLowerCase() === username || member.user.username === username || member.user.displayName === username);
+            const matchingMembers = memberList.filter(member => member.nickname?.toLowerCase() === username || member.user.username === username || member.user.displayName.toLowerCase() === username);
             
             // if you found a match, add it to the holder
             // keep the first found result so we don't duplicate users
