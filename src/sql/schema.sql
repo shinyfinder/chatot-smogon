@@ -144,6 +144,7 @@ CREATE TABLE chatot.reminders (
     loc varchar(20),
     tstamp timestamptz,
     msg text,
+    timerid integer,
     PRIMARY KEY (userid, msg)
 );
 

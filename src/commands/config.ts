@@ -425,7 +425,7 @@ export const command: SlashCommand = {
                     // delete -- delete the corresponding 'all' row
                     await pgClient.query('DELETE FROM chatot.ccprefs WHERE serverid=$1 AND channelid=$2 AND tier=$3 AND gen=$4 AND stage=$5', [interaction.guildId, channel.id, tier, gen, 'all']);
                     // upsert
-                    await pool.query(`INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage)
+                    await pool.query(`INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage, cooldown)
                         VALUES ($1, $2, $3, $4, $5, $6, $7)
                         ON CONFLICT (serverid, channelid, tier, gen, stage) DO UPDATE
                         SET serverid=EXCLUDED.serverid, channelid=EXCLUDED.channelid, tier=EXCLUDED.tier, role=EXCLUDED.role, gen=EXCLUDED.gen, stage=EXCLUDED.stage, cooldown=EXCLUDED.cooldown`,
