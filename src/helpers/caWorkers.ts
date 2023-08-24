@@ -119,7 +119,9 @@ async function alertCAStatus(newDataArr: IXFCAStatus[], client: Client) {
                     // build the attachment 
                     const attachment = new AttachmentBuilder(filepath, { name: newData.filename });
                     // send
-                    await chan.send({ content: `${newData.title} ready for QC <@&1132969853087658045>\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>`, files: [attachment] });
+                    const msg = await chan.send({ content: `${newData.title} ready for QC <@&1132969853087658045>\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>`, files: [attachment] });
+                    // react
+                    await msg.react('👍');
                 }
                 else {
                     await chan.send(`${newData.title} ready for QC <@&1132969853087658045>\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>`);

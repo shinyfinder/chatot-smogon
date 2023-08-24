@@ -19,6 +19,7 @@ import { createCCTimer } from './helpers/ccWorkers.js';
 import { createCATimer } from './helpers/caWorkers.js';
 import { loadCCCooldowns } from './helpers/manageCCCooldownCache.js';
 import config from './config.js';
+import { recreateReminders } from './helpers/reminderWorkers.js';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
@@ -149,12 +150,8 @@ createPool();
 
 /**
  * Cache the info from the db so we don't overload postgres with queries
- * This includes updating the command state and deploying the commands,
- * loading the list of custom commands,
- * loading the Pokemon names from the dex,
- * and loading the data required for C&C monitoring
  */
-await Promise.all([updateState(client), loadCustoms(), loadDex(), loadCCCooldowns()]);
+await Promise.all([updateState(client), loadCustoms(), loadDex(), loadCCCooldowns(), recreateReminders(client)]);
 
 
 /**
