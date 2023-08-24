@@ -140,12 +140,12 @@ CREATE TABLE chatot.fc (
 );
 
 CREATE TABLE chatot.reminders (
+    timerid SERIAL,
     userid varchar(20),
     loc varchar(20),
     tstamp timestamptz,
     msg text,
-    timerid integer,
-    PRIMARY KEY (userid, msg)
+    PRIMARY KEY (timerid)
 );
 
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only

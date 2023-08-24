@@ -31,7 +31,6 @@ export const command: SlashCommand = {
                 option.setName('time')
                 .setDescription('When the bot will remind you')
                 .addChoices(
-                    { name: '10 Sec', value: 10 * 1000 },
                     { name: '30 Min', value: 0.5 * 60 * 60 * 1000 },
                     { name: '1 Hour', value: 1 * 60 * 60 * 1000 },
                     { name: '1.5 Hour', value: 1.5 * 60 * 60 * 1000 },
@@ -77,7 +76,7 @@ export const command: SlashCommand = {
                 .setRequired(true))
             .addIntegerOption(option => 
                 option.setName('day')
-                .setDescription('Date day')
+                .setDescription('Date day (number)')
                 .setMinValue(1)
                 .setMaxValue(31)
                 .setRequired(true))
@@ -107,7 +106,7 @@ export const command: SlashCommand = {
                 .setRequired(true))
             .addNumberOption(option => 
                 option.setName('offset')
-                .setDescription('The UTC/GMT offset of the datetime you entered')
+                .setDescription('The UTC/GMT offset of the datetime you entered. Positive/negative number')
                 .setRequired(true))
             .addStringOption(option =>
                 option.setName('message')
@@ -122,7 +121,7 @@ export const command: SlashCommand = {
             .setDescription('Retrieves the reminders set for the current user or deletes the provided reminder')
             .addIntegerOption(option =>
                 option.setName('delete')
-                .setDescription('Reminder to remove')
+                .setDescription('Reminder ID to remove.')
                 .setRequired(false)))
         .setDMPermission(false),
 
@@ -139,7 +138,7 @@ export const command: SlashCommand = {
                 const allRemsPG = await pool.query('SELECT loc, tstamp, msg, timerid FROM chatot.reminders WHERE userid=$1', [interaction.user.id]);
                 const allRem: { loc: string, tstamp: Date, msg: string, timerid: number }[] | [] = allRemsPG.rows;
 
-                let remOut = 'Here are your reminders:\nID: `time` message\n';
+                let remOut = 'Here are your reminders. Format is ID: `time` message\n';
 
                 for (const rem of allRem) {
                     if (rem.loc === 'dm') {
@@ -176,6 +175,8 @@ export const command: SlashCommand = {
 
         // UNIX timestamp of reminder
         let unixTimestamp = 0;
+        // the delay for setting the timer (difference between now and timestamp)
+        let delay = 0;
         
         // get the user inputs
         const method = interaction.options.getString('method', true);
@@ -188,6 +189,7 @@ export const command: SlashCommand = {
             const time = interaction.options.getNumber('time', true);
             const timestamp = Date.now().valueOf() + (time);
             unixTimestamp = Math.floor(timestamp / 1000);
+            delay = time;
         }
         else if (interaction.options.getSubcommand() === 'custom') {
             // get the entered info
@@ -214,7 +216,7 @@ export const command: SlashCommand = {
             const date = new Date(dateStr);
 
             // find the delay needed to reach the target time
-            const delay = date.valueOf() - Date.now().valueOf();
+            delay = date.valueOf() - Date.now().valueOf();
 
             // if the desired time is in the past, return
             if (delay < 0) {
@@ -222,15 +224,15 @@ export const command: SlashCommand = {
                 return;
             }
 
-            // get the unix time
-            unixTimestamp = Math.floor(delay / 1000);
+            // get the unix time of the reminder
+            unixTimestamp = Math.floor(date.valueOf() / 1000);
         }
 
         // create a timer
-        const tid = setTimeout(() => {
+        const timer = setTimeout(() => {
             void alertUser(loc, message, interaction.user.id, interaction.client)
                 .catch(e => errorHandler(e));
-        }, unixTimestamp * 1000);
+        }, delay);
 
         // attempt to message them in the specified manner
         if (method === 'dm') {
@@ -239,13 +241,14 @@ export const command: SlashCommand = {
                 await interaction.user.send('Ok, I will remind you');
 
                 // store in the db so we don't forget
-                await pool.query('INSERT INTO chatot.reminders (userid, loc, tstamp, msg, timerid) VALUES ($1, $2, to_timestamp($3), $4, $5) ON CONFLICT (userid, msg) DO UPDATE SET userid=EXCLUDED.userid, loc=EXCLUDED.loc, tstamp=EXCLUDED.tstamp, msg=EXCLUDED.msg, timerid=EXCLUDED.timerid', [interaction.user.id, loc, unixTimestamp, message, tid]);
+                await pool.query('INSERT INTO chatot.reminders (userid, loc, tstamp, msg) VALUES ($1, $2, to_timestamp($3), $4)', [interaction.user.id, loc, unixTimestamp, message]);
+
                 // respond to interaction
                 await interaction.followUp('Reminder set');
             }
             // if any error occurred while trying to set the reminder, cancel the timer and let them know
             catch (e) {
-                clearTimeout(tid);
+                clearTimeout(timer);
                 throw e;
             }
         }
@@ -261,14 +264,15 @@ export const command: SlashCommand = {
                 await chan.send(`Ok, <@${interaction.user.id}> I will remind you.`);
 
                 // store in the db so we don't forget
-                await pool.query('INSERT INTO chatot.reminders (userid, loc, tstamp, msg, timerid) VALUES ($1, $2, to_timestamp($3), $4) ON CONFLICT (userid, msg) DO UPDATE SET userid=EXCLUDED.userid, loc=EXCLUDED.loc, tstamp=EXCLUDED.tstamp, msg=EXCLUDED.msg, timerid=EXCLUDED.timerid', [interaction.user.id, loc, unixTimestamp, message, tid]);
+                await pool.query('INSERT INTO chatot.reminders (userid, loc, tstamp, msg) VALUES ($1, $2, to_timestamp($3), $4)', [interaction.user.id, loc, unixTimestamp, message]);
+
                 // respond to interaction
                 await interaction.followUp('Reminder set');
             }
             // if any error occurred while trying to set the reminder, cancel the timer and let them know
             catch (e) {
                 // await interaction.followUp('An error occurred and a reminder was not set. Do you have DMs turned off?');
-                clearTimeout(tid);
+                clearTimeout(timer);
                 throw e;
             }
         }

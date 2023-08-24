@@ -39,13 +39,10 @@ export async function recreateReminders(client: Client) {
         }
 
         // create a new timer for each
-        const tid = setTimeout(() => {
+        setTimeout(() => {
             void alertUser(reminder.loc, reminder.msg, reminder.userid, client)
                 .catch(e => errorHandler(e));
         }, delay);
-
-        // and update the cached timer id
-        await pool.query('UPDATE chatot.reminders SET tid=$1 WHERE userid=$2 AND msg=$3', [tid, reminder.userid, reminder.msg]);
     }
 }
 
