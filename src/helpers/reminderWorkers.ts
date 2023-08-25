@@ -10,11 +10,11 @@ import { errorHandler } from './errorHandler.js';
  * Reminder database interface
  */
 interface IReminderDB {
+    timer_id: number,
     userid: string,
     loc: string,
     tstamp: Date,
     msg: string,
-    timerid: number,
 }
 
 
@@ -23,7 +23,7 @@ interface IReminderDB {
  */
 export async function recreateReminders(client: Client) {
     // load the db
-    const reminderPG = (await pool.query('SELECT userid, loc, tstamp, msg, timerid FROM chatot.reminders'));
+    const reminderPG = (await pool.query('SELECT timer_id, userid, loc, tstamp, msg FROM chatot.reminders'));
     const reminderDB: IReminderDB[] | [] = reminderPG.rows;
 
     // recreate the timer for each
@@ -39,10 +39,14 @@ export async function recreateReminders(client: Client) {
         }
 
         // create a new timer for each
-        setTimeout(() => {
+        const timer = setTimeout(() => {
             void alertUser(reminder.loc, reminder.msg, reminder.userid, client)
                 .catch(e => errorHandler(e));
         }, delay);
+
+        // update the timer_primitive in the db with the new value
+        const timerPrim = timer[Symbol.toPrimitive]();
+        await pool.query('UPDATE chatot.reminders SET timer_primitive=$1 WHERE userid=$2 AND msg=$3 AND loc=$4', [timerPrim, reminder.userid, reminder.msg, reminder.loc]);
     }
 }
 
@@ -69,5 +73,5 @@ export async function alertUser(loc: string, message: string, userID: string, cl
     }
 
     // remove the info from the db
-    await pool.query('DELETE FROM chatot.reminders WHERE userid=$1 AND msg=$2', [userID, message]);
+    await pool.query('DELETE FROM chatot.reminders WHERE userid=$1 AND msg=$2 and loc=$3', [userID, message, loc]);
 }
