@@ -142,13 +142,11 @@ CREATE TABLE chatot.fc (
 -- timer_id: unique id for each timer in the table
 -- timer_primitive: node timer object number used to reference/cancel
 CREATE TABLE chatot.reminders (
-    timer_id SERIAL,
+    timerid integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     userid varchar(20),
-    loc varchar(20),
+    channelid varchar(20),
     tstamp timestamptz,
-    msg text,
-    timer_primitive integer,
-    PRIMARY KEY (timer_id)
+    msg text
 );
 
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only

@@ -10,9 +10,9 @@ import { errorHandler } from './errorHandler.js';
  * Reminder database interface
  */
 interface IReminderDB {
-    timer_id: number,
+    timerid: number,
     userid: string,
-    loc: string,
+    channelid: string,
     tstamp: Date,
     msg: string,
 }
@@ -23,7 +23,7 @@ interface IReminderDB {
  */
 export async function recreateReminders(client: Client) {
     // load the db
-    const reminderPG = (await pool.query('SELECT timer_id, userid, loc, tstamp, msg FROM chatot.reminders'));
+    const reminderPG = (await pool.query('SELECT timerid, userid, channelid, tstamp, msg FROM chatot.reminders'));
     const reminderDB: IReminderDB[] | [] = reminderPG.rows;
 
     // recreate the timer for each
@@ -39,20 +39,24 @@ export async function recreateReminders(client: Client) {
         }
 
         // create a new timer for each
-        const timer = setTimeout(() => {
-            void alertUser(reminder.loc, reminder.msg, reminder.userid, client)
+        setTimeout(() => {
+            void alertUser(reminder.channelid, reminder.msg, reminder.userid, client)
                 .catch(e => errorHandler(e));
         }, delay);
 
-        // update the timer_primitive in the db with the new value
-        const timerPrim = timer[Symbol.toPrimitive]();
-        await pool.query('UPDATE chatot.reminders SET timer_primitive=$1 WHERE userid=$2 AND msg=$3 AND loc=$4', [timerPrim, reminder.userid, reminder.msg, reminder.loc]);
     }
 }
 
 
 export async function alertUser(loc: string, message: string, userID: string, client: Client) {
-    if (loc === 'dm') {
+    // make sure they didn't delete the row to cancel the timer
+    // if they did (rowCount = 0), don't alert
+    const storedTimer = await pool.query('SELECT timerid FROM chatot.reminders WHERE userid=$1 AND channelid=$2 AND msg=$3', [userID, loc, message]);
+    if (!storedTimer.rowCount) {
+        return;
+    }
+
+    if (loc === userID) {
         // fetch the user object again to make sure it's still in the cache
         const user = await client.users.fetch(userID);
 
@@ -73,5 +77,5 @@ export async function alertUser(loc: string, message: string, userID: string, cl
     }
 
     // remove the info from the db
-    await pool.query('DELETE FROM chatot.reminders WHERE userid=$1 AND msg=$2 and loc=$3', [userID, message, loc]);
+    await pool.query('DELETE FROM chatot.reminders WHERE userid=$1 AND channelid=$2 AND msg=$3', [userID, loc, message]);
 }

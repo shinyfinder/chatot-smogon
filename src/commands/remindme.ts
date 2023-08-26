@@ -31,9 +31,6 @@ export const command: SlashCommand = {
                 option.setName('time')
                 .setDescription('When the bot will remind you')
                 .addChoices(
-                    { name: '10 Sec', value: 10 * 1000 },
-                    { name: '1 Min', value: 1 * 60 * 1000 },
-                    { name: '5 Min', value: 5 * 60 * 1000 },
                     { name: '30 Min', value: 0.5 * 60 * 60 * 1000 },
                     { name: '1 Hour', value: 1 * 60 * 60 * 1000 },
                     { name: '1.5 Hour', value: 1.5 * 60 * 60 * 1000 },
@@ -41,7 +38,8 @@ export const command: SlashCommand = {
                     { name: '2.5 Hour', value: 2.5 * 60 * 60 * 1000 },
                     { name: '3 Hour', value: 3 * 60 * 60 * 1000 },
                     { name: '4 Hour', value: 4 * 60 * 60 * 1000 },
-                    { name: '6 Hour', value: 5 * 60 * 60 * 1000 },
+                    { name: '5 Hour', value: 5 * 60 * 60 * 1000 },
+                    { name: '6 Hour', value: 6 * 60 * 60 * 1000 },
                     { name: '12 Hour', value: 12 * 60 * 60 * 1000 },
                     { name: '18 Hour', value: 18 * 60 * 60 * 1000 },
                     { name: '1 Day', value: 24 * 60 * 60 * 1000 },
@@ -137,28 +135,22 @@ export const command: SlashCommand = {
             const deletionID = interaction.options.getInteger('delete');
 
             interface IReminderPG {
-                timer_id: number,
-                loc: string,
+                timerid: number,
+                channelid: string,
                 tstamp: Date,
                 msg: string,
-                timer_primitive: number
             }
 
             // if they didn't enter a number, retrieve all of the ones for the user
             if (deletionID === null) {
-                const allRemsPG = await pool.query('SELECT timer_id, loc, tstamp, msg, timer_primitive FROM chatot.reminders WHERE userid=$1', [interaction.user.id]);
+                const allRemsPG = await pool.query('SELECT timerid, channelid, tstamp, msg FROM chatot.reminders WHERE userid=$1', [interaction.user.id]);
                 const allRem: IReminderPG[] | [] = allRemsPG.rows;
 
                 let remOut = 'Here are your reminders. Format is ID: `time` message\n';
 
+                // loop over the reminders to create the output string
                 for (const rem of allRem) {
-                    if (rem.loc === 'dm') {
-                        remOut += `- ${ rem.timer_id }: <t:${ Math.floor(rem.tstamp.valueOf() / 1000) }:R> ${ rem.msg }\n`;
-                    }
-                    else {
-                        remOut += `- ${ rem.timer_id }: <t:${ Math.floor(rem.tstamp.valueOf() / 1000) }:f> ${ rem.msg }\n`;
-                    }
-                    
+                    remOut += `- ${ rem.timerid }: <t:${ Math.floor(rem.tstamp.valueOf() / 1000) }:f> ${ rem.msg }\n`;
                 }
 
                 // post 
@@ -168,13 +160,10 @@ export const command: SlashCommand = {
             // also match with their userid so that someone else can't delete it
             else {
                 // try to delete from the db
-                const deleteReminderPG = await pool.query('DELETE FROM chatot.reminders WHERE userid=$1 AND timer_id=$2 RETURNING timer_id, loc, tstamp, msg, timer_primitive', [interaction.user.id, deletionID]);
+                const deleteReminderPG = await pool.query('DELETE FROM chatot.reminders WHERE userid=$1 AND timerid=$2 RETURNING timerid, channelid, tstamp, msg', [interaction.user.id, deletionID]);
                 const deletedRows: IReminderPG[] | [] = deleteReminderPG.rows;
 
-                // if you deleted something, also clear the timeout
-                // otherwise, let them know nothing happened
                 if (deletedRows.length) {
-                    clearTimeout(deletedRows[0].timer_primitive);
                     await interaction.followUp('Reminder deleted');
                 }
                 else {
@@ -194,7 +183,7 @@ export const command: SlashCommand = {
         const method = interaction.options.getString('method', true);
         const message = interaction.options.getString('message', true);
 
-        const loc = method === 'dm' ? method : interaction.channelId;
+        const loc = method === 'dm' ? interaction.user.id : interaction.channelId;
 
         if (interaction.options.getSubcommand() === 'basic') {
             // get the timestamp from the value of the selected option
@@ -235,6 +224,11 @@ export const command: SlashCommand = {
                 await interaction.followUp('Reminder cannot be set to the past!');
                 return;
             }
+            // timers have a max delay value of signed 32-bit max
+            else if (delay > 2147483646) { 
+                await interaction.followUp('Reminder too far into the future! Longest allowable delay is about 24 days');
+                return;
+            }
 
             // get the unix time of the reminder
             unixTimestamp = Math.floor(date.valueOf() / 1000);
@@ -246,17 +240,14 @@ export const command: SlashCommand = {
                 .catch(e => errorHandler(e));
         }, delay);
 
-        // get the id so we can cancel it later
-        const timerPrim = timer[Symbol.toPrimitive]();
-
         // attempt to message them in the specified manner
         if (method === 'dm') {
             try {
                 // send a test message
-                await interaction.user.send('Ok, I will remind you');
+                await interaction.user.send(`Ok, I will remind you on <t:${unixTimestamp}:f>`);
 
                 // store in the db so we don't forget
-                await pool.query('INSERT INTO chatot.reminders (userid, loc, tstamp, msg, timer_primitive) VALUES ($1, $2, to_timestamp($3), $4, $5)', [interaction.user.id, loc, unixTimestamp, message, timerPrim]);
+                await pool.query('INSERT INTO chatot.reminders (userid, channelid, tstamp, msg) VALUES ($1, $2, to_timestamp($3), $4)', [interaction.user.id, loc, unixTimestamp, message]);
 
                 // respond to interaction
                 await interaction.followUp('Reminder set');
@@ -276,10 +267,10 @@ export const command: SlashCommand = {
             }
             try {
                 // send a test message
-                await chan.send(`Ok, <@${interaction.user.id}> I will remind you.`);
+                await chan.send(`Ok, <@${interaction.user.id}> I will remind you on <t:${unixTimestamp}:f>`);
 
                 // store in the db so we don't forget
-                await pool.query('INSERT INTO chatot.reminders (userid, loc, tstamp, msg, timer_primitive) VALUES ($1, $2, to_timestamp($3), $4, $5)', [interaction.user.id, loc, unixTimestamp, message, timerPrim]);
+                await pool.query('INSERT INTO chatot.reminders (userid, channelid, tstamp, msg) VALUES ($1, $2, to_timestamp($3), $4)', [interaction.user.id, loc, unixTimestamp, message]);
 
                 // respond to interaction
                 await interaction.followUp('Reminder set');
