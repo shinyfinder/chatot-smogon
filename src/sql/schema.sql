@@ -139,8 +139,8 @@ CREATE TABLE chatot.fc (
     PRIMARY KEY (userid, game, code)
 );
 
--- timer_id: unique id for each timer in the table
--- timer_primitive: node timer object number used to reference/cancel
+-- timerid: unique id for each timer in the table
+-- channelid can be either the channel id (for post) or the user id (for dm)
 CREATE TABLE chatot.reminders (
     timerid integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     userid varchar(20),
