@@ -61,7 +61,7 @@ export async function alertUser(loc: string, message: string, userID: string, cl
         const user = await client.users.fetch(userID);
 
         // send them the alert
-        await user.send(`Reminder to ${message}`);
+        await user.send(`Reminder: ${message}`);
     }
     else {
         // make sure the user and channel objects are cached
@@ -73,7 +73,7 @@ export async function alertUser(loc: string, message: string, userID: string, cl
         await client.users.fetch(userID);
 
         // send them the alert
-        await chan.send(`<@${userID}>, reminder to ${message}`);
+        await chan.send(`<@${userID}>, reminder: ${message}`);
     }
 
     // remove the info from the db
