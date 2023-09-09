@@ -1,10 +1,11 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction, Message, DiscordAPIError } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction, Message, DiscordAPIError, PermissionFlagsBits, ChannelType } from 'discord.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
 import config from '../config.js';
 import { buildEmbed, postLogEvent, loggedEventTypes } from '../helpers/logging.js';
 import { errorHandler } from '../helpers/errorHandler.js';
-
+import { pool } from '../helpers/createPool.js';
+import { updatePublicRatersList } from '../helpers/updatePublicRatersList.js';
 /**
  * Command to ban a user from every server the bot is in
  * Supports banning a single user or a group of users depending on the selected subcommand
@@ -41,6 +42,7 @@ export const command: SlashCommand = {
     async execute(interaction: ChatInputCommandInteraction) {
         // make sure this command is used in a the main smogon server
         const allowedGuildID = config.MODE === 'dev' ? '1040378543626002442' : '192713314399289344';
+
         if (!interaction.guild || !(interaction.guild.id === allowedGuildID)) {
             await interaction.reply({ content: 'You must use this command in the Smogon main server!', ephemeral: true });
             return;
@@ -51,6 +53,46 @@ export const command: SlashCommand = {
          * SINGLE USER
          */
         if (interaction.options.getSubcommand() === 'user') {
+            // defer our reply to give us time to process
+            await interaction.deferReply();
+
+            // make sure we have the necessary permissions
+            // first fetch our member object
+            const me = await interaction.guild.members.fetchMe();
+
+            // then get our permissions for the interaction channel
+            const chanPerms = me.permissionsIn(interaction.channelId);
+
+            // check for the necessary permissions based on where it's used
+            // also make sure it's used in a channel (which it has to be, but we have to type check it anyway)
+            if (interaction.channel?.type === ChannelType.GuildText) {
+                const permSet = [
+                    PermissionFlagsBits.ViewChannel,
+                    PermissionFlagsBits.SendMessages,
+                ];
+
+                if (!chanPerms.has(permSet)) {
+                    await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read and posting access to this channel, then start over.');
+                    return;
+                }
+
+            }
+            else if (interaction.channel?.type === ChannelType.PublicThread || interaction.channel?.type === ChannelType.PrivateThread) {
+                const permSet = [
+                    PermissionFlagsBits.ViewChannel,
+                    PermissionFlagsBits.SendMessagesInThreads,
+                ];
+
+                if (!chanPerms.has(permSet)) {
+                    await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read and posting access to this channel, then start over.');
+                    return;
+                }
+            }
+            else {
+                await interaction.followUp('This command must be used in a channel.');
+                return;
+            }
+
             // get the inputs
             const user = interaction.options.getUser('user', true);
             let auditEntry = interaction.options.getString('reason');
@@ -62,7 +104,7 @@ export const command: SlashCommand = {
 
             
             // prompt the user to confirm
-            await interaction.reply(`You are about to ban ${user.tag} from every server I am in. Are you sure? (y/n)`);
+            await interaction.followUp(`You are about to ban ${user.tag} from every server I am in. Are you sure? (y/n)`);
             const filter = (m: Message) => interaction.user.id === m.author.id;
             const confirmMsg = await interaction.channel?.awaitMessages({ filter, time: 60 * 1000, max: 1, errors: ['time'] });
             if (confirmMsg === undefined) {
@@ -135,13 +177,21 @@ export const command: SlashCommand = {
                 // let them know you're done and whether you had issues along the way
                 if (failedBans) {
                     await interaction.channel?.send(`I attempted to ban the user from every server I am in, but I had issues in:\n\n${failedGuilds.join(', ')}`);
-                    return;
                 }
                 else {
                     await interaction.channel?.send('I have banned the user from every server I am in.');
-                    return;
                 }
-                
+
+                // remove them from the list of raters, returning an array of the deleted metas/gens
+                const removedRates: { meta: string, gen: string }[] | [] = (await pool.query('DELETE FROM chatot.raters WHERE userid=$1 RETURNING meta, gen', [user.id])).rows;
+
+                // if something was deleted, update the public rater list
+                // only do this for the main cord
+                if (removedRates.length) {
+                    for (const rateObj of removedRates) {
+                        await updatePublicRatersList(interaction.client, rateObj.meta, rateObj.gen);
+                    }
+                }
             } 
             else {
                 await interaction.channel?.send('Global ban exited');
@@ -196,6 +246,45 @@ export const command: SlashCommand = {
 
             // on submit, defer our reply so we can process it
             await submittedModal.deferReply();
+
+            // make sure we have the necessary permissions
+            // we do this now because Discord has a limitation that the modal must be the first response to the interaction
+
+            // first fetch our member object
+            const me = await interaction.guild.members.fetchMe();
+
+            // then get our permissions for the interaction channel
+            const chanPerms = me.permissionsIn(interaction.channelId);
+
+            // check for the necessary permissions based on where it's used
+            // also make sure it's used in a channel (which it has to be, but we have to type check it anyway)
+            if (interaction.channel?.type === ChannelType.GuildText) {
+                const permSet = [
+                    PermissionFlagsBits.ViewChannel,
+                    PermissionFlagsBits.SendMessages,
+                ];
+
+                if (!chanPerms.has(permSet)) {
+                    await submittedModal.followUp('I lack the permissions to invoke this command. Please ensure I have read and posting access to this channel, then start over.');
+                    return;
+                }
+
+            }
+            else if (interaction.channel?.type === ChannelType.PublicThread || interaction.channel?.type === ChannelType.PrivateThread) {
+                const permSet = [
+                    PermissionFlagsBits.ViewChannel,
+                    PermissionFlagsBits.SendMessagesInThreads,
+                ];
+
+                if (!chanPerms.has(permSet)) {
+                    await submittedModal.followUp('I lack the permissions to invoke this command. Please ensure I have read and posting access to this channel, then start over.');
+                    return;
+                }
+            }
+            else {
+                await submittedModal.followUp('This command must be used in a channel.');
+                return;
+            }
 
             // get the info they entered
             const uids = submittedModal.fields.getTextInputValue('idInput').split('\n');
@@ -307,11 +396,20 @@ export const command: SlashCommand = {
                     // get the unique guild names
                     const uniqFailedGuilds = [...new Set(failedGuilds)];
                     await interaction.channel?.send(`I attempted to ban the provided id(s) from every server I am in, but I had some issues in:\n\n${uniqFailedGuilds.join(', ')}`);
-                    return;
                 }
                 else {
                     await interaction.channel?.send('I have banned the provided id(s) from every server I am in.');
-                    return;
+                }
+
+                // remove them from the list of raters, returning an array of the deleted metas/gens
+                const removedRates: { meta: string, gen: string }[] | [] = (await pool.query('DELETE FROM chatot.raters WHERE userid = ANY($1) RETURNING meta, gen', [uids])).rows;
+
+                // if something was deleted, update the public rater list
+                // only do this for the main cord
+                if (removedRates.length) {
+                    for (const rateObj of removedRates) {
+                        await updatePublicRatersList(interaction.client, rateObj.meta, rateObj.gen);
+                    }
                 }
                 
             }

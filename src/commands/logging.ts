@@ -60,7 +60,7 @@ export const command: SlashCommand = {
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         // typecheck
-        if (interaction.guildId === null) {
+        if (!interaction.guild || interaction.guildId === null) {
             return;
         }
         await interaction.deferReply({ ephemeral: true });
@@ -77,6 +77,39 @@ export const command: SlashCommand = {
             // get the user input
             const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
             let type = interaction.options.getString('type');
+
+            // make sure we have the necessary perms to post there
+            // first fetch our member object
+            const me = await interaction.guild.members.fetchMe();
+
+            // then get our permissions for the specified channel
+            const chanPerms = me.permissionsIn(chan.id);
+
+            if (chan.type === ChannelType.PublicThread || chan.type === ChannelType.PrivateThread) {
+                const permSet = [
+                    PermissionFlagsBits.ViewChannel,
+                    PermissionFlagsBits.AttachFiles,
+                    PermissionFlagsBits.SendMessagesInThreads,
+                ];
+
+                if (!chanPerms.has(permSet)) {
+                    await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read, posting, and attachment perms to the provided channel, then start over.');
+                    return;
+                }
+            }
+            else if (chan.type === ChannelType.GuildText) {
+                const permSet = [
+                    PermissionFlagsBits.ViewChannel,
+                    PermissionFlagsBits.AttachFiles,
+                    PermissionFlagsBits.SendMessages,
+                ];
+
+                if (!chanPerms.has(permSet)) {
+                    await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read, posting, and attachment perms to the provided channel, then start over.');
+                    return;
+                }
+            }
+            
 
             // try to default the chan type to whatever is currently there if no type was provided
             // if no results, default to all

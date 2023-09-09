@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Channel, ChannelType, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-
+import config from '../config.js';
 /**
  * Command to dump the line count of the comp helpers in the RMT channels of the main Smogon discord.
  * Line counts are calcuated over a specified date range.
@@ -32,15 +32,20 @@ export const command: SlashCommand = {
 
     // execute the code
 	async execute(interaction: ChatInputCommandInteraction) {
+        await interaction.deferReply();
+
         // check to make sure it's actually in a guild and used in the main server
         // this should always happen, since this command is a guild command
-        if (!interaction.guild || !(interaction.guild.id == '192713314399289344')) {
-            await interaction.reply({ content: 'You must use this command in the Smogon main server!', ephemeral: true });
+        const allowedGuildID = config.MODE === 'dev' ? '1040378543626002442' : '192713314399289344';
+        const roleFetchID = config.MODE === 'dev' ? '1046554598783062066' : '630430864634937354';
+
+        if (!interaction.guild || interaction.guild.id !== allowedGuildID) {
+            await interaction.followUp('You must use this command in the Smogon main server!');
             return;
         }
 
         // fetch the userlist from the interaction channel
-        const smogon = interaction.client.guilds.cache.get('192713314399289344');
+        const smogon = interaction.client.guilds.cache.get(allowedGuildID);
 
         if (smogon === undefined) {
             return;
@@ -50,12 +55,12 @@ export const command: SlashCommand = {
 
         // filter the users by the desired role
         // here the id is the role id for comp helpers
-        const roleFetch = interaction.guild.roles.cache.get('630430864634937354');
+        const roleFetch = interaction.guild.roles.cache.get(roleFetchID);
         
 
         // typecheck roleFetch to make sure you got the data
         if (roleFetch === undefined) {
-            await interaction.reply({ content: 'An error occured fetching the data from the API', ephemeral: true });
+            await interaction.followUp('An error occured fetching the data from the API');
             return;
         }
 
@@ -72,7 +77,7 @@ export const command: SlashCommand = {
 
         // if either of the inputs are not valid dates, return
         if (isNaN(startDateIn.valueOf()) || isNaN(endDateIn.valueOf())) {
-            await interaction.reply({ content: `There was an error parsing your dates. I received ${startDateIn.toString()} and ${endDateIn.toString()}. Check your input and try again.`, ephemeral: true });
+            await interaction.followUp(`There was an error parsing your dates. I received ${startDateIn.toString()} and ${endDateIn.toString()}. Check your input and try again.`);
             return;
         }
 
@@ -103,61 +108,111 @@ export const command: SlashCommand = {
 
         // check if either date is into the future or less than the discord epoch
         if (startDateDisc < 0 || startDateDisc > curTimeDisc || endDateDisc > curTimeDisc) {
-            await interaction.reply({ content: 'Dates entered are either too far into the future or past. Please retry', ephemeral: true });
+            await interaction.followUp('Dates entered are either too far into the future or past. Please retry');
+            return;
+        }
+
+
+        // make sure we have the necessary permissions
+        // first fetch our member object
+        const me = await interaction.guild.members.fetchMe();
+
+        // then get our permissions for the interaction channel
+        const chanPerms = me.permissionsIn(interaction.channelId);
+
+        // check for the necessary permissions based on where it's used
+        // also make sure it's used in a channel (which it has to be, but we have to type check it anyway)
+        if (interaction.channel?.type === ChannelType.GuildText) {
+            const permSet = [
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessages,
+                PermissionFlagsBits.AttachFiles,
+            ];
+
+            if (!chanPerms.has(permSet)) {
+                await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read, posting, and attachment permissions to this channel, then start over.');
+                return;
+            }
+
+        }
+        else if (interaction.channel?.type === ChannelType.PublicThread || interaction.channel?.type === ChannelType.PrivateThread) {
+            const permSet = [
+                PermissionFlagsBits.ViewChannel,
+                PermissionFlagsBits.SendMessagesInThreads,
+                PermissionFlagsBits.AttachFiles,
+            ];
+
+            if (!chanPerms.has(permSet)) {
+                await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read, posting, and attachment permissions to this channel, then start over.');
+                return;
+            }
+        }
+        // this should never trigger, but technically we should typecheck
+        else {
+            await interaction.followUp('This command must be used in a channel.');
             return;
         }
 
         // all checks have passed, so let the user know you're processing messages
-        await interaction.reply(`Parsing messages from ${ startDateIn.toString() } to ${ endDateIn.toString() }...`);
+        await interaction.followUp(`Parsing messages from ${ startDateIn.toString() } to ${ endDateIn.toString() }...`);
 
         // loop through the different RMT channels to get all of the messages
         // forums
-        const channelIDs = [
-            // pu
-            '1061136198208344084',
-            // nu
-            '1061136091056439386',
-            // ru
-            '1061135917160607766',
-            // lc
-            '1061135027599048746',
-            // bss
-            '1060690402711183370',
-            // other
-            '1060682530094862477',
-            // ag
-            '1060682013453078711',
-            // old gen ou
-            '1060339824537641152',
-            // natdex non ou
-            '1060037469472555028',
-            // uber
-            '1059901370477576272',
-            // uu
-            '1059743348728004678',
-            // nat dex ou'
-            '1059714627384115290',
-            // cap
-            '1059708679814918154',
-            // vgc
-            '1059704283072831499',
-            // 1v1 -- old
-            '1059673638145622096',
-            // 1v1 -- new
-            '1089349311080439882',
-            // mono
-            '1059658237097545758',
-            // om
-            '1059657287293222912',
-            // dou
-            '1059655497587888158',
-            // ou
-            '1059653209678950460',
-            // rmt1 -- legacy system
-            '630478290729041920',
-            // rmt2 -- legacy system
-            '635257209416187925',
-        ];
+        let channelIDs: string[] = [];
+        if (config.MODE === 'dev') {
+            channelIDs = [
+                '1060628096442708068',
+            ];
+        }
+        else {
+            channelIDs = [
+                // pu
+                '1061136198208344084',
+                // nu
+                '1061136091056439386',
+                // ru
+                '1061135917160607766',
+                // lc
+                '1061135027599048746',
+                // bss
+                '1060690402711183370',
+                // other
+                '1060682530094862477',
+                // ag
+                '1060682013453078711',
+                // old gen ou
+                '1060339824537641152',
+                // natdex non ou
+                '1060037469472555028',
+                // uber
+                '1059901370477576272',
+                // uu
+                '1059743348728004678',
+                // nat dex ou'
+                '1059714627384115290',
+                // cap
+                '1059708679814918154',
+                // vgc
+                '1059704283072831499',
+                // 1v1 -- old
+                '1059673638145622096',
+                // 1v1 -- new
+                '1089349311080439882',
+                // mono
+                '1059658237097545758',
+                // om
+                '1059657287293222912',
+                // dou
+                '1059655497587888158',
+                // ou
+                '1059653209678950460',
+                // rmt1 -- legacy system
+                '630478290729041920',
+                // rmt2 -- legacy system
+                '635257209416187925',
+            ];
+        }
+        
 
         // variable preallocation for getting the users who posted messages in the RMT channels
         const users: string[] = [], userIDs: string[] = [], charCount: number[] = [];
