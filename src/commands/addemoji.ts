@@ -2,9 +2,8 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits }
 import { SlashCommand } from '../types/slash-command-base';
 
 /**
- * Command to post FAQs to the chat, optionally which one.
+ * Adds an emoji from the server given a url to the image
  *
- * Subcommands are add, remove, and list
  */
 
 export const command: SlashCommand = {
@@ -25,7 +24,7 @@ export const command: SlashCommand = {
             .setDescription('Name for the emoji')
             .setRequired(true),
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageEmojisAndStickers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuildExpressions),
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         // return if not used in guild
