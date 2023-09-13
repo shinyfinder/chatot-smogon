@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, SlashCommandSubcommandsOnlyBuilder } from 'discord.js';
+import { SlashCommandBuilder, AutocompleteInteraction, SlashCommandSubcommandsOnlyBuilder, CommandInteraction } from 'discord.js';
 
 /**
  * Slash command class definition
@@ -23,5 +23,5 @@ export interface SlashCommand {
     cooldown?: number;
     data: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
     autocomplete? (interaction: AutocompleteInteraction): Promise<void>;
-    execute (interaction: ChatInputCommandInteraction): Promise<void>;
+    execute (interaction: CommandInteraction): Promise<void>;
 }
