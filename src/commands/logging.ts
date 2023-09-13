@@ -3,10 +3,8 @@ import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 
 /**
- * Command to turn mod logging on or off in the channel this command is used.
- * Only 1 logging channel is allowed per server.
+ * Command to turn mod logging on or off in a channel
  * Logged actions are ban add/remove, kick, (un)boosting, (un)timeout, and message deleted
- * Subcommands are on and off
  */
 
 export const command: SlashCommand = {
