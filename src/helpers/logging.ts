@@ -1,5 +1,6 @@
 import { EmbedBuilder, Guild, ChannelType, User, Message } from 'discord.js';
 import { pool } from './createPool.js';
+import { errorHandler } from './errorHandler.js';
 
 /**
  * Group of functions helpful for logging 
@@ -92,73 +93,80 @@ export async function postLogEvent(ogEmbed: EmbedBuilder, guild: Guild, event: l
         // loop over the list of relevant channels
         // there'll only be 1, but technically there could be more
         for (const chan of targetChans) {
-            // clone the embed so that we keep the original as a reference in case there are multiple log chans in a server
-            const embed = EmbedBuilder.from(ogEmbed);
+            try {
+                // clone the embed so that we keep the original as a reference in case there are multiple log chans in a server
+                const embed = EmbedBuilder.from(ogEmbed);
 
-            const channel = guild.client.channels.cache.get(chan.channelid);
-            if (!(channel?.type === ChannelType.GuildText || channel?.type === ChannelType.PublicThread || channel?.type === ChannelType.PrivateThread)) {
-                return;
-            }
-            // special logic for message deletes
-            // we didn't build the attachment filed before becuase we want to preview embeds
-            if (message) {
-                // echo any attachments in another post
-                if (message.attachments.size > 0) {
-                    const attachmentArr = [...message.attachments.values()];
-                    // loop over all of the attachments and build an embed for each one so they preview
-                    let attCnt = 0;
-                    let postCnt = 0;
-                    // set the max number of images per embed
-                    // the max that can be previewed is 4
-                    // any more are embeded, but you need to scroll thru the images to see them.
-                    const maxImages = 4;
-                    let embedHolder: EmbedBuilder[] = [];
+                const channel = guild.client.channels.cache.get(chan.channelid);
+                if (!(channel?.type === ChannelType.GuildText || channel?.type === ChannelType.PublicThread || channel?.type === ChannelType.PrivateThread)) {
+                    continue;
+                }
+                // special logic for message deletes
+                // we didn't build the attachment filed before becuase we want to preview embeds
+                if (message) {
+                    // echo any attachments in another post
+                    if (message.attachments.size > 0) {
+                        const attachmentArr = [...message.attachments.values()];
+                        // loop over all of the attachments and build an embed for each one so they preview
+                        let attCnt = 0;
+                        let postCnt = 0;
+                        // set the max number of images per embed
+                        // the max that can be previewed is 4
+                        // any more are embeded, but you need to scroll thru the images to see them.
+                        const maxImages = 4;
+                        let embedHolder: EmbedBuilder[] = [];
 
-                    for (const attachment of attachmentArr) {
-                        const attPreviewEmbed = EmbedBuilder.from(embed).setURL('https://www.smogon.com/forums/').setImage(attachment.url);
-                        embedHolder.push(attPreviewEmbed);
-                        attCnt++;
-                        // set a cap for the number of images allowed in each embed
-                        // then reset the holder
-                        if (attCnt === maxImages) {
-                            // build the embed attachment list
+                        for (const attachment of attachmentArr) {
+                            const attPreviewEmbed = EmbedBuilder.from(embed).setURL('https://www.smogon.com/forums/').setImage(attachment.url);
+                            embedHolder.push(attPreviewEmbed);
+                            attCnt++;
+                            // set a cap for the number of images allowed in each embed
+                            // then reset the holder
+                            if (attCnt === maxImages) {
+                                // build the embed attachment list
+                                embedHolder.forEach((newEmbed, index) => {
+                                    embedHolder[index] = newEmbed.addFields(
+                                        { name: 'Attachments', value: attachmentArr.slice(maxImages * postCnt, maxImages * (postCnt + 1)).map(att => att.url).join(' ') },
+                                    );
+                                });
+
+                                // post it 
+                                await channel.send({ embeds: embedHolder });
+                                // increment the post counter
+                                postCnt++;                    
+                                // reset the holder and attachment counter
+                                embedHolder = [];
+                                attCnt = 0;
+                            }
+                        }
+                        // if there are still pending embeds in the holder, we need to post them
+                        if (embedHolder.length) {
+                            // build the attachment list
                             embedHolder.forEach((newEmbed, index) => {
                                 embedHolder[index] = newEmbed.addFields(
-                                    { name: 'Attachments', value: attachmentArr.slice(maxImages * postCnt, maxImages * (postCnt + 1)).map(att => att.url).join(' ') },
+                                    { name: 'Attachments', value: attachmentArr.slice(maxImages * postCnt).map(att => att.url).join(' ') },
                                 );
                             });
-
-                            // post it 
+                                
                             await channel.send({ embeds: embedHolder });
-                            // increment the post counter
-                            postCnt++;                    
-                            // reset the holder and attachment counter
-                            embedHolder = [];
-                            attCnt = 0;
                         }
                     }
-                    // if there are still pending embeds in the holder, we need to post them
-                    if (embedHolder.length) {
-                        // build the attachment list
-                        embedHolder.forEach((newEmbed, index) => {
-                            embedHolder[index] = newEmbed.addFields(
-                                { name: 'Attachments', value: attachmentArr.slice(maxImages * postCnt).map(att => att.url).join(' ') },
-                            );
-                        });
-                            
-                        await channel.send({ embeds: embedHolder });
+                    else {
+                        embed.addFields(
+                            { name: 'Attachments', value: 'No Attachments' },
+                        );
+                        await channel.send({ embeds: [embed] });
                     }
                 }
                 else {
-                    embed.addFields(
-                        { name: 'Attachments', value: 'No Attachments' },
-                    );
                     await channel.send({ embeds: [embed] });
                 }
             }
-            else {
-                await channel.send({ embeds: [embed] });
+            catch (e) {
+                errorHandler(e);
+                continue;
             }
+            
         }
         
     }
