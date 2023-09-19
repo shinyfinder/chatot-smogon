@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { dexdb, dexNames } from '../helpers/loadDex.js';
+import fetch from 'node-fetch';
 
 /**
  * Posts an image in the chat of the specified Pokemon
@@ -132,7 +133,7 @@ export const command: SlashCommand = {
 
         // try to get the URL
         const res = await fetch(url);
-
+        
         // if the get failed, the image doesn't exist.
         // try to get the non-animated sprite (these are typically updated before the animated exist when new gens come out)
         if (res.status !== 200) {
