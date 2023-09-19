@@ -95,67 +95,87 @@ export const command: SlashCommand = {
                 return;
             }
         }
+        
+        /**
+         * PS uses a different naming convention for their sprites than the dex.
+         * Becase this is based on the dex, we need to modify the input a bit to match the PS convention
+         */
+        // get the name of the mon
+        // we know this exists already and can just take the first value
+        const monName = dexNames.filter(n => n.value === mon)[0].name;
+        
+        // remove any special characters that aren't -
+        let nameSanitized = monName.replaceAll(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
 
-
-        // determine if the mon they selected is a CAP mon
-        const isCapMon = dexdb.find(poke => poke.isnonstandard === 'CAP' && poke.alias === mon);
-
-        // if they want a shiny CAP mon sprite, use PS non-animated
-        if (shiny && isCapMon) {
-            // use the gen number to find the folder
-            let folderName = '';
-            if (gen === 1) {
-                await interaction.followUp('Shiny sprites are unavailable in gen 1');
-                return;
-            }
-            else if (gen <= 5) {
-                folderName = `gen${gen}-shiny`;
-            }
-            else {
-                folderName = 'dex-shiny';
-            }
-
-            url = `https://play.pokemonshowdown.com/sprites/${folderName}/${mon}.png`;
+        // we need a special overwrite for the jangmo-o line because they have a special character that gets replaced
+        if (nameSanitized === 'jangmo-o' || nameSanitized === 'hakamo-o' || nameSanitized === 'kommo-o') {
+            nameSanitized = nameSanitized.replace('-', '');
         }
-        // if they want a shiny (non cap mon), use the PS animated when you can
-        // the non-animated sprites are missing some for newer games (i.e. basculegion)
-        // PS animated are only available gen > 4
-        else if (shiny && !isCapMon) {
-            let ext = 'png';
-            // use the gen number to find the folder
-            let folderName = '';
-            if (gen === 1) {
-                await interaction.followUp('Shiny sprites are unavailable in gen 1');
-                return;
-            }
-            else if (gen < 5) {
-                folderName = `gen${gen}-shiny`;
-            }
-            else if (gen === 5) {
-                folderName = 'gen5ani-shiny';
-                ext = 'gif';
-            }
-            else {
-                folderName = 'ani-shiny';
-                ext = 'gif';
-            }
 
-            url = `https://play.pokemonshowdown.com/sprites/${folderName}/${mon}.${ext}`;
+        let folderName = '';
+        let ext = 'gif';
+        
+        // first gens don't have shinies
+        if (gen === 1 && shiny) {
+            await interaction.followUp('Shiny sprites are unavailable in gen 1');
+            return;
         }
-        // otherwise, use the dex
+        // if gen < 5, no animated sprites exist
+        else if (gen <= 5) {
+            folderName = shiny ? `gen${gen}ani-shiny` : `gen${gen}ani`;
+        }
         else {
-            // map the gen alias to the gen number
-            // sprites are stored under the alias
-            const spriteGenAliases = ['rb', 'c', 'rs', 'dp', 'bw', 'xy', 'xy', 'xy', 'xy'];
-            const folderName = spriteGenAliases[gen - 1];
+            folderName = shiny ? 'ani-shiny' : 'ani';
+        }
 
-            // the dex uses different file extensions depending on the gen
-            const ext = ['gs', 'bw', 'xy', 'sm', 'sm', 'ss', 'sv'].includes(folderName) ? 'gif' : 'png';
-            url = `https://smogon.com/dex/media/sprites/${folderName}/${mon}.${ext}`;
+        url = `https://play.pokemonshowdown.com/sprites/${folderName}/${nameSanitized}.${ext}`;
+
+        // try to get the URL
+        const res = await fetch(url);
+
+        // if the get failed, the image doesn't exist.
+        // try to get the non-animated sprite (these are typically updated before the animated exist when new gens come out)
+        if (res.status !== 200) {
+            if (gen <= 5) {
+                folderName = shiny ? `gen${gen}-shiny` : `gen${gen}`;
+                ext = 'png';
+            }
+            else {
+                folderName = shiny ? 'dex-shiny' : 'dex';
+                ext = 'png';
+            }
+
+            url = `https://play.pokemonshowdown.com/sprites/${folderName}/${nameSanitized}.${ext}`;
+
+            const resRetry = await fetch(url);
+
+            // if that still doesn't work and they want a shiny
+            // tell them we don't have it
+            if (resRetry.status !== 200 && shiny) {
+                url = 'No shiny sprite found; the databases are probably not updated yet.';
+            }
+            // if the res doesn't work and they want a regular sprite, try to use the dex
+            else if (resRetry.status !== 200) {
+                // map the gen alias to the gen number
+                // sprites are stored under the alias
+                const spriteGenAliases = ['rb', 'c', 'rs', 'dp', 'bw', 'xy', 'xy', 'xy', 'xy'];
+                folderName = spriteGenAliases[gen - 1];
+
+                // the dex uses different file extensions depending on the gen
+                ext = ['gs', 'bw', 'xy', 'sm', 'sm', 'ss', 'sv'].includes(folderName) ? 'gif' : 'png';
+                url = `https://smogon.com/dex/media/sprites/${folderName}/${mon}.${ext}`;
+
+                // if THAT still doesn't work, tell them we don't have the sprite yet
+                // because discord autoembeds the sprite, we can just post the url to post the image
+                // meaning we can reuse the url variable for the fail string
+                const resRetry2 = await fetch(url);
+                if (resRetry2.status !== 200) {
+                    url = 'No sprite found; the databases are probably not updated yet.';
+                }
+            }
         }
         
-
-        // make and post the url
+        // post the url
         await interaction.followUp(url);
         
     },
