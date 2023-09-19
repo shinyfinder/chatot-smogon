@@ -3,11 +3,7 @@ import { ContextCommand } from '../types/context-command-base';
 import { pool } from '../helpers/createPool.js';
 
 /**
- * Command to test the bot is online and working.
- * @param data SlashCommandBuilder() instance from discord.js
- * @returns Replies Pong! in the chat
- *
- * Can be used as a template for future commands
+ * Context menu command to keep a message pinned to the top of the pins list in a channel
  */
 export const command: ContextCommand = {
     global: true,
