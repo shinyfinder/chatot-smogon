@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, PermissionFlagsBits, ChannelType } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
+import { checkChanPerms } from '../helpers/checkChanPerms.js';
 
 /**
  * Command to turn mod logging on or off in a channel
@@ -77,35 +78,16 @@ export const command: SlashCommand = {
             let type = interaction.options.getString('type');
 
             // make sure we have the necessary perms to post there
-            // first fetch our member object
-            const me = await interaction.guild.members.fetchMe();
-
-            // then get our permissions for the specified channel
-            const chanPerms = me.permissionsIn(chan.id);
-
+            let canComplete = true;
             if (chan.type === ChannelType.PublicThread || chan.type === ChannelType.PrivateThread) {
-                const permSet = [
-                    PermissionFlagsBits.ViewChannel,
-                    PermissionFlagsBits.AttachFiles,
-                    PermissionFlagsBits.SendMessagesInThreads,
-                ];
-
-                if (!chanPerms.has(permSet)) {
-                    await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read, posting, and attachment perms to the provided channel, then start over.');
-                    return;
-                }
+                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'AttachFiles', 'SendMessagesInThreads']);
             }
             else if (chan.type === ChannelType.GuildText) {
-                const permSet = [
-                    PermissionFlagsBits.ViewChannel,
-                    PermissionFlagsBits.AttachFiles,
-                    PermissionFlagsBits.SendMessages,
-                ];
+                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'AttachFiles', 'SendMessages']);
+            }
 
-                if (!chanPerms.has(permSet)) {
-                    await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read, posting, and attachment perms to the provided channel, then start over.');
-                    return;
-                }
+            if (!canComplete) {
+                return;
             }
             
 

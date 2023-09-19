@@ -1,6 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Channel, ChannelType, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import config from '../config.js';
+import { checkChanPerms } from '../helpers/checkChanPerms.js';
 /**
  * Command to dump the line count of the comp helpers in the RMT channels of the main Smogon discord.
  * Line counts are calcuated over a specified date range.
@@ -112,44 +113,23 @@ export const command: SlashCommand = {
             return;
         }
 
-
-        // make sure we have the necessary permissions
-        // first fetch our member object
-        const me = await interaction.guild.members.fetchMe();
-
-        // then get our permissions for the interaction channel
-        const chanPerms = me.permissionsIn(interaction.channelId);
-
         // check for the necessary permissions based on where it's used
         // also make sure it's used in a channel (which it has to be, but we have to type check it anyway)
+        let canComplete = true;
         if (interaction.channel?.type === ChannelType.GuildText) {
-            const permSet = [
-                PermissionFlagsBits.ViewChannel,
-                PermissionFlagsBits.SendMessages,
-                PermissionFlagsBits.AttachFiles,
-            ];
-
-            if (!chanPerms.has(permSet)) {
-                await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read, posting, and attachment permissions to this channel, then start over.');
-                return;
-            }
-
+            canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessages', 'AttachFiles']);
         }
         else if (interaction.channel?.type === ChannelType.PublicThread || interaction.channel?.type === ChannelType.PrivateThread) {
-            const permSet = [
-                PermissionFlagsBits.ViewChannel,
-                PermissionFlagsBits.SendMessagesInThreads,
-                PermissionFlagsBits.AttachFiles,
-            ];
-
-            if (!chanPerms.has(permSet)) {
-                await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read, posting, and attachment permissions to this channel, then start over.');
-                return;
-            }
+            canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessagesInThreads', 'AttachFiles']);
         }
         // this should never trigger, but technically we should typecheck
         else {
             await interaction.followUp('This command must be used in a channel.');
+            return;
+        }
+        // if we lack the perms, return
+        // we already let them know
+        if (!canComplete) {
             return;
         }
 

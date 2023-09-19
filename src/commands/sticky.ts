@@ -1,6 +1,7 @@
 import { ContextMenuCommandBuilder, ApplicationCommandType, MessageContextMenuCommandInteraction, PermissionFlagsBits } from 'discord.js';
 import { ContextCommand } from '../types/context-command-base';
 import { pool } from '../helpers/createPool.js';
+import { checkChanPerms } from '../helpers/checkChanPerms.js';
 
 /**
  * Context menu command to keep a message pinned to the top of the pins list in a channel
@@ -18,6 +19,18 @@ export const command: ContextCommand = {
     // execute our desired task
     async execute(interaction: MessageContextMenuCommandInteraction) {
         await interaction.deferReply({ ephemeral: true });
+
+        if (!interaction.guild) {
+            await interaction.followUp('Command must be used in a guild');
+            return;
+        }
+
+        // make sure we have the necessary permissions in the channel
+        const canComplete = await checkChanPerms(interaction, ['ManageMessages']);
+        if (!canComplete) {
+            return;
+        }
+        
 
         // get the targeted message
         const msg = interaction.targetMessage;
