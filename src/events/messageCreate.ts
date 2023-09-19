@@ -1,4 +1,4 @@
-import { Message } from 'discord.js';
+import { Message, MessageType } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { rmtMonitor } from '../helpers/rmt-monitor.js';
 import { dbmatches } from '../helpers/manageCustomsCache.js';
@@ -16,7 +16,15 @@ export const clientEvent: eventHandler = {
     // execute the command
     async execute(msg: Message) {
         // if the message is a bot or in a DM, ignore it
-        if (msg.author.bot || !msg.guild) {
+        // unless it is a "chatot pinned" message, then you can delete it to clean up
+        if (!msg.guild) {
+            return;
+        }
+        else if (msg.author.bot && msg.type === MessageType.ChannelPinnedMessage) {
+            await msg.delete();
+            return;
+        }
+        else if (msg.author.bot) {
             return;
         }
         

@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction, Message, DiscordAPIError, PermissionFlagsBits, ChannelType } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction, Message, DiscordAPIError, ChannelType } from 'discord.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
 import config from '../config.js';
@@ -6,6 +6,7 @@ import { buildEmbed, postLogEvent, loggedEventTypes } from '../helpers/logging.j
 import { errorHandler } from '../helpers/errorHandler.js';
 import { pool } from '../helpers/createPool.js';
 import { updatePublicRatersList } from '../helpers/updatePublicRatersList.js';
+import { checkChanPerms } from '../helpers/checkChanPerms.js';
 /**
  * Command to ban a user from every server the bot is in
  * Supports banning a single user or a group of users depending on the selected subcommand
@@ -56,40 +57,22 @@ export const command: SlashCommand = {
             // defer our reply to give us time to process
             await interaction.deferReply();
 
-            // make sure we have the necessary permissions
-            // first fetch our member object
-            const me = await interaction.guild.members.fetchMe();
-
-            // then get our permissions for the interaction channel
-            const chanPerms = me.permissionsIn(interaction.channelId);
-
             // check for the necessary permissions based on where it's used
             // also make sure it's used in a channel (which it has to be, but we have to type check it anyway)
+            let canComplete = true;
             if (interaction.channel?.type === ChannelType.GuildText) {
-                const permSet = [
-                    PermissionFlagsBits.ViewChannel,
-                    PermissionFlagsBits.SendMessages,
-                ];
-
-                if (!chanPerms.has(permSet)) {
-                    await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read and posting access to this channel, then start over.');
-                    return;
-                }
+                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessages']);
 
             }
             else if (interaction.channel?.type === ChannelType.PublicThread || interaction.channel?.type === ChannelType.PrivateThread) {
-                const permSet = [
-                    PermissionFlagsBits.ViewChannel,
-                    PermissionFlagsBits.SendMessagesInThreads,
-                ];
-
-                if (!chanPerms.has(permSet)) {
-                    await interaction.followUp('I lack the permissions to invoke this command. Please ensure I have read and posting access to this channel, then start over.');
-                    return;
-                }
+                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessagesInThreads']);
             }
             else {
                 await interaction.followUp('This command must be used in a channel.');
+                return;
+            }
+
+            if (!canComplete) {
                 return;
             }
 
@@ -247,42 +230,22 @@ export const command: SlashCommand = {
             // on submit, defer our reply so we can process it
             await submittedModal.deferReply();
 
-            // make sure we have the necessary permissions
-            // we do this now because Discord has a limitation that the modal must be the first response to the interaction
-
-            // first fetch our member object
-            const me = await interaction.guild.members.fetchMe();
-
-            // then get our permissions for the interaction channel
-            const chanPerms = me.permissionsIn(interaction.channelId);
-
             // check for the necessary permissions based on where it's used
             // also make sure it's used in a channel (which it has to be, but we have to type check it anyway)
+            let canComplete = true;
             if (interaction.channel?.type === ChannelType.GuildText) {
-                const permSet = [
-                    PermissionFlagsBits.ViewChannel,
-                    PermissionFlagsBits.SendMessages,
-                ];
-
-                if (!chanPerms.has(permSet)) {
-                    await submittedModal.followUp('I lack the permissions to invoke this command. Please ensure I have read and posting access to this channel, then start over.');
-                    return;
-                }
+                canComplete = await checkChanPerms(submittedModal, ['ViewChannel', 'SendMessages']);
 
             }
             else if (interaction.channel?.type === ChannelType.PublicThread || interaction.channel?.type === ChannelType.PrivateThread) {
-                const permSet = [
-                    PermissionFlagsBits.ViewChannel,
-                    PermissionFlagsBits.SendMessagesInThreads,
-                ];
-
-                if (!chanPerms.has(permSet)) {
-                    await submittedModal.followUp('I lack the permissions to invoke this command. Please ensure I have read and posting access to this channel, then start over.');
-                    return;
-                }
+                canComplete = await checkChanPerms(submittedModal, ['ViewChannel', 'SendMessagesInThreads']);
             }
             else {
                 await submittedModal.followUp('This command must be used in a channel.');
+                return;
+            }
+
+            if (!canComplete) {
                 return;
             }
 

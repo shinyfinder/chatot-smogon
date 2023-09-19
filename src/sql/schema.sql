@@ -149,6 +149,13 @@ CREATE TABLE chatot.reminders (
     msg text
 );
 
+CREATE TABLE chatot.stickies (
+    serverid varchar(20),
+    channelid varchar(20),
+    messageid varchar(20),
+    PRIMARY KEY (channelid)
+);
+
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------

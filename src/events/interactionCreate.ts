@@ -8,7 +8,6 @@ import { SlashCommand } from '../types/slash-command-base';
  * On interaction, this checks whether the interaction is a command and is registered to the bot.
  * If it it registered, it compares against the list of commands and fires the appropriate one
  *
- * This triggers on interaction, so the once parameter is left out (alternatively could be set to false)
  */
 
 export const clientEvent: eventHandler = {
@@ -16,11 +15,11 @@ export const clientEvent: eventHandler = {
     name: 'interactionCreate',
     // execute the command
     async execute(interaction: BaseInteraction) {
-        // check whether the interaction is a slash command. If not, return
-        if (interaction.isChatInputCommand()) {
+        // check whether the interaction is a slash/context menu command. If not, return
+        if (interaction.isCommand()) {
             // try to fetch the command the user used from the list of commands the bot has
             // is undefined if it is not this bot's command
-            const command = interaction.client.commands.get(interaction.commandName) as SlashCommand;
+            const command = interaction.client.commands.get(interaction.commandName);
 
             // if it's not a command of this bot, return
             if (!command) return;
@@ -129,7 +128,7 @@ export const clientEvent: eventHandler = {
         }
         // autocomplete handler
         else if (interaction.isAutocomplete()) {
-            const command = interaction.client.commands.get(interaction.commandName) as SlashCommand;
+            const command = interaction.client.commands.get(interaction.commandName) as SlashCommand | undefined;
 
             // if it's not a command of this bot, return
             if (!command) return;

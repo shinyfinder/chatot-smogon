@@ -20,6 +20,7 @@ import { createCATimer } from './helpers/caWorkers.js';
 import { loadCCCooldowns } from './helpers/manageCCCooldownCache.js';
 import config from './config.js';
 import { recreateReminders } from './helpers/reminderWorkers.js';
+import { ContextCommand } from './types/context-command-base';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
@@ -67,11 +68,11 @@ const commandsPath = new URL('commands', import.meta.url);
 // get a list of all the .js files in the commands directory
 // this returns an array of strings
 interface cmdModule {
-    command: SlashCommand;
+    command: SlashCommand | ContextCommand;
 }
 
 const commandFiles = await readdir(commandsPath);
-const modulePromiseArr: Promise<SlashCommand | eventHandler>[] = [];
+const modulePromiseArr: Promise<SlashCommand | eventHandler | ContextCommand>[] = [];
 
 // assign dynamically loading all of the local command files to an array so we can load them in parallel
 for (const file of commandFiles) {
