@@ -3,6 +3,8 @@ import { eventHandler } from '../types/event-base.js';
 import { sleep } from '../helpers/sleep.js';
 import { pool } from '../helpers/createPool.js';
 import { buildEmbed, buildMsgDeleteEmbedParams, postLogEvent, loggedEventTypes } from '../helpers/logging.js';
+import config from '../config.js';
+
 /**
  * messageDelete handler
  *
@@ -22,7 +24,8 @@ export const clientEvent: eventHandler = {
     // execute the code for this event
     async execute(message: Message) {
         // ignore DMs and uncached messages
-        if (!message.guild || !message.author) {
+        // also ignore bot self deletes
+        if (!message.guild || !message.author || message.author.id === config.CLIENT_ID) {
             return;
         }
 
