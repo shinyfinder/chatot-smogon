@@ -165,6 +165,13 @@ export const command: SlashCommand = {
                     await interaction.channel?.send('I have banned the user from every server I am in.');
                 }
 
+                // add this entry to the gban db
+                await pool.query(`
+                INSERT INTO chatot.gbans (target, date, reason)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (target)
+                DO UPDATE SET target=EXCLUDED.target, date=EXCLUDED.date, reason=EXCLUDED.reason`, [user.id, new Date(), auditEntry]);
+
                 // remove them from the list of raters, returning an array of the deleted metas/gens
                 const removedRates: { meta: string, gen: string }[] | [] = (await pool.query('DELETE FROM chatot.raters WHERE userid=$1 RETURNING meta, gen', [user.id])).rows;
 
@@ -363,6 +370,16 @@ export const command: SlashCommand = {
                 else {
                     await interaction.channel?.send('I have banned the provided id(s) from every server I am in.');
                 }
+
+                // add these entries to the gban db
+                const dates = [new Date()];
+                const reasons = [auditEntry];
+
+                await pool.query(`
+                INSERT INTO chatot.gbans (target, date, reason)
+                VALUES (UNNEST($1::text[]), UNNEST($2::timestamptz[]), UNNEST($3::text[]))
+                ON CONFLICT (target)
+                DO UPDATE SET target=EXCLUDED.target, date=EXCLUDED.date, reason=EXCLUDED.reason`, [uids, dates, reasons]);
 
                 // remove them from the list of raters, returning an array of the deleted metas/gens
                 const removedRates: { meta: string, gen: string }[] | [] = (await pool.query('DELETE FROM chatot.raters WHERE userid = ANY($1) RETURNING meta, gen', [uids])).rows;

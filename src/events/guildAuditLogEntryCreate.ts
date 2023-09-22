@@ -85,6 +85,7 @@ export const clientEvent: eventHandler = {
             const fields: embedField[] = [
                 { name: 'User', value: `<@${target.id}>` },
                 { name: 'Unbanned by', value: `<@${executor.id}>` },
+                { name: 'Reason', value: `${reason}` },
             ];
 
             // build the discord embed
