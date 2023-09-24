@@ -3,8 +3,7 @@ import { validateMeta } from '../helpers/validateMeta.js';
 import { pool } from '../helpers/createPool.js';
 import { updatePublicRatersList } from './updatePublicRatersList.js';
 /**
- * Command to add a team rater
- * @param user Username or ID to add to the list of raters
+ * Helper function to renove a team rater from a specific gen+meta
  */
 export async function removeRater(interaction: ChatInputCommandInteraction, metaIn: string, gen: string, user: User) {
     // make sure the provided meta is accurate
@@ -40,10 +39,12 @@ export async function removeRater(interaction: ChatInputCommandInteraction, meta
     return;
 }
 
-
-export async function removeRaterAll(interaction: ChatInputCommandInteraction, user: User) {
+/**
+ * Helper  function to remove a team rater from all of their metas
+ */
+export async function removeRaterAll(interaction: ChatInputCommandInteraction, id: string[]) {
     // remove them from the db
-    const removedRates: { meta: string, gen: string }[] | [] = (await pool.query('DELETE FROM chatot.raters WHERE userid=$1 RETURNING meta, gen', [user.id])).rows;
+    const removedRates: { meta: string, gen: string }[] | [] = (await pool.query('DELETE FROM chatot.raters WHERE userid=ANY($1) RETURNING meta, gen', [id])).rows;
     
     // if something was deleted, update the public rater list
     // only do this for the main cord
@@ -52,7 +53,4 @@ export async function removeRaterAll(interaction: ChatInputCommandInteraction, u
             await updatePublicRatersList(interaction.client, rateObj.meta, rateObj.gen);
         }
     }
-
-    // done
-    await interaction.followUp(`${user.username} was removed from all rater lists`);
 }

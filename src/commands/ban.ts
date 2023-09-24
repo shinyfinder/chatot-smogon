@@ -1,8 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { pool } from '../helpers/createPool.js';
-import { updatePublicRatersList } from '../helpers/updatePublicRatersList.js';
 import config from '../config.js';
+import { removeRaterAll } from '../helpers/removerater.js';
 
 /**
  * Command to ban a user from the server
@@ -108,17 +107,10 @@ export const command: SlashCommand = {
             await interaction.followUp(`${user.username} has been banned. I did not DM them. Possible reasons are they have DMs turned off, they are not in a server with me, or you didn't specify a DM.`);
         }
         
-        // remove them from the list of raters, returning an array of the deleted metas/gens
-        const removedRates: { meta: string, gen: string }[] | [] = (await pool.query('DELETE FROM chatot.raters WHERE userid=$1 RETURNING meta, gen', [user.id])).rows;
-
-        // if something was deleted, update the public rater list
+        // remove them from the list of raters
         // only do this for the main cord
-        if (removedRates.length) {
-            if ((config.MODE === 'dev' && interaction.guildId === config.GUILD_ID) || (config.MODE === 'production' && interaction.guildId === '192713314399289344')) {
-                for (const rateObj of removedRates) {
-                    await updatePublicRatersList(interaction.client, rateObj.meta, rateObj.gen);
-                }
-            }
+        if ((config.MODE === 'dev' && interaction.guildId === config.GUILD_ID) || (config.MODE === 'production' && interaction.guildId === '192713314399289344')) {
+            await removeRaterAll(interaction, [user.id]);
         }
     },
 };

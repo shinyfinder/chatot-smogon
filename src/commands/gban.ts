@@ -5,8 +5,8 @@ import config from '../config.js';
 import { buildEmbed, postLogEvent, loggedEventTypes } from '../helpers/logging.js';
 import { errorHandler } from '../helpers/errorHandler.js';
 import { pool } from '../helpers/createPool.js';
-import { updatePublicRatersList } from '../helpers/updatePublicRatersList.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
+import { removeRaterAll } from '../helpers/removerater.js';
 /**
  * Command to ban a user from every server the bot is in
  * Supports banning a single user or a group of users depending on the selected subcommand
@@ -173,15 +173,7 @@ export const command: SlashCommand = {
                 DO UPDATE SET target=EXCLUDED.target, date=EXCLUDED.date, reason=EXCLUDED.reason`, [user.id, new Date(), auditEntry]);
 
                 // remove them from the list of raters, returning an array of the deleted metas/gens
-                const removedRates: { meta: string, gen: string }[] | [] = (await pool.query('DELETE FROM chatot.raters WHERE userid=$1 RETURNING meta, gen', [user.id])).rows;
-
-                // if something was deleted, update the public rater list
-                // only do this for the main cord
-                if (removedRates.length) {
-                    for (const rateObj of removedRates) {
-                        await updatePublicRatersList(interaction.client, rateObj.meta, rateObj.gen);
-                    }
-                }
+                await removeRaterAll(interaction, [user.id]);
             } 
             else {
                 await interaction.channel?.send('Global ban exited');
@@ -382,15 +374,7 @@ export const command: SlashCommand = {
                 DO UPDATE SET target=EXCLUDED.target, date=EXCLUDED.date, reason=EXCLUDED.reason`, [uids, dates, reasons]);
 
                 // remove them from the list of raters, returning an array of the deleted metas/gens
-                const removedRates: { meta: string, gen: string }[] | [] = (await pool.query('DELETE FROM chatot.raters WHERE userid = ANY($1) RETURNING meta, gen', [uids])).rows;
-
-                // if something was deleted, update the public rater list
-                // only do this for the main cord
-                if (removedRates.length) {
-                    for (const rateObj of removedRates) {
-                        await updatePublicRatersList(interaction.client, rateObj.meta, rateObj.gen);
-                    }
-                }
+                await removeRaterAll(interaction, uids);
                 
             }
             else {

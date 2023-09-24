@@ -177,26 +177,6 @@ export const command: SlashCommand = {
             }
 
             await interaction.respond(filteredOut);
-
-            // filter the options shown to the user based on what they've typed in
-            // everything is cast to lower case to handle differences in case
-            /*
-            const filtered = choices.filter(choice => choice.toLowerCase().includes(focusedOption.value.toLowerCase()));
-
-            // discord has a max length of 25 options
-            // When the command is selected from the list, nothing is entered into the fields so it tries to return every entry in choices as autocomplete answers
-            // so we need to trim the output to 25 choices so it doesn't throw an error
-            let filteredOut: string[];
-            if (filtered.length > 25) {
-                filteredOut = filtered.slice(0, 25);
-            }
-            else {
-                filteredOut = filtered;
-            }
-            await interaction.respond(
-                filteredOut.map(choice => ({ name: choice, value: choice })),
-            );
-            */
         }
     },
     // execute our desired task
@@ -227,8 +207,11 @@ export const command: SlashCommand = {
             const user = interaction.options.getUser('user', true);
 
             // remove them
-            await removeRaterAll(interaction, user);
-            return;            
+            await removeRaterAll(interaction, [user.id]);
+            
+            // done
+            await interaction.followUp(`${user.username} was removed from all rater lists`);      
+
         }
         else if (interaction.options.getSubcommand() === 'all') {
             await listRater(interaction);
