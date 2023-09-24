@@ -156,6 +156,13 @@ CREATE TABLE chatot.stickies (
     PRIMARY KEY (channelid)
 );
 
+CREATE TABLE chatot.gbans (
+    target varchar(20),
+    date timestamptz,
+    reason text,
+    PRIMARY KEY (target)
+);
+
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------
