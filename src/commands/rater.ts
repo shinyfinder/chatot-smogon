@@ -2,7 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteracti
 import { SlashCommand } from '../types/slash-command-base';
 import { allowedMetasObj } from '../helpers/constants.js';
 import { addRater } from '../helpers/addrater.js';
-import { removeRater } from '../helpers/removerater.js';
+import { removeRater, removeRaterAll } from '../helpers/removerater.js';
 import { listRater } from '../helpers/listrater.js';
 
 /**
@@ -29,6 +29,8 @@ export const command: SlashCommand = {
      * --- add <generation> <meta> <user>
      * |
      * --- remove <generation> <meta> <user>
+     * |
+     * --- removeall <user>
      * |
      * --- list
      * |
@@ -101,6 +103,17 @@ export const command: SlashCommand = {
                 .setDescription('Tier which the user rates teams for. Start typing to filter the list')
                 .setRequired(true)
                 .setAutocomplete(true))
+            .addUserOption(option =>
+                option.setName('user')
+                .setDescription('User to be added (can accept IDs)')
+                .setRequired(true)))
+
+        /**
+         * Remove ALL
+         */
+        .addSubcommand(new SlashCommandSubcommandBuilder()
+            .setName('removeall')
+            .setDescription('Removes a team rater from all of their metas')
             .addUserOption(option =>
                 option.setName('user')
                 .setDescription('User to be added (can accept IDs)')
@@ -208,6 +221,14 @@ export const command: SlashCommand = {
 
             await removeRater(interaction, metaIn, gen, user);
             return;
+        }
+        else if (interaction.options.getSubcommand() === 'removeall') {
+            // get the input
+            const user = interaction.options.getUser('user', true);
+
+            // remove them
+            await removeRaterAll(interaction, user);
+            return;            
         }
         else if (interaction.options.getSubcommand() === 'all') {
             await listRater(interaction);

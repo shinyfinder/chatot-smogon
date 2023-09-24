@@ -39,3 +39,20 @@ export async function removeRater(interaction: ChatInputCommandInteraction, meta
     await interaction.followUp(`${user.username} removed from the list of ${gen === 'XY' ? 'ORAS' : gen} ${meta} raters.`);
     return;
 }
+
+
+export async function removeRaterAll(interaction: ChatInputCommandInteraction, user: User) {
+    // remove them from the db
+    const removedRates: { meta: string, gen: string }[] | [] = (await pool.query('DELETE FROM chatot.raters WHERE userid=$1 RETURNING meta, gen', [user.id])).rows;
+    
+    // if something was deleted, update the public rater list
+    // only do this for the main cord
+    if (removedRates.length) {
+        for (const rateObj of removedRates) {
+            await updatePublicRatersList(interaction.client, rateObj.meta, rateObj.gen);
+        }
+    }
+
+    // done
+    await interaction.followUp(`${user.username} was removed from all rater lists`);
+}
