@@ -372,12 +372,12 @@ export const command: SlashCommand = {
                 }
 
                 // add these entries to the gban db
-                const dates = [new Date()];
-                const reasons = [auditEntry];
+                const dates = new Date();
+                const reasons = auditEntry;
 
                 await pool.query(`
                 INSERT INTO chatot.gbans (target, date, reason)
-                VALUES (UNNEST($1::text[]), UNNEST($2::timestamptz[]), UNNEST($3::text[]))
+                VALUES (UNNEST($1::text[]), $2, $3)
                 ON CONFLICT (target)
                 DO UPDATE SET target=EXCLUDED.target, date=EXCLUDED.date, reason=EXCLUDED.reason`, [uids, dates, reasons]);
 

@@ -3,6 +3,7 @@ import { SlashCommand } from '../types/slash-command-base';
 import { errorHandler } from '../helpers/errorHandler.js';
 import { pool } from '../helpers/createPool.js';
 import { alertUser } from '../helpers/reminderWorkers.js';
+import { checkChanPerms } from '../helpers/checkChanPerms.js';
 /**
  * Creates a timer to DM a user after a specifc time with a specified message
  */
@@ -259,21 +260,35 @@ export const command: SlashCommand = {
             }
         }
         else if (method === 'post') {
+            // check for the necessary permissions based on where it's used
+            // also make sure it's used in a channel (which it has to be, but we have to type check it anyway)
+            let canComplete = true;
             const chan = interaction.channel;
 
-            if (!chan || !(chan.type === ChannelType.GuildText || chan.type === ChannelType.PublicThread || chan.type === ChannelType.PrivateThread)) {
-                await interaction.followUp('This command must be used in a text channel');
+            if (chan?.type === ChannelType.GuildText) {
+                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessages']);
+
+            }
+            else if (chan?.type === ChannelType.PublicThread || chan?.type === ChannelType.PrivateThread) {
+                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessagesInThreads']);
+            }
+            else {
+                await interaction.followUp('This command must be used in a text channel.');
+                clearTimeout(timer);
                 return;
             }
-            try {
-                // send a test message
-                await chan.send(`Ok, <@${interaction.user.id}> I will remind you on <t:${unixTimestamp}:f>`);
 
+            if (!canComplete) {
+                clearTimeout(timer);
+                return;
+            }
+
+            try {
                 // store in the db so we don't forget
                 await pool.query('INSERT INTO chatot.reminders (userid, channelid, tstamp, msg) VALUES ($1, $2, to_timestamp($3), $4)', [interaction.user.id, loc, unixTimestamp, message]);
 
                 // respond to interaction
-                await interaction.followUp('Reminder set');
+                await interaction.followUp(`Ok, <@${interaction.user.id}> I will post to this channel to remind you on <t:${unixTimestamp}:f>`);
             }
             // if any error occurred while trying to set the reminder, cancel the timer and let them know
             catch (e) {

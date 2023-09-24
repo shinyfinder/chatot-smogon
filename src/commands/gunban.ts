@@ -11,13 +11,9 @@ interface IModlogPG {
 }
 
 /**
- * Command to ban a user from the server
- * @param data SlashCommandBuilder() instance from discord.js
- * @param user Username/id of the user to be banned
- * @param timeframe Optional timeframe to delete the user's past messages. Defaults to 0
- * @param reason Optional reason entry for the audit log
- * @param dm Optional message to send to the user befor banning them
- *
+ * Command to globally unban a user.
+ * This command essentially undoes a gban.
+ * Users who were banned before they were gbanned are left banned in the respective servers.
  */
 export const command: SlashCommand = {
     global: false,
@@ -108,6 +104,10 @@ export const command: SlashCommand = {
                     continue;
                 }
             }
+            // otherwise, skip it
+            else {
+                continue;
+            }
 
             // try to unban them
             // catch any errors but continue so we can unban as many as possible
@@ -121,7 +121,7 @@ export const command: SlashCommand = {
         }
 
         // let them know we're done
-        await interaction.followUp(`I unbanned ${user.username} from every server I gbanned them from`);
+        await interaction.followUp(`I attempted to unban ${user.username} from every server I gbanned them from`);
         
     },
 };
