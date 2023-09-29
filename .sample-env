@@ -12,3 +12,4 @@ SQLHOST = "localhost"
 SQLPORT = 3306
 SQLDATABASE = "mysqldb"
 SQLSOCKETPATH = ""
+INTERNAL_DATA_PATH = "/path/to/internal_data"
