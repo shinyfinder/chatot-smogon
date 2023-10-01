@@ -46,7 +46,7 @@ export const clientEvent: eventHandler = {
         if (member === undefined) {
             return;
         }
-        // add the role
+        // remove the role
         await member.roles.remove(dbmatches[0].roleid);
 
         return;

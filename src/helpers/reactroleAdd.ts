@@ -1,6 +1,7 @@
-import { ChatInputCommandInteraction, EmbedBuilder, ChannelType, Role, APIRole } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, ChannelType, Role, APIRole, Message } from 'discord.js';
 import { pool } from './createPool.js';
 import type { IReactRole } from '../types/reactrole.js';
+import { errorHandler } from './errorHandler.js';
 
 /**
  * Adds an emoji to the list of watched emojis for this server for user's to choose their role with a reaction.
@@ -41,13 +42,15 @@ export async function rrAdd(dbmatches: IReactRole[] | [], interaction: ChatInput
         return;
     }
     // fetch the message
-    const rrMsg = (await rrChan.messages.fetch({ around: msg, limit: 1, cache: false })).first();
-
-    if (rrMsg === undefined) {
+    let rrMsg: Message;
+    try {
+        rrMsg = await rrChan.messages.fetch(msg);
+    }
+    catch (e) {
+        errorHandler(e);
         await interaction.followUp('Unable to fetch message. Does it still exist?');
         return;
     }
-
     
     // react with the emoji
     // we do this first because if it's not a valid emoji we don't want to edit the post
@@ -55,7 +58,7 @@ export async function rrAdd(dbmatches: IReactRole[] | [], interaction: ChatInput
 
     // determine if the message is the bot's or a user's
     // one of the rows will be the init row, which will have a roleID of bot or user
-    const isBotMsg = dbmatches.some(row => row.roleid === 'bot');
+    const isBotMsg = dbmatches.some(row => row.roleid === 'bot' && msg === row.messageid);
 
     // if it's a bot message...
     if (isBotMsg) {
@@ -63,7 +66,7 @@ export async function rrAdd(dbmatches: IReactRole[] | [], interaction: ChatInput
         const embed = rrMsg.embeds[0];
 
         if (!embed?.description) {
-            await interaction.followUp('Embed was deleted; cannot continue');
+            await interaction.followUp('Embed was deleted; cannot continue. While I may have reacted to the message, it was **not** successfully setup. Please clear reaction monitoring on this message, then reinitialize it.');
             return;
         }
         // append the emoji to the message
@@ -80,6 +83,4 @@ export async function rrAdd(dbmatches: IReactRole[] | [], interaction: ChatInput
 
     // let them know we're done
     await interaction.followUp(`Users can now react with ${emojiID} to get role ${role.name}`);
-
-    return;
 }

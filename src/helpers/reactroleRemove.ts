@@ -1,7 +1,7 @@
-import { ChatInputCommandInteraction, EmbedBuilder, ChannelType } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, ChannelType, Message } from 'discord.js';
 import { pool } from './createPool.js';
 import type { IReactRole } from '../types/reactrole.js';
-
+import { errorHandler } from './errorHandler.js';
 /**
  * Removes an emoji from the list of those that grant a role to the user upon reaction to the initialized message.
  * If the message is the bot's, the embed is updated to remove this emoji from the list.
@@ -14,9 +14,22 @@ import type { IReactRole } from '../types/reactrole.js';
  * @returns Promise<void>
  */
 export async function rrRemove(dbmatches: IReactRole[] | [], interaction: ChatInputCommandInteraction, emojiID: string) {
-    // there can only be 1 message per guild that can handle RRs, so we can pull the messaage ID from the db and use that for all subsequent adds
-    const chan = dbmatches[0].channelid;
-    const msg = dbmatches[0].messageid;
+    // get the line containing this emoji
+    const reactionData = dbmatches.filter(row => row.emoji === emojiID);
+
+    let chan = '';
+    let msg = '';
+
+    // extract the info from the row
+    if (!reactionData.length) {
+       await interaction.followUp('No message is setup to monitor this emoji. Nothing to do.');
+       return;
+    }
+    // otherwise, find the channel id corresponding to the provided message id
+    else {
+        chan = reactionData[0].channelid;
+        msg = reactionData[0].messageid;
+    }
 
     // fetch the message's channel so we can then fetch the message
     const rrChan = await interaction.client.channels.fetch(chan);
@@ -30,24 +43,28 @@ export async function rrRemove(dbmatches: IReactRole[] | [], interaction: ChatIn
         await interaction.followUp('Invalid channel type. Reaction role messages should be in a public channel');
         return;
     }
-    // fetch the message
-    const rrMsg = (await rrChan.messages.fetch({ around: msg, limit: 1, cache: false })).first();
 
-    if (rrMsg === undefined) {
+    // fetch the message
+    let rrMsg: Message;
+    try {
+        rrMsg = await rrChan.messages.fetch(msg);
+    }
+    catch (e) {
+        errorHandler(e);
         await interaction.followUp('Unable to fetch message. Does it still exist?');
         return;
     }
     
     // determine if the message is the bot's or a user's
     // one of the rows will be the init row, which will have a roleID of bot or user
-    const isBotMsg = dbmatches.some(row => row.roleid === 'bot');
+    const isBotMsg = dbmatches.some(row => row.roleid === 'bot' && row.messageid === msg);
 
     if (isBotMsg) {
         // get the current embed
         const embed = rrMsg.embeds[0];
 
         if (!embed?.description) {
-            await interaction.followUp('Embed was deleted; cannot continue');
+            await interaction.followUp('Embed was deleted; cannot continue. Please clear reaction monitoring on this message, then reinitalize it.');
             return;
         }
         
@@ -61,10 +78,6 @@ export async function rrRemove(dbmatches: IReactRole[] | [], interaction: ChatIn
         // edit the message embed
         await rrMsg.edit({ embeds: [newEmbed] });
     }
-    
-
-    // Left in case we ever want to do this, but removing the reaction would trigger the bot to remove the roles from everyone, which may not be desired
-    // So instead we'll just remove the check for the emoji and the message can just have a bunch of useless reactions still on it.
 
     // try to fetch the entered emoji so we can remove the reactions
     let reaction = rrMsg.reactions.cache.get(emojiID);
@@ -90,7 +103,6 @@ export async function rrRemove(dbmatches: IReactRole[] | [], interaction: ChatIn
     // finally remove the specified reactions
     await reaction.remove();
     
-
     // remove it from the db
     await pool.query('DELETE FROM chatot.reactroles WHERE serverid=$1 AND emoji=$2', [interaction.guildId, emojiID]);
 

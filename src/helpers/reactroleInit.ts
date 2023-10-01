@@ -1,7 +1,8 @@
-import { ChatInputCommandInteraction, EmbedBuilder, ChannelType } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, ChannelType, Message } from 'discord.js';
 import { addRRMessage } from './loadReactRoleMessages.js';
 import { pool } from './createPool.js';
 import config from '../config.js';
+import { errorHandler } from './errorHandler.js';
 
 /**
  * Initializes a message users react to in order to receive roles.
@@ -27,23 +28,7 @@ export async function rrInit(msgID: string | null, interaction: ChatInputCommand
         // create an embed
         const embed = new EmbedBuilder()
             .setTitle('React Roles')
-            .setDescription('Choose your roles by reacting with the following:\n\u200B\n');
-
-        // check channel perms
-        /*
-        const rrChan = await interaction.client.channels.fetch(interaction.channelId);
-        if (!(rrChan?.type === ChannelType.GuildText || rrChan?.type === ChannelType.PublicThread)) {
-            await interaction.followUp('Invalid channel type. Reaction role messages should be in a public channel');
-            return;
-        }
-
-        const hasPerms = rrChan.permissionsFor(config.CLIENT_ID)?.has([PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory, PermissionFlagsBits.ViewChannel]);
-
-        if (!hasPerms) {
-            await interaction.followUp('I am missing required permissions to effectively monitor reaction roles');
-            return;
-        }
-        */
+            .setDescription('Choose your roles by reacting with the following. Roles can be removed at any time by removing your reaction (clicking your reaction again).\n\u200B\n');
                 
         const msg = await interaction.channel.send({ embeds: [embed] });
         // store it in the db
@@ -68,7 +53,7 @@ export async function rrInit(msgID: string | null, interaction: ChatInputCommand
          */
         let owner = 'user';
 
-        // fetch the message
+        // fetch the channel
         const rrChan = await interaction.client.channels.fetch(interaction.channelId);
 
         // check for errors
@@ -81,17 +66,28 @@ export async function rrInit(msgID: string | null, interaction: ChatInputCommand
             return;
         }
         // fetch the message
-        const rrMsg = (await rrChan.messages.fetch({ around: msgID, limit: 1 })).first();
-
-        // check for errors
-        if (rrMsg === undefined) {
+        let rrMsg: Message;
+        try {
+            rrMsg = await rrChan.messages.fetch(msgID);
+        }
+        catch (e) {
+            errorHandler(e);
             await interaction.followUp('Unable to fetch message. Does it still exist?');
             return;
         }
 
         // see if the message owner is the bot
+        // discord doesn't seem to let us edit in an embed if there wasn't one originally
+        // so if they're trying to reuse an old bot message and the embed was deleted, return
         if (rrMsg.author.id === config.CLIENT_ID) {
-            owner = 'bot';
+            if (rrMsg.embeds.length === 0) {
+                await interaction.followUp('I cannot reuse one of my old messages that had its embeds deleted.');
+                return;
+            }
+            else {
+                owner = 'bot';
+            }
+            
         }
         // the message already exists, so we just need to store it in the db
         // use the message id as the emoji id so it's unique
