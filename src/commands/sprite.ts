@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { dexdb, dexNames } from '../helpers/loadDex.js';
+import { dexdb, spriteNames } from '../helpers/loadDex.js';
 import fetch from 'node-fetch';
 
 /**
@@ -22,15 +22,19 @@ export const command: SlashCommand = {
             .setDescription('Name of the Pokemon (start typing to filter)')
             .setRequired(true)
             .setAutocomplete(true))
+        .addBooleanOption(option =>
+            option.setName('shiny')
+            .setDescription('Whether to retrieve the shiny sprite. Default false')
+            .setRequired(false))
+        .addBooleanOption(option =>
+            option.setName('home')
+            .setDescription('Whether to use HOME sprites. Default false')
+            .setRequired(false))
         .addIntegerOption(option =>
             option.setName('gen')
             .setDescription('Which gen to retrieve the sprite for. If blank, the latest available is used')
             .setMinValue(1)
             .setMaxValue(9)
-            .setRequired(false))
-        .addBooleanOption(option =>
-            option.setName('shiny')
-            .setDescription('Whether to retrieve the shiny sprite. Default false')
             .setRequired(false))
         .setDMPermission(false),
 
@@ -43,7 +47,7 @@ export const command: SlashCommand = {
             const filteredOut: {name: string, value: string }[] = [];
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
-            for (const pair of dexNames) {
+            for (const pair of spriteNames) {
                 if (filteredOut.length < 25) {
                     if (pair.value.includes(enteredText)) {
                         filteredOut.push(pair);
@@ -71,13 +75,54 @@ export const command: SlashCommand = {
         const mon = interaction.options.getString('pokemon', true).toLowerCase();
         const gen = interaction.options.getInteger('gen') ?? 9;
         const shiny = interaction.options.getBoolean('shiny') ?? false;
+        const home = interaction.options.getBoolean('home') ?? false;
         
         // make sure they entered proper text
         // the value is the alias
-        const validName = dexNames.some(n => n.value === mon);
+        const validName = spriteNames.some(n => n.value === mon);
         if (!validName) {
             await interaction.followUp('Invalid Pokemon name. Please choose one from the list');
             return;
+        }
+
+        let folderName = '';
+        let ext = 'gif';
+
+        /**
+         * PS uses a different naming convention for their sprites than the dex.
+         * Becase the checks are based on the dex, we need to modify the input a bit to match the PS convention
+         */
+        // get the name of the mon
+        // we know this exists already and can just take the first value
+        const monName = spriteNames.filter(n => n.value === mon)[0].name;
+        
+        // remove any special characters that aren't -
+        let nameSanitized = monName.replaceAll(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+
+        // we need a special overwrite for the jangmo-o line and ho-oh because they have a dash that gets replaced
+        if (nameSanitized === 'jangmo-o' || nameSanitized === 'hakamo-o' || nameSanitized === 'kommo-o' || nameSanitized === 'ho-oh') {
+            nameSanitized = nameSanitized.replace('-', '');
+        }
+
+
+        // HOME sprites ignores gen and any other flow, so check that first so we can return early
+        if (home) {
+            folderName = shiny ? 'shiny' : 'normal';
+            ext = 'png';
+            url = `https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/home-sprites/${folderName}/${nameSanitized}.${ext}`;
+
+            const homeRes = await fetch(url);
+
+            // if it errors, tell them we couldn't find it
+            // otherwise send them the url, which will auto-embed
+            if (homeRes.status !== 200) {
+                await interaction.followUp('No sprite found; the databases are probably not updated yet.');
+                return;
+            }
+            else {
+                await interaction.followUp(url);
+                return;
+            }
         }
 
         // validate that the selected mon is available in the selected gen
@@ -88,33 +133,21 @@ export const command: SlashCommand = {
 
             // try to find a row available for the mon
             // we don't really care if it's standard or not because we just want the sprite
-            const dbFilterMon = dexdb.filter(poke => poke.alias === mon && poke.gen_id === genAlias);
+            let dbFilterMon = dexdb.filter(poke => poke.alias === mon && poke.gen_id === genAlias);
 
-            // if you didn't find a match, return and let them know
+            // if you didn't find a match, it's possible it's a cosmetic forme
+            // so split on - and take the first word, which should be the mon
             if (!dbFilterMon.length) {
-                await interaction.followUp(`${mon} is unavailable in gen ${gen}`);
-                return;
+                dbFilterMon = dexdb.filter(poke => poke.alias.includes(mon.split('-')[0]) && poke.gen_id === genAlias);
+
+                // if still no match, return
+                if (!dbFilterMon.length) {
+                    await interaction.followUp(`${mon} is unavailable in gen ${gen}`);
+                    return;
+                }
+                
             }
         }
-        
-        /**
-         * PS uses a different naming convention for their sprites than the dex.
-         * Becase this is based on the dex, we need to modify the input a bit to match the PS convention
-         */
-        // get the name of the mon
-        // we know this exists already and can just take the first value
-        const monName = dexNames.filter(n => n.value === mon)[0].name;
-        
-        // remove any special characters that aren't -
-        let nameSanitized = monName.replaceAll(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
-
-        // we need a special overwrite for the jangmo-o line because they have a special character that gets replaced
-        if (nameSanitized === 'jangmo-o' || nameSanitized === 'hakamo-o' || nameSanitized === 'kommo-o') {
-            nameSanitized = nameSanitized.replace('-', '');
-        }
-
-        let folderName = '';
-        let ext = 'gif';
         
         // first gens don't have shinies
         if (gen === 1 && shiny) {
@@ -123,7 +156,8 @@ export const command: SlashCommand = {
         }
         // if gen < 5, no animated sprites exist
         else if (gen <= 5) {
-            folderName = shiny ? `gen${gen}ani-shiny` : `gen${gen}ani`;
+            folderName = shiny ? `gen${gen}-shiny` : `gen${gen}`;
+            ext = 'png';
         }
         else {
             folderName = shiny ? 'ani-shiny' : 'ani';
@@ -135,42 +169,43 @@ export const command: SlashCommand = {
         const res = await fetch(url);
         
         // if the get failed, the image doesn't exist.
-        // try to get the non-animated sprite (these are typically updated before the animated exist when new gens come out)
+        // try to get the HOME sprite
         if (res.status !== 200) {
-            if (gen <= 5) {
-                folderName = shiny ? `gen${gen}-shiny` : `gen${gen}`;
-                ext = 'png';
-            }
-            else {
-                folderName = shiny ? 'dex-shiny' : 'dex';
-                ext = 'png';
-            }
-
-            url = `https://play.pokemonshowdown.com/sprites/${folderName}/${nameSanitized}.${ext}`;
+            folderName = shiny ? 'shiny' : 'normal';
+            url = `https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/home-sprites/${folderName}/${nameSanitized}.png`;
 
             const resRetry = await fetch(url);
 
             // if that still doesn't work and they want a shiny
-            // tell them we don't have it
+            // try the gen 5 static dex
             if (resRetry.status !== 200 && shiny) {
-                url = 'No shiny sprite found; the databases are probably not updated yet.';
+                folderName = 'gen5-shiny';
+                ext = 'png';
+                url = `https://play.pokemonshowdown.com/sprites/${folderName}/${nameSanitized}.${ext}`;
+                
+                const resRetry2 = await fetch(url);
+                // if that fails tell them we don't have it
+                if (resRetry2.status !== 200) {
+                    url = 'No shiny sprite found; the databases are probably not updated yet.';
+                }
             }
             // if the res doesn't work and they want a regular sprite, try to use the dex
             else if (resRetry.status !== 200) {
                 // map the gen alias to the gen number
                 // sprites are stored under the alias
+                // repeating xy isn't a typo, because the newer gens pull frmo the xy folder
                 const spriteGenAliases = ['rb', 'c', 'rs', 'dp', 'bw', 'xy', 'xy', 'xy', 'xy'];
                 folderName = spriteGenAliases[gen - 1];
 
                 // the dex uses different file extensions depending on the gen
-                ext = ['gs', 'bw', 'xy', 'sm', 'sm', 'ss', 'sv'].includes(folderName) ? 'gif' : 'png';
+                ext = ['gs', 'bw', 'xy'].includes(folderName) ? 'gif' : 'png';
                 url = `https://smogon.com/dex/media/sprites/${folderName}/${mon}.${ext}`;
 
                 // if THAT still doesn't work, tell them we don't have the sprite yet
                 // because discord autoembeds the sprite, we can just post the url to post the image
                 // meaning we can reuse the url variable for the fail string
-                const resRetry2 = await fetch(url);
-                if (resRetry2.status !== 200) {
+                const resRetry3 = await fetch(url);
+                if (resRetry3.status !== 200) {
                     url = 'No sprite found; the databases are probably not updated yet.';
                 }
             }

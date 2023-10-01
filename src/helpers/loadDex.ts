@@ -1,5 +1,7 @@
+import { IPSDex } from '../types/ps';
+import { alcremieFormes, genderDiffs } from './constants.js';
 import { pool } from './createPool.js';
-
+import fetch from 'node-fetch';
 /**
  * Helper file to instantiate the connection to the postgres pool
  */
@@ -13,6 +15,9 @@ export interface IDexDB {
 export let dexdb: IDexDB[] | [];
 
 export let dexNames: { name: string, value: string }[];
+
+export let spriteNames: { name: string, value: string}[];
+
 /**
  * Queries the info we need from the dex table
  */
@@ -44,4 +49,51 @@ export async function loadDex() {
 
     return;
     
+}
+
+/**
+ * Extends the SmogDex names to include alt formes
+ */
+export async function loadSpriteDex() {
+    // call the PS api to get the dex
+    const res = await fetch('https://play.pokemonshowdown.com/data/pokedex.json');
+    const pokedex = await res.json() as IPSDex;
+
+    // extract the names
+    const psNames: string[] = [];
+    for (const mon in pokedex) {
+        const data = pokedex[mon];
+
+        // skip alcremie because we're going to build it ourselves
+        if (data.name.includes('Alcremie')) {
+            continue;
+        }
+
+        // add cosmetic formes
+        psNames.push(data.name);
+        if (data.cosmeticFormes) {
+            for (const forme of data.cosmeticFormes) {
+                psNames.push(forme);
+            }
+        }
+    }
+
+    // extend Alcremie in particular
+    for (const aforme of alcremieFormes) {
+        const aTitleCase = aforme.split('-').map(f => f[0].toUpperCase() + f.slice(1)).join('-');
+        psNames.push(aTitleCase);
+    }
+    
+    // add in the female differences
+    for (const female of genderDiffs) {
+        const femaleTitleCase = female.split('-').map(f => f[0].toUpperCase() + f.slice(1)).join('-');
+        // concat if not exist
+        if (!psNames.some(n => n === femaleTitleCase)) {
+            psNames.push(femaleTitleCase);
+        }
+    }
+
+    // conert everything to lower case and remvove special chars so we can build the exported pair array
+    // the format should match the dex
+    spriteNames = psNames.map(n => ({ name: n, value: n.toLowerCase().replace(/[ _]+/g, '-').replace(/[^a-z0-9-]/g, '') }));
 }

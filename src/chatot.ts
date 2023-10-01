@@ -11,7 +11,7 @@ import * as net from 'node:net';
 import { createPool } from './helpers/createPool.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
-import { loadDex } from './helpers/loadDex.js';
+import { loadDex, loadSpriteDex } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
@@ -152,7 +152,7 @@ createPool();
 /**
  * Cache the info from the db so we don't overload postgres with queries
  */
-await Promise.all([updateState(client), loadCustoms(), loadDex(), loadCCCooldowns(), recreateReminders(client)]);
+await Promise.all([updateState(client), loadCustoms(), loadDex(), loadCCCooldowns(), recreateReminders(client), loadSpriteDex()]);
 
 
 /**
