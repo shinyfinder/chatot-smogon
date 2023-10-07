@@ -1,4 +1,4 @@
-import { ContextMenuCommandBuilder, ApplicationCommandType, MessageContextMenuCommandInteraction, PermissionFlagsBits } from 'discord.js';
+import { ContextMenuCommandBuilder, ApplicationCommandType, MessageContextMenuCommandInteraction, PermissionFlagsBits, ChannelType } from 'discord.js';
 import { ContextCommand } from '../types/context-command-base';
 import { pool } from '../helpers/createPool.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
@@ -20,13 +20,13 @@ export const command: ContextCommand = {
     async execute(interaction: MessageContextMenuCommandInteraction) {
         await interaction.deferReply({ ephemeral: true });
 
-        if (!interaction.guild) {
-            await interaction.followUp('Command must be used in a guild');
+        if (!interaction.channel || interaction.channel.type === ChannelType.DM) {
+            await interaction.followUp('Command must be used in a guild channel');
             return;
         }
 
         // make sure we have the necessary permissions in the channel
-        const canComplete = await checkChanPerms(interaction, ['ManageMessages']);
+        const canComplete = await checkChanPerms(interaction, interaction.channel, ['ManageMessages']);
         if (!canComplete) {
             return;
         }

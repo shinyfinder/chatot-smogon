@@ -61,11 +61,11 @@ export const command: SlashCommand = {
             // also make sure it's used in a channel (which it has to be, but we have to type check it anyway)
             let canComplete = true;
             if (interaction.channel?.type === ChannelType.GuildText) {
-                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessages']);
+                canComplete = await checkChanPerms(interaction, interaction.channel, ['ViewChannel', 'SendMessages']);
 
             }
             else if (interaction.channel?.type === ChannelType.PublicThread || interaction.channel?.type === ChannelType.PrivateThread) {
-                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessagesInThreads']);
+                canComplete = await checkChanPerms(interaction, interaction.channel, ['ViewChannel', 'SendMessagesInThreads']);
             }
             else {
                 await interaction.followUp('This command must be used in a channel.');
@@ -233,11 +233,11 @@ export const command: SlashCommand = {
             // also make sure it's used in a channel (which it has to be, but we have to type check it anyway)
             let canComplete = true;
             if (interaction.channel?.type === ChannelType.GuildText) {
-                canComplete = await checkChanPerms(submittedModal, ['ViewChannel', 'SendMessages']);
+                canComplete = await checkChanPerms(submittedModal, interaction.channel, ['ViewChannel', 'SendMessages']);
 
             }
             else if (interaction.channel?.type === ChannelType.PublicThread || interaction.channel?.type === ChannelType.PrivateThread) {
-                canComplete = await checkChanPerms(submittedModal, ['ViewChannel', 'SendMessagesInThreads']);
+                canComplete = await checkChanPerms(submittedModal, interaction.channel, ['ViewChannel', 'SendMessagesInThreads']);
             }
             else {
                 await submittedModal.followUp('This command must be used in a channel.');

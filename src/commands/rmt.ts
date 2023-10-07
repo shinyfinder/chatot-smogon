@@ -117,10 +117,10 @@ export const command: SlashCommand = {
         // also make sure it's used in a channel (which it has to be, but we have to type check it anyway)
         let canComplete = true;
         if (interaction.channel?.type === ChannelType.GuildText) {
-            canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessages', 'AttachFiles']);
+            canComplete = await checkChanPerms(interaction, interaction.channel, ['ViewChannel', 'SendMessages', 'AttachFiles']);
         }
         else if (interaction.channel?.type === ChannelType.PublicThread || interaction.channel?.type === ChannelType.PrivateThread) {
-            canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessagesInThreads', 'AttachFiles']);
+            canComplete = await checkChanPerms(interaction, interaction.channel, ['ViewChannel', 'SendMessagesInThreads', 'AttachFiles']);
         }
         // this should never trigger, but technically we should typecheck
         else {

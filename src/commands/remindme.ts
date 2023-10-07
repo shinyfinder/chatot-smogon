@@ -266,11 +266,11 @@ export const command: SlashCommand = {
             const chan = interaction.channel;
 
             if (chan?.type === ChannelType.GuildText) {
-                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessages']);
+                canComplete = await checkChanPerms(interaction, chan, ['ViewChannel', 'SendMessages']);
 
             }
             else if (chan?.type === ChannelType.PublicThread || chan?.type === ChannelType.PrivateThread) {
-                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'SendMessagesInThreads']);
+                canComplete = await checkChanPerms(interaction, chan, ['ViewChannel', 'SendMessagesInThreads']);
             }
             else {
                 await interaction.followUp('This command must be used in a text channel.');
