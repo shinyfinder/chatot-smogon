@@ -80,10 +80,10 @@ export const command: SlashCommand = {
             // make sure we have the necessary perms to post there
             let canComplete = true;
             if (chan.type === ChannelType.PublicThread || chan.type === ChannelType.PrivateThread) {
-                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'AttachFiles', 'SendMessagesInThreads']);
+                canComplete = await checkChanPerms(interaction, chan, ['ViewChannel', 'AttachFiles', 'SendMessagesInThreads']);
             }
             else if (chan.type === ChannelType.GuildText) {
-                canComplete = await checkChanPerms(interaction, ['ViewChannel', 'AttachFiles', 'SendMessages']);
+                canComplete = await checkChanPerms(interaction, chan, ['ViewChannel', 'AttachFiles', 'SendMessages']);
             }
 
             if (!canComplete) {
