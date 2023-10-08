@@ -29,7 +29,8 @@ export const command: SlashCommand = {
                 option.setName('duration')
                 .setDescription('How long in minutes signups are open')
                 .setRequired(true)
-                .setMinValue(0)))
+                .setMinValue(0)
+                .setMaxValue(120)))
 
         .addSubcommand(new SlashCommandSubcommandBuilder()
         .setName('extend')
@@ -42,7 +43,8 @@ export const command: SlashCommand = {
             option.setName('duration')
             .setDescription('How long in minutes to extend signups')
             .setRequired(true)
-            .setMinValue(0)))
+            .setMinValue(0)
+            .setMaxValue(120)))
             
         .addSubcommand(new SlashCommandSubcommandBuilder()
         .setName('close')
