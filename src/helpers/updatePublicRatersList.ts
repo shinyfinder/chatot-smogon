@@ -317,7 +317,7 @@ async function buildEmbed(title: string, obj: raterGroup[], holder: EmbedBuilder
  * @param client base client object for the process
  * @returns discord User object
  */
-async function fetchUser(id: string, client: Client) {
+export async function fetchUser(id: string, client: Client) {
    const user = await client.users.fetch(id);
    return user;
 }

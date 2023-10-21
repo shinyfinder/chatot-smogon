@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, EmbedBuilder, MessageReaction, User, APIEmbedField } from 'discord.js';
 import { validateMeta } from '../helpers/validateMeta.js';
 import { pool } from '../helpers/createPool.js';
+import { fetchUser } from './updatePublicRatersList.js';
 /**
  * Command to list a set of team raters from the database
  * @param interaction ChatInputCommandInteraction from discord.js
@@ -192,7 +193,7 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
     }
     else if (metaIn !== undefined && gen !== undefined) {
         const [valid, meta, channel] = validateMeta(metaIn, gen);
-        // if they choice a gen, it will be mapped to the gen number
+        // if they chose a gen, it will be mapped to the gen number
         // if they didn't choose a gen, it will return as '' from the function call
 
         // if it's invalid input, let them know and return
@@ -209,11 +210,21 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
             await interaction.followUp('No raters found');
             return;
         }
-        // format the userids as taggable output
-        const taggablePings: string[] = [];
+
+        // fetch the users so we can get their username
+        const userPromiseArr: Promise<User>[] = [];
+        
         for (const element of dbmatches) {
             const id = element.userid;
-            taggablePings.push('<@' + id + '>');
+            userPromiseArr.push(fetchUser(id, interaction.client));
+        }
+
+        const userArr: User[] = await Promise.all(userPromiseArr);
+
+        // populate an output array to include a user tag + username
+        const taggablePings: string[] = [];
+        for (const user of userArr) {
+            taggablePings.push(`<@${user.id}> (${user.username})`);
         }
 
         // concat the taggable ids as a single string
@@ -222,7 +233,7 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
             pingOut = 'None';
         }
         else {
-            pingOut = taggablePings.join(', ');
+            pingOut = taggablePings.join('\n');
         }
 
         // build the embed for output
