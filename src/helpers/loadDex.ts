@@ -1,9 +1,9 @@
-import { IPSDex } from '../types/ps';
+import { IPSDex, IPSMoves } from '../types/ps';
 import { alcremieFormes, genderDiffs } from './constants.js';
 import { pool } from './createPool.js';
 import fetch from 'node-fetch';
 /**
- * Helper file to instantiate the connection to the postgres pool
+ * Helper file to populate the dex db information
  */
 export interface IDexDB {
     name: string,
@@ -17,6 +17,8 @@ export let dexdb: IDexDB[] | [];
 export let dexNames: { name: string, value: string }[];
 
 export let spriteNames: { name: string, value: string}[];
+
+export let moveNames: {name: string, value: string}[];
 
 /**
  * Queries the info we need from the dex table
@@ -96,4 +98,23 @@ export async function loadSpriteDex() {
     // conert everything to lower case and remvove special chars so we can build the exported pair array
     // the format should match the dex
     spriteNames = psNames.map(n => ({ name: n, value: n.toLowerCase().replace(/[ _]+/g, '-').replace(/[^a-z0-9-]/g, '') }));
+}
+
+/**
+ * Loads the moves json from PS
+ */
+export async function loadMoves() {
+    // fetch the json from the PS API
+    const res = await fetch('https://play.pokemonshowdown.com/data/moves.json');
+    const moves = await res.json() as IPSMoves;
+
+    // extract the names from the moves
+    // this results in an array of readable move names (i.e. Air Slash)
+    const moveArr: string[] = [];
+    for (const move in moves) {
+        moveArr.push(moves[move].name);
+    }
+
+    // convert everything to lower case and remvove special chars so we can build the exported pair array
+    moveNames = moveArr.map(m => ({ name: m, value: m.toLowerCase().replace(/[^a-z0-9]/g, '') }));
 }
