@@ -2,6 +2,8 @@ export interface IPSDex {
     [key: string]: {
         name: string,
         cosmeticFormes?: string[],
+        prevo?: string,
+        baseSpecies?: string,
         [key: string]: unknown,
     }
 }
@@ -9,6 +11,7 @@ export interface IPSDex {
 export interface IPSMoves {
     [key: string]: {
         name: string,
+        isZ?: string,
         [key: string]: unknown,
     }
 }

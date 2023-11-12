@@ -1,6 +1,6 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { dexNames, moveNames } from '../helpers/loadDex.js';
+import { dexNames, moveNames, pokedex } from '../helpers/loadDex.js';
 import fetch from 'node-fetch';
 import { IPSLearnsets } from '../types/ps';
 
@@ -22,17 +22,17 @@ export const command: SlashCommand = {
             .setDescription('Name of the Pokemon')
             .setRequired(true)
             .setAutocomplete(true))
+        .addStringOption(option =>
+            option.setName('move')
+            .setDescription('Name of the move to search')
+            .setRequired(true)
+            .setAutocomplete(true))
         .addIntegerOption(option =>
             option.setName('gen')
             .setDescription('Which gen number to search. If blank, all are returned')
             .setMinValue(0)
             .setMaxValue(9)
             .setRequired(false))
-        .addStringOption(option =>
-            option.setName('move')
-            .setDescription('Name of the move to search')
-            .setRequired(true)
-            .setAutocomplete(true))
         .setDMPermission(false),
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
@@ -87,13 +87,13 @@ export const command: SlashCommand = {
         }
 
         // get the inputs
-        const mon = interaction.options.getString('pokemon', true);
+        const monIn = interaction.options.getString('pokemon', true);
         const gen = interaction.options.getInteger('gen');
         const move = interaction.options.getString('move', true);
 
         // make sure they entered proper text
         // the value is the alias
-        const validMonName = dexNames.some(n => n.value === mon);
+        const validMonName = dexNames.some(n => n.value === monIn);
         const validMoveName = moveNames.some(n => n.value === move);
         if (!validMonName || !validMoveName) {
             await interaction.followUp('Invalid Pokemon name. Please choose one from the list');
@@ -104,8 +104,27 @@ export const command: SlashCommand = {
         const res = await fetch('https://play.pokemonshowdown.com/data/learnsets.json');
         const learnJson = await res.json() as IPSLearnsets;
 
-        // determine if their chosen mon learns the chosen move
-        const monLearnset = learnJson[mon];
+        // get the base specie of the mon, if required
+        // the response from the PS api doesn't include dash in the keys, so remove any
+        const mon = monIn.replaceAll('-', '');
+
+        // check if the mon has a learnset
+        // if it doesn't, use the base specie
+        let monLearnset = learnJson[mon];
+        let baseSpecie: string | undefined;
+
+        // if the mon doesn't have a learnset entry
+        if (!monLearnset?.learnset) {
+            // get the base specie
+            baseSpecie = pokedex[mon].baseSpecies;
+
+            // and if that exists, sanitize it of any special characters
+            if (baseSpecie) {
+                baseSpecie = baseSpecie.toLowerCase().replaceAll(/[^a-z]/g, '');
+                // then use that to get the learnset
+                monLearnset = learnJson[baseSpecie];
+            }
+        }
 
         // make sure the mon has learnset info
         if (!monLearnset) {
@@ -116,54 +135,173 @@ export const command: SlashCommand = {
         // determine whether the mon learns the move
         const learnMethods = monLearnset.learnset[move];
 
-        if (!learnMethods) {
-            await interaction.followUp('Move not learned!');
-            return;
-        }
-
         const genArr: string[] = [];
-        const methodArr: string[] = [];
+        const methodArr: string[][] = [];
+        let tempMethodArr: string[] = [];
+        const transferArr: string[] = [];
+
         // if it does learn the move, figure out how
-        for (const method of learnMethods) {
-            // get the gen number
-            const learnableGen = method.match(/\d*/)?.shift();
-            // if they specified a gen, see if it matches
-            // if it doesn't, ignore this entry
-            if (gen) {
-                if (gen === Number(learnableGen) && !genArr.includes(`Gen ${gen}`)) {
-                    genArr.push(`Gen ${gen}`);
-                    /**
-                     * MAP THE METHOD FUNCTION GOES HERE
-                     */
+        if (learnMethods) {
+            for (const method of learnMethods) {
+                // get the gen number
+                const learnableGen = method.match(/\d+/)?.shift();
+                
+                // if they specified a gen, see if it matches
+                // if they specified and it doesn't, see if it's a transfer
+                if (gen === Number(learnableGen) || !gen) {
+                    if (!genArr.includes(`Gen ${learnableGen}`)) {
+                        genArr.push(`Gen ${learnableGen}`);
+                        if (tempMethodArr.length) {
+                            methodArr.push(tempMethodArr);
+                            tempMethodArr = [];
+                        }
+                    }
+                    // get the method
+                    const sourceID = method.match(/[a-z]/i)?.shift();
+                    if (!sourceID) {
+                        continue;
+                    }
+                    else if (sourceID === 'M') {
+                        tempMethodArr.push('TM/HM');
+                    }
+                    else if (sourceID === 'T') {
+                        tempMethodArr.push('Move Tutor');
+                    }
+                    else if (sourceID === 'L') {
+                        // get the level number
+                        const level = method.match(/\d+/g)?.pop();
+                        tempMethodArr.push(`Level ${level}`);
+                    }
+                    else if (sourceID === 'R') {
+                        tempMethodArr.push('Unique');
+                    }
+                    else if (sourceID === 'E') {
+                        tempMethodArr.push('Egg');
+                    }
+                    else if (sourceID === 'D') {
+                        tempMethodArr.push('Drean World');
+                    }
+                    else if (sourceID === 'S') {
+                        tempMethodArr.push('Event');
+                    }
+                    else if (sourceID === 'V') {
+                        tempMethodArr.push('Virtual Console');
+                    }
+                    else {
+                        continue;
+                    }
+                }
+                else if (Number(learnableGen) < gen) {
+                    // add an entry to the gen array for transfers if needed
+                    if (!genArr.includes('Transfer from gen(s)')) {
+                        genArr.push('Transfer from gen(s)');
+                    }
+
+                    // add the gen number to the temporary holder
+                    if (learnableGen && !transferArr.includes(learnableGen)) {
+                        transferArr.push(learnableGen);
+                    }
                 }
             }
-
         }
-        /**
-         * Describes a possible way to get a move onto a pokemon.
-         *
-         * First character is a generation number, 1-7.
-         * Second character is a source ID, one of:
-         *
-         * - M = TM/HM
-         * - T = tutor
-         * - L = start or level-up, 3rd char+ is the level
-         * - R = restricted (special moves like Rotom moves)
-         * - E = egg
-         * - D = Dream World, only 5D is valid
-         * - S = event, 3rd char+ is the index in .eventData
-         * - V = Virtual Console or Let's Go transfer, only 7V/8V is valid
-         * - C = NOT A REAL SOURCE, see note, only 3C/4C is valid
-         *
-         * C marks certain moves learned by a pokemon's prevo. It's used to
-         * work around the chainbreeding checker's shortcuts for performance;
-         * it lets the pokemon be a valid father for teaching the move, but
-         * is otherwise ignored by the learnset checker (which will actually
-         * check prevos for compatibility).
-         */
 
+        // the last iteration doesn't necessarily add to the array, so check if we need to push the temp array to the holder
+        if (tempMethodArr.length) {
+            methodArr.push(tempMethodArr);
+        }
 
-        // make and post the url
+        // similarly, add the transfers to the method array if needed
+        // we have no guarantee on order, so splice it in
+        const transferIdx = genArr.indexOf('Transfer from gen(s)');
+
+        if (transferIdx >= 0) {
+            methodArr.splice(transferIdx, 0, transferArr);
+        }
+
+        // check for any prevos
+        let dexEntry = baseSpecie ? pokedex[baseSpecie] : pokedex[mon];
+        const prevosWithMove: string[] = [];
+        while (dexEntry.prevo) {
+            // get the prevo data
+            const sanitizedPrevo = dexEntry.prevo.toLowerCase().replaceAll(/[^a-z]/g, '');
+            const sanitizedName = dexEntry.name.toLowerCase().replaceAll(/[^a-z]/g, '');
+
+            dexEntry = pokedex[sanitizedPrevo];
+
+            // check the prevo for the move in its learnset
+            // we only check for existence in the provided gen, if specified
+            const prevoLearnset = learnJson[sanitizedName].learnset;
+            const prevoLearnMethods = prevoLearnset[move];
+            
+            // if the prevo doesn't learn the move, move on
+            if (!prevoLearnMethods) {
+                continue;
+            }
+            else {
+                // loop over the entries
+                for (const method of prevoLearnMethods) {
+                    // get the gen number for each entry
+                    const prevoLearnGen = method.match(/\d+/)?.shift();
+                    // if the gen number matches, push to the arrays because the mon can learn the move via a prevo
+                    if (!gen || Number(prevoLearnGen) <= gen) {
+                        if (!genArr.includes('Prevolution')) {
+                            genArr.push('Prevolution');
+                        }
+                        prevosWithMove.push(dexEntry.name);
+                        break;
+                    }
+                }
+            }
+            /*
+            // if they specified a gen, see if the prevo learns the move in this gen
+            else if (gen) {
+                // loop over the entries
+                for (const method of prevoLearnMethods) {
+                    // get the gen number for each entry
+                    const prevoLearnGen = method.match(/\d+/)?.shift();
+                    // if the gen number matches, push to the arrays because the mon can learn the move via a prevo
+                    if (Number(prevoLearnGen) === gen) {
+                        if (!genArr.includes('Prevolution')) {
+                            genArr.push('Prevolution');
+                        }
+                        prevosWithMove.push(dexEntry.name);
+                        break;
+                    }
+                }
+            }
+            // if they didn't specify a gen, just see if the prevo learns the move
+            else {
+                if (!genArr.includes('Prevolution')) {
+                    genArr.push('Prevolution');
+                }
+                prevosWithMove.push(dexEntry.name);
+            }
+            */
+        }
+        // if there's ay least 1 prevo with the move, push it to the method array
+        if (prevosWithMove.length) {
+            methodArr.push(prevosWithMove);
+        }
+
+        // get the proper cased names for the text they enter
+        const titleCaseMon = dexNames.find(pair => pair.value === monIn)?.name;
+        const titleCaseMove = moveNames.find(pair => pair.value === move)?.name;
+
+        // build the embed
+        const genDescr = gen ? `Gen ${gen}` : 'Any Gen';
+
+        const embed = new EmbedBuilder().setTitle(`${titleCaseMon} @ ${titleCaseMove} (${genDescr})`);
+        if (!genArr.length) {
+            embed.setDescription(`${titleCaseMon} does not learn ${titleCaseMove}.`);
+        }
+        else {
+            embed.setDescription(`${titleCaseMon} learns ${titleCaseMove} via the following:`);
+            for (let i = 0; i < genArr.length; i++) {
+                embed.addFields({ name: genArr[i], value: methodArr[i].join(', ') });
+            }
+        }
+
+        await interaction.followUp({ embeds: [embed] });
         
     },
 };

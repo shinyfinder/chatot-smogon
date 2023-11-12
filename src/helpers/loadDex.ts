@@ -20,6 +20,8 @@ export let spriteNames: { name: string, value: string}[];
 
 export let moveNames: {name: string, value: string}[];
 
+export let pokedex: IPSDex;
+
 /**
  * Queries the info we need from the dex table
  */
@@ -59,7 +61,7 @@ export async function loadDex() {
 export async function loadSpriteDex() {
     // call the PS api to get the dex
     const res = await fetch('https://play.pokemonshowdown.com/data/pokedex.json');
-    const pokedex = await res.json() as IPSDex;
+    pokedex = await res.json() as IPSDex;
 
     // extract the names
     const psNames: string[] = [];
@@ -112,7 +114,9 @@ export async function loadMoves() {
     // this results in an array of readable move names (i.e. Air Slash)
     const moveArr: string[] = [];
     for (const move in moves) {
-        moveArr.push(moves[move].name);
+        if (!moves[move].isZ) {
+            moveArr.push(moves[move].name);
+        }
     }
 
     // convert everything to lower case and remvove special chars so we can build the exported pair array
