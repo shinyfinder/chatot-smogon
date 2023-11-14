@@ -52,8 +52,9 @@ export const command: SlashCommand = {
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
             for (const pair of dexNames) {
+                const nameLower = pair.name.toLowerCase();
                 if (filteredOut.length < 25) {
-                    if (pair.value.includes(enteredText)) {
+                    if (nameLower.includes(enteredText)) {
                         filteredOut.push(pair);
                     }
                 }

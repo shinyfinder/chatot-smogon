@@ -1,3 +1,4 @@
+import { Colors } from 'discord.js';
 /**
  * This is a placeholder file to export various constants needed for mutiple files
  * If you need a place to import a variable from, it could go here rather than making a new file
@@ -309,6 +310,8 @@ export const gens: {[key: string]: string} = {
     '1': '1',
 };
 
+export const latestGen = 9;
+
 /**
  * CUSTOM AVATAR SUBS
  * Array of subforum ids
@@ -503,3 +506,15 @@ export const genderDiffs = [
     'abomasnow-f',
     'gulpin-f',
 ];
+
+
+/**
+ * CUSTOM COLORS
+ */
+const customColors = {
+    Brown: 0x964B00,
+    Pink: 0xFFC0CB,
+    Gray: Colors.Grey,
+};
+
+export const myColors = { ...Colors, ...customColors };

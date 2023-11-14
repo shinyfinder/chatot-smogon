@@ -49,7 +49,8 @@ export const command: SlashCommand = {
             // everything is cast to lower case to handle differences in case
             for (const pair of spriteNames) {
                 if (filteredOut.length < 25) {
-                    if (pair.value.includes(enteredText)) {
+                    const nameLower = pair.name.toLowerCase();
+                    if (nameLower.includes(enteredText)) {
                         filteredOut.push(pair);
                     }
                 }
