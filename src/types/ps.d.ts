@@ -1,6 +1,7 @@
 export interface IPSDex {
     [key: string]: {
         name: string,
+        color: string,
         cosmeticFormes?: string[],
         prevo?: string,
         baseSpecies?: string,
