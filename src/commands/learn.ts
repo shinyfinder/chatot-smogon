@@ -273,13 +273,12 @@ export const command: SlashCommand = {
         while (dexEntry.prevo) {
             // get the prevo data
             const sanitizedPrevo = dexEntry.prevo.toLowerCase().replaceAll(/[^a-z]/g, '');
-            const sanitizedName = dexEntry.name.toLowerCase().replaceAll(/[^a-z]/g, '');
 
             dexEntry = pokedex[sanitizedPrevo];
 
             // check the prevo for the move in its learnset
             // we only check for existence in the provided gen, if specified
-            const prevoLearnset = learnJson[sanitizedName].learnset;
+            const prevoLearnset = learnJson[sanitizedPrevo].learnset;
             const prevoLearnMethods = prevoLearnset[move];
             
             // if the prevo doesn't learn the move, move on
