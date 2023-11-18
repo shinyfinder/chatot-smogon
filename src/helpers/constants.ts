@@ -1,4 +1,6 @@
 import { Colors } from 'discord.js';
+import { pokedex, movesText, itemsText, items, abilitiesText, natures } from './loadDex.js';
+import { createAutoPairs } from './createAutoPairs.js';
 /**
  * This is a placeholder file to export various constants needed for mutiple files
  * If you need a place to import a variable from, it could go here rather than making a new file

@@ -113,7 +113,7 @@ export const command: SlashCommand = {
         const learnJson = await res.json() as IPSLearnsets;
 
         // also get the modded learnsets for that gen
-        const moddedLearnsets: IPSLearnsets = await fetchModdedLearnsets(gen);
+        const moddedLearnsets = await fetchModdedLearnsets(gen) as IPSLearnsets;
 
         // get the base specie of the mon, if required
         // the response from the PS api doesn't include dash in the keys, so remove any
@@ -318,7 +318,7 @@ export const command: SlashCommand = {
         // we need a special overwrite for the jangmo-o line and ho-oh because they have a dash that gets replaced
         if (nameSanitized === 'jangmo-o' || nameSanitized === 'hakamo-o' || nameSanitized === 'kommo-o' || nameSanitized === 'ho-oh') {
             nameSanitized = nameSanitized.replace('-', '');
- }
+        }
 
         // build the embed
         const embed = new EmbedBuilder().setTitle(`${titleCaseMon} @ ${titleCaseMove} (Gen ${gen})`);

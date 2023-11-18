@@ -1,7 +1,9 @@
-import { IPSDex, IPSMoves } from '../types/ps';
+import { IPSDex, IPSMoves, IPSMoveText, IPSItemText, IPSItems, IPSAbilityText, IPSNatures } from '../types/ps';
 import { alcremieFormes, genderDiffs } from './constants.js';
 import { pool } from './createPool.js';
 import fetch from 'node-fetch';
+import { res2JSON } from './res2JSON.js';
+
 /**
  * Helper file to populate the dex db information
  */
@@ -13,23 +15,20 @@ export interface IDexDB {
 }
 
 export let dexdb: IDexDB[] | [];
-
 export let dexNames: { name: string, value: string }[];
-
 export let spriteNames: { name: string, value: string}[];
-
 export let moveNames: {name: string, value: string}[];
-
-export let pokedex: IPSDex;
+export let pokedex: IPSDex = {};
+export let movesText: IPSMoveText = {};
+export let itemsText: IPSItemText = {};
+export let items: IPSItems = {};
+export let abilitiesText: IPSAbilityText = {};
+export let natures: IPSNatures = {};
 
 /**
  * Queries the info we need from the dex table
  */
-export async function loadDex() {
-    // poll the db
-    // get the unique pokemon names
-    // const dexPostgres = await pool.query('SELECT DISTINCT alias FROM dex.pokemon');
-    
+export async function loadDex() {    
     // get the alias and gen for each mon, ordered by mon then by gen in ascending order (gen 1 -> gen current)
     // to do this we need to join the pokemon table with the gens table
     const dexPostgres = await pool.query('SELECT dex.pokemon.name, dex.pokemon.alias, dex.pokemon.gen_id, dex.pokemon.isNonstandard FROM dex.pokemon JOIN dex.gens ON dex.pokemon.gen_id = dex.gens.gen_id ORDER BY dex.pokemon.alias, dex.gens.order');
@@ -121,4 +120,65 @@ export async function loadMoves() {
 
     // convert everything to lower case and remvove special chars so we can build the exported pair array
     moveNames = moveArr.map(m => ({ name: m, value: m.toLowerCase().replace(/[^a-z0-9]/g, '') }));
+    
+}
+
+/**
+ * Loads the moves text
+ */
+export async function loadMoveText() {
+    // fetch the json from the PS API
+    const res = await fetch('https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/text/moves.ts');
+    const moves = await res.text();
+
+    // convert to JSON
+    movesText = res2JSON(moves) as IPSMoveText;
+}
+
+/**
+ * Loads item text
+ */
+export async function loadItemText() {
+    // fetch the json from the PS API
+    const res = await fetch('https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/text/items.ts');
+    const moves = await res.text();
+
+    // convert to JSON
+    itemsText = res2JSON(moves) as IPSItemText;
+}
+
+/**
+ * Loads items
+ */
+export async function loadItems() {
+    // fetch the json from the PS API
+    const res = await fetch('https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/items.ts');
+    const moves = await res.text();
+
+    // convert to JSON
+    items = res2JSON(moves) as IPSItems;
+}
+
+/**
+ * Loads ability text
+ */
+export async function loadAbilityText() {
+    // fetch the json from the PS API
+    const res = await fetch('https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/text/abilities.ts');
+    const moves = await res.text();
+
+    // convert to JSON
+    abilitiesText = res2JSON(moves) as IPSAbilityText;
+}
+
+/**
+ * Loads natures
+ */
+export async function loadNatures() {
+    // fetch the json from the PS API
+    const res = await fetch('https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/natures.ts');
+    const moves = await res.text();
+
+    // convert to JSON
+    natures = res2JSON(moves) as IPSNatures;
 }
