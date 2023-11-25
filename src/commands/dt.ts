@@ -6,9 +6,9 @@ import { pool } from '../helpers/createPool.js';
 import { genConversion } from '../helpers/genConversion.js';
 
 /**
- * Posts a link in the chat to the specified Pokemon analysis
- * @param pokemon Name of the pokemon
- * @param gen Which gen to pull up the analysis for
+ * Posts detailed information about the provided query
+ * @param name Name of the pokemon/item/nature/etc
+ * @param gen Which gen to pull up the data for
  *
  */
 export const command: SlashCommand = {
@@ -17,10 +17,10 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('dt')
-        .setDescription('Gives the details of the provided Pokemon, move, item, etc')
+        .setDescription('Gives the details of the provided Pokemon, move, item, etc using the SmogDex')
         .addStringOption(option =>
             option.setName('name')
-            .setDescription('Name of the Pokemon, move, item, nature, or ability')
+            .setDescription('Name of the object to search')
             .setRequired(true)
             .setAutocomplete(true))
         .addIntegerOption(option =>
