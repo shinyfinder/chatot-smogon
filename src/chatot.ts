@@ -11,7 +11,7 @@ import * as net from 'node:net';
 import { createPool } from './helpers/createPool.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
-import { loadDex, loadMoves, loadSpriteDex } from './helpers/loadDex.js';
+import { loadItems, loadMoves, loadSpriteDex, loadAllDexNames } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
@@ -152,8 +152,22 @@ createPool();
 /**
  * Cache the info from the db so we don't overload postgres with queries
  */
-await Promise.all([updateState(client), loadCustoms(), loadDex(), loadCCCooldowns(), recreateReminders(client), loadSpriteDex(), loadMoves()]);
+await Promise.all([
+    updateState(client),
+    loadCustoms(),
+    loadCCCooldowns(),
+    recreateReminders(client),
+    loadSpriteDex(),
+    loadAllDexNames(),
+    loadMoves(),
+    loadItems(),
+]);
 
+
+/**
+ * Mutate the object containing the /dt autocomplete pairs
+ */
+// createAutoPairs([pokedex, movesText, itemsText, items, abilitiesText, natures]);
 
 /**
  * Login to Discord with your client's token, or log any errors

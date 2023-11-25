@@ -1,7 +1,8 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { dexdb, dexNames, IDexDB } from '../helpers/loadDex.js';
+import { dexMondb, monNames } from '../helpers/loadDex.js';
 import { pool } from '../helpers/createPool.js';
+import { IPokedexDB } from '../types/dex';
 
 /**
  * Posts a link in the chat to the specified Pokemon analysis
@@ -51,7 +52,7 @@ export const command: SlashCommand = {
             const filteredOut: {name: string, value: string }[] = [];
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
-            for (const pair of dexNames) {
+            for (const pair of monNames) {
                 const nameLower = pair.name.toLowerCase();
                 if (filteredOut.length < 25) {
                     if (nameLower.includes(enteredText)) {
@@ -64,23 +65,6 @@ export const command: SlashCommand = {
             }
 
             await interaction.respond(filteredOut);
-            /*
-            const filtered = dexNames.filter(choice => choice.toLowerCase().includes(focusedOption.value.toLowerCase()));
-
-            // discord has a max length of 25 options
-            // When the command is selected from the list, nothing is entered into the fields so it tries to return every entry in choices as autocomplete answers
-            // so we need to trim the output to 25 choices so it doesn't throw an error
-            let filteredOut: string[];
-            if (filtered.length > 25) {
-                filteredOut = filtered.slice(0, 25);
-            }
-            else {
-                filteredOut = filtered;
-            }
-            await interaction.respond(
-                filteredOut.map(choice => ({ name: choice, value: choice })),
-            );
-            */
         }
     },
     // execute our desired task
@@ -99,7 +83,7 @@ export const command: SlashCommand = {
 
         // make sure they entered proper text
         // the value is the alias
-        const validName = dexNames.some(n => n.value === mon);
+        const validName = monNames.some(n => n.value === mon);
         if (!validName) {
             await interaction.followUp('Invalid Pokemon name. Please choose one from the list');
             return;
@@ -145,8 +129,8 @@ export const command: SlashCommand = {
          */
         if (gen === null) {
             // filter the db to only the mon they specified
-            const dbFilterMon = dexdb.filter(poke => poke.alias === mon);
-            let dbFilterFormat: IDexDB[];
+            const dbFilterMon = dexMondb.filter(poke => poke.alias === mon);
+            let dbFilterFormat: IPokedexDB[];
             // if they set the format to cap, get the latest cap entry
             if (format === 'cap') {
                 // get all of the entries related to cap

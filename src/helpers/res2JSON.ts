@@ -1,5 +1,3 @@
-import { IPSLearnsets } from '../types/ps';
-
 /**
  * Takes a text string obtained via a HTTP fetch and converts it into a JSON.
  * Useful when retrieving files from the PS github that export an object
@@ -8,21 +6,45 @@ import { IPSLearnsets } from '../types/ps';
  */
 export function res2JSON(txt: string) {
     // first remove the variable declaration (everything before the leading {)
-    const noDef = txt.replace(/[^]*= /, '');
+    const noDef = txt.replace(/[\s\S]*export.* = {/, '{');
 
     // setup a regex to determine the keys
-    // const keyFinderRegEX = /([{,]\s*)(\S+)\s*(:)/mg;
-    const keyFinderRegEX = /({?)(\S*):/mg;
+    const keyFinderRegEX = /({?)(?<!"|[\w-]+)([^"\s'{]*)(?<!"):(?!®)/mg;
 
-    // add double-quotes around the keys
-    // then remove trailing commas (commas that are not followed by another key)
-    // then replace any remaining single quotes with double quotes
-    // then remove the last semicolon as part of the object definition
-    const convertedJSONString = noDef.replace(keyFinderRegEX, '$1"$2":').replace(/,([\n\t]*[}\]])/g, '$1').replace(/'/g, '"').replace(';', '');
+    // escape any : contained within ""
+    let convertedJSONString = noDef.replace(/(?<=".*):(?=.*")(?!.*},)/gm, ':®');
+
+    // put "" around all keys
+    convertedJSONString = convertedJSONString.replace(keyFinderRegEX, '$1"$2":');
+
+    // remove the dummy var
+    convertedJSONString = convertedJSONString.replace(/®/gm, '');
+
+    // replace bounding '' with ""
+    convertedJSONString = convertedJSONString.replace(/(?<=\[|[,:] )'|'(?=[,\]])/gm, '"');
+
+    // add ® after any },
+    convertedJSONString = convertedJSONString.replace(/},/gm, '},®');
+
+    // remove anything between function definition and ®
+    convertedJSONString = convertedJSONString.replace(/^\s*\w*\([^®]*/gm, '');
+
+    // remove all ®
+    convertedJSONString = convertedJSONString.replace(/®/gm, '');
+
+    // remove any lingering comments
+    // are there any atp?
+    convertedJSONString = convertedJSONString.replace(/\s*\/\/.*/gm, '');
+
+    // remove any trailing commas
+    convertedJSONString = convertedJSONString.replace(/,([\n\t]*[}\]])/gm, '$1');
+    
+    // remove the trailing ;
+    convertedJSONString = convertedJSONString.replace(/;/gm, '');
 
     // it should be a valid json now
     // so parse it as such
-    const json = JSON.parse(convertedJSONString) as IPSLearnsets;
+    const json: unknown = JSON.parse(convertedJSONString);
 
     return json;
 }

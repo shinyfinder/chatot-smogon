@@ -1,4 +1,5 @@
 import { Colors } from 'discord.js';
+
 /**
  * This is a placeholder file to export various constants needed for mutiple files
  * If you need a place to import a variable from, it could go here rather than making a new file
@@ -515,6 +516,24 @@ const customColors = {
     Brown: 0x964B00,
     Pink: 0xFFC0CB,
     Gray: Colors.Grey,
+    Normal: 0xada594,
+    Fighting: 0xa55239,
+    Flying: 0x9cadf7,
+    Poison: 0xb55aa5,
+    Ground: 0xd6b55a,
+    Rock: 0xbda55a,
+    Bug: 0xadbd21,
+    Ghost: 0x6363b5,
+    Steel: 0xadadc6,
+    Fire: 0xf75231,
+    Water: 0x399cff,
+    Grass: 0x7bce52,
+    Electric: 0xffc631,
+    Psychic: 0xff73a5,
+    Ice: 0x5acee7,
+    Dragon: 0x7b63e7,
+    Dark: 0x735a4a,
+    Fairy: 0xff65d5,
 };
 
 export const myColors = { ...Colors, ...customColors };
