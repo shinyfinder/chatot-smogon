@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { dexdb, spriteNames } from '../helpers/loadDex.js';
+import { dexMondb, spriteNames } from '../helpers/loadDex.js';
 import fetch from 'node-fetch';
 
 /**
@@ -134,12 +134,12 @@ export const command: SlashCommand = {
 
             // try to find a row available for the mon
             // we don't really care if it's standard or not because we just want the sprite
-            let dbFilterMon = dexdb.filter(poke => poke.alias === mon && poke.gen_id === genAlias);
+            let dbFilterMon = dexMondb.filter(poke => poke.alias === mon && poke.gen_id === genAlias);
 
             // if you didn't find a match, it's possible it's a cosmetic forme
             // so split on - and take the first word, which should be the mon
             if (!dbFilterMon.length) {
-                dbFilterMon = dexdb.filter(poke => poke.alias.includes(mon.split('-')[0]) && poke.gen_id === genAlias);
+                dbFilterMon = dexMondb.filter(poke => poke.alias.includes(mon.split('-')[0]) && poke.gen_id === genAlias);
 
                 // if still no match, return
                 if (!dbFilterMon.length) {

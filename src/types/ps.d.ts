@@ -1,3 +1,4 @@
+/* eslint-disable no-inline-comments */
 export interface IPSDex {
     [key: string]: {
         name: string,
@@ -19,6 +20,7 @@ export interface IPSDex {
 export interface IPSMoves {
     [key: string]: {
         name: string,
+        flags: { [key: string]: 1},
         isZ?: string,
         [key: string]: unknown,
     }
@@ -45,7 +47,7 @@ export interface IPSItems {
     [key: string]: {
         name: string,
         gen: number,
-        fling?: { basePower: number, status?: string },
+        fling?: { basePower: number, status?: string, volatileStatus?: string; },
         naturalGift?: { basePower: number, type: string },
         [key: string]: unknown,
     }

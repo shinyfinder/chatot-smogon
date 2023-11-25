@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { dexNames, moveNames, pokedex, spriteNames } from '../helpers/loadDex.js';
+import { monNames, moveNames, pokedex, spriteNames } from '../helpers/loadDex.js';
 import fetch from 'node-fetch';
 import { IPSLearnsets } from '../types/ps';
 import { latestGen, myColors } from '../helpers/constants.js';
@@ -45,7 +45,7 @@ export const command: SlashCommand = {
             const filteredOut: {name: string, value: string }[] = [];
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
-            for (const pair of dexNames) {
+            for (const pair of monNames) {
                 if (filteredOut.length < 25) {
                     const nameLower = pair.name.toLowerCase();
                     // return the pairs, excluding any -Mega and -Gmax formes because those don't have keys in the PS learnset json
@@ -96,7 +96,7 @@ export const command: SlashCommand = {
 
         // make sure they entered proper text
         // the value is the alias
-        const validMonName = dexNames.some(n => n.value === monIn);
+        const validMonName = monNames.some(n => n.value === monIn);
         const validMoveName = moveNames.some(n => n.value === move);
         if (!validMonName) {
             await interaction.followUp('Invalid Pokemon name. Please choose one from the list');
@@ -264,7 +264,7 @@ export const command: SlashCommand = {
         let dexEntry = baseSpecie ? pokedex[baseSpecie] : pokedex[mon];
         let embedColor = 0;
         for (const [color, value] of Object.entries(myColors)) {
-            if (color === dexEntry.color) {
+            if (color.toLowerCase() === dexEntry.color.toLowerCase()) {
                 embedColor = value;
             }
         }
@@ -307,7 +307,7 @@ export const command: SlashCommand = {
         }
 
         // get the proper cased names for the text they enter
-        const titleCaseMon = dexNames.find(pair => pair.value === monIn)?.name;
+        const titleCaseMon = monNames.find(pair => pair.value === monIn)?.name;
         const titleCaseMove = moveNames.find(pair => pair.value === move)?.name;
         const monSprite = spriteNames.find(s => s.value === monIn)?.name;
 

@@ -11,7 +11,7 @@ import * as net from 'node:net';
 import { createPool } from './helpers/createPool.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
-import { loadAbilityText, loadDex, loadItemText, loadItems, loadMoveText, loadMoves, loadNatures, loadSpriteDex, pokedex, movesText, itemsText, items, abilitiesText, natures } from './helpers/loadDex.js';
+import { loadItems, loadMoves, loadSpriteDex, loadAllDexNames } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
@@ -21,7 +21,6 @@ import { loadCCCooldowns } from './helpers/manageCCCooldownCache.js';
 import config from './config.js';
 import { recreateReminders } from './helpers/reminderWorkers.js';
 import { ContextCommand } from './types/context-command-base';
-import { createAutoPairs } from './helpers/createAutoPairs.js';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
@@ -156,23 +155,19 @@ createPool();
 await Promise.all([
     updateState(client),
     loadCustoms(),
-    loadDex(),
     loadCCCooldowns(),
     recreateReminders(client),
     loadSpriteDex(),
+    loadAllDexNames(),
     loadMoves(),
-    loadMoveText(),
-    loadItemText(),
     loadItems(),
-    loadAbilityText(),
-    loadNatures(),
 ]);
 
 
 /**
  * Mutate the object containing the /dt autocomplete pairs
  */
-createAutoPairs([pokedex, movesText, itemsText, items, abilitiesText, natures]);
+// createAutoPairs([pokedex, movesText, itemsText, items, abilitiesText, natures]);
 
 /**
  * Login to Discord with your client's token, or log any errors
