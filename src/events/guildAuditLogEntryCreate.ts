@@ -207,36 +207,38 @@ export const clientEvent: eventHandler = {
 
             // output the length of the timeout based on the differential
             // because if statements are short circuited, we don't need to check the lower bound on each test
+            // discord sometimes glitches out and returns a number larger than these cutoffs (rounding?), so add a buffer to each one
             let duration = '';
-            if (timeDiff <= 60000) {
+            const buffer = 1.2;
+            if (timeDiff <= 60000 * buffer) {
                 // 1 minute
                 duration = '1 minute';
             }
-            else if (timeDiff <= 300000) {
+            else if (timeDiff <= 300000 * buffer) {
                 // 5 min
                 duration = '5 minutes';
             }
-            else if (timeDiff <= 600000) {
+            else if (timeDiff <= 600000 * buffer) {
                 // 10 min
                 duration = '10 minutes';
             }
-            else if (timeDiff <= 3600000) {
+            else if (timeDiff <= 3600000 * buffer) {
                 // 1 hour
                 duration = '1 hour';
             }
-            else if (timeDiff <= 21600000) {
+            else if (timeDiff <= 21600000 * buffer) {
                 // 6 hour
                 duration = '6 hours';
             }
-            else if (timeDiff <= 43200000) {
+            else if (timeDiff <= 43200000 * buffer) {
                 // 12 hours
                 duration = '12 hours';
             }
-            else if (timeDiff <= 64800000) {
+            else if (timeDiff <= 64800000 * buffer) {
                 // 18 hours
                 duration = '18 hours';
             }
-            else if (timeDiff <= 86400000) {
+            else if (timeDiff <= 86400000 * buffer) {
                 // 1 day
                 duration = '1 day';
             }
