@@ -210,7 +210,7 @@ export const clientEvent: eventHandler = {
             // discord sometimes glitches out and returns a number larger than these cutoffs (rounding?), so add a buffer to each one
             let duration = '';
             const buffer = 1.2;
-            if (timeDiff <= 60000 * buffer) {
+            if (timeDiff <= 60000 * 3) {
                 // 1 minute
                 duration = '1 minute';
             }
