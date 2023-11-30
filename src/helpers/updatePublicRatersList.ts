@@ -15,7 +15,7 @@ interface raterGroup {
  * Since the names are posted in an embed and not post per meta, we need to rubuild/requery each time
  */
 export async function updatePublicRatersList(client: Client, editMeta?: string, editGen?: string) {
-    // fetch all of the messages from the relevant channel so that we can edit the bot's message
+    // fetch all of the messages from the relevant channel so that we can edit the bot's messages
     // load the channel
     let raterListChannel: Channel | null;
     // dev mode gate
@@ -25,27 +25,20 @@ export async function updatePublicRatersList(client: Client, editMeta?: string, 
     else {
         raterListChannel = await client.channels.fetch('1079156451609686026');
     }
-    // 
     
     if (!(raterListChannel?.type === ChannelType.GuildText || raterListChannel?.type === ChannelType.PublicThread)) {
         return;
     }
 
     // fetch the messages from the channel
-    let postEmbeds: Embed[] = [];
-    let targetMessage: Message | undefined;
     const messages = await raterListChannel.messages.fetch({ limit: 100, cache: false });
     
-    // then find the id of the message that is from the bot and has the embeds
-    messages.forEach(msg => {
-        // search for the bot's ID and multiple embeds in the message
-        // the bot is currently only designed to post multiple embeds in a message in the specified channel for this purpose, so this is probably good enough
-        // albeit a bit hard coded
-        if (msg.author.id === config.CLIENT_ID && msg.embeds.length >= 3) {
-            postEmbeds = msg.embeds;
-            targetMessage = msg;
-        }
-    });
+    // then find the id of the messages that is from the bot and has the embeds
+    const botMsgs = messages.filter(msg => msg.author.id === client.user?.id);
+
+    // extract the embeds from the posts
+    const postEmbeds = botMsgs.map(msg => msg.embeds).flat();
+    const postEmbedTitles = botMsgs.map(msg => msg.embeds[0]?.title);
    
     // else, we didn't find the message, so we have to make a new one   
     const stringArr: string[] = [];
@@ -198,7 +191,9 @@ export async function updatePublicRatersList(client: Client, editMeta?: string, 
      */
     // set the max number of fields we want per embed
     const maxFields = 25;
-    const embedHolder: EmbedBuilder[] = [];
+    const currentEmbedHolder: EmbedBuilder[] = [];
+    const pastEmbedHolder: EmbedBuilder[] = [];
+    const miscEmbedHolder: EmbedBuilder[] = [];
 
     // find the user who was added/removed
     let editHeader = '';
@@ -209,25 +204,70 @@ export async function updatePublicRatersList(client: Client, editMeta?: string, 
 
     // current gen official
     // find the number of embeds needed to cover this
-    await buildEmbed('Current Gen Official Tiers', currentOfficial, embedHolder, maxFields, client, editHeader, postEmbeds);
+    await buildEmbed('Current Gen Official Tiers', currentOfficial, currentEmbedHolder, maxFields, client, editHeader, postEmbeds);
 
     // old gen official
-    await buildEmbed('Old Gen Official Tiers', oldOfficial, embedHolder, maxFields, client, editHeader, postEmbeds);
+    await buildEmbed('Old Gen Official Tiers', oldOfficial, pastEmbedHolder, maxFields, client, editHeader, postEmbeds);
 
     // misc
-    await buildEmbed('Miscellaneous Tiers', misc, embedHolder, maxFields, client, editHeader, postEmbeds);
+    await buildEmbed('Miscellaneous Tiers', misc, miscEmbedHolder, maxFields, client, editHeader, postEmbeds);
 
     // post it to the channel
     // if we found a message, we just need to edit the content of the embeds
     // otherwise we need to make a new post with them
     if (postEmbeds.length) {
-        // edit the message in the channel
-        if (targetMessage instanceof Message) {
-            await targetMessage.edit({ embeds: embedHolder });
+        let delFlag = false;
+
+        // assert we have the right number of posts and embeds in each
+        // embeds and posts could be deleted, in which case we'd need to repost instead of edit
+        const groupChecks = ['Current', 'Old', 'Miscellaneous'];
+
+        for (const check of groupChecks) {
+            // make sure each one has an embed
+            for (const [id, oldMsg] of botMsgs) {
+                if (!oldMsg.embeds.length) {
+                    delFlag = true;
+                }
+            }
+
+            // make sure all of the categories are covered
+            if (!postEmbedTitles.some(title => title?.includes(check))) {
+                delFlag = true;
+            }
         }
+        
+
+        // if something is off, delete the bot's messages so we can trigger a full refresh
+        if (delFlag) {
+            for (const [id, msg] of botMsgs) {
+                await msg.delete();
+            }
+            // post them in order of current, old, misc
+            await raterListChannel.send({ embeds: currentEmbedHolder });
+            await raterListChannel.send({ embeds: pastEmbedHolder });
+            await raterListChannel.send({ embeds: miscEmbedHolder });
+        }
+        else {
+            // edit the message in the channel
+            for (const [id, oldMsg] of botMsgs) {
+                if (oldMsg.embeds[0].title?.includes('Current')) {
+                    await oldMsg.edit({ embeds: currentEmbedHolder });
+                }
+                else if (oldMsg.embeds[0].title?.includes('Old')) {
+                    await oldMsg.edit({ embeds: pastEmbedHolder });
+                }
+                else if (oldMsg.embeds[0].title?.includes('Miscellaneous')) {
+                    await oldMsg.edit({ embeds: miscEmbedHolder });
+                }
+            }
+        }
+        
     }
     else {
-        await raterListChannel.send({ embeds: embedHolder });
+        // post them in order of current, old, misc
+        await raterListChannel.send({ embeds: currentEmbedHolder });
+        await raterListChannel.send({ embeds: pastEmbedHolder });
+        await raterListChannel.send({ embeds: miscEmbedHolder });
     }
     
 }
