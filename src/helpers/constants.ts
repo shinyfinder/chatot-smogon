@@ -60,11 +60,6 @@ export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url
         tiers: ['ou'],
         url: 'https://www.smogon.com/forums/forums/ou-analyses.758/',
     },
-    '538' : {
-        gens: ['8'],
-        tiers: ['ou'],
-        url: 'https://www.smogon.com/forums/forums/ou-analyses.538/',
-    },
     '759' : {
         gens: ['9'],
         tiers: ['ubers'],
@@ -171,24 +166,14 @@ export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url
         url: 'https://www.smogon.com/forums/forums/natdex-uu-analyses.839/',
     },
     '768' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '9'],
+        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
         tiers: ['cap'],
         url: 'https://www.smogon.com/forums/forums/cap-analyses.768/',
-    },
-    '555' : {
-        gens: ['8'],
-        tiers: ['cap'],
-        url: 'https://www.smogon.com/forums/forums/cap-analyses.555/',
     },
     '766' : {
         gens: ['9'],
         tiers: ['bss'],
         url: 'https://www.smogon.com/forums/forums/battle-stadium-analyses.766/',
-    },
-    '543' : {
-        gens: ['8'],
-        tiers: ['bss'],
-        url: 'https://www.smogon.com/forums/forums/battle-stadium-analyses.543/',
     },
     '767' : {
         gens: ['9'],
@@ -196,7 +181,7 @@ export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url
         url: 'https://www.smogon.com/forums/forums/vgc-analyses.767/',
     },
     '148' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7'],
+        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
         tiers: ['ou'],
         url: 'https://www.smogon.com/forums/forums/past-generation-analyses.148/',
     },
