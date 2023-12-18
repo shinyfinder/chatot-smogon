@@ -249,13 +249,15 @@ export const command: SlashCommand = {
             .setCustomId('prefixInput')
             .setLabel('Prefix')
             .setStyle(TextInputStyle.Short)
-            .setValue(dbmatches[index].prefix);
+            .setValue(dbmatches[index].prefix)
+            .setMaxLength(1);
 
             const cmdInput = new TextInputBuilder()
             .setCustomId('cmdInput')
             .setLabel('Prints')
             .setStyle(TextInputStyle.Paragraph)
-            .setValue(dbmatches[index].txt);
+            .setValue(dbmatches[index].txt)
+            .setMinLength(1);
 
             // add an action row to hold the text inputs
             // an action row can only hold 1 text input, so you need 1 per input

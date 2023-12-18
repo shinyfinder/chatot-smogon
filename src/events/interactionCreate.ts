@@ -1,6 +1,7 @@
 import { DiscordAPIError, Collection, BaseInteraction } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { SlashCommand } from '../types/slash-command-base';
+import { createTicket } from '../helpers/createTicket.js';
 
 /**
  * interactionCreate handler
@@ -15,7 +16,7 @@ export const clientEvent: eventHandler = {
     name: 'interactionCreate',
     // execute the command
     async execute(interaction: BaseInteraction) {
-        // check whether the interaction is a slash/context menu command. If not, return
+        // check whether the interaction is a slash/context menu command
         if (interaction.isCommand()) {
             // try to fetch the command the user used from the list of commands the bot has
             // is undefined if it is not this bot's command
@@ -107,6 +108,52 @@ export const clientEvent: eventHandler = {
                 }
                 else if (error instanceof Collection && error.size === 0) {
                     await interaction.channel?.send('Collector timed out without receiving an interaction');
+                    throw { err: error, int: interaction };
+                }
+                // if we already replied, send a new one
+                else if (interaction.replied) {
+                    await interaction.channel?.send('There was en error while executing this command');
+                }
+                // if we haven't replied yet, but we deferred a reply, follow up
+                else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
+                    await interaction.followUp('There was an error while executing this command');
+                }
+                // if we haven't deferred or replied, reply
+                else if (!interaction.replied && interaction.isRepliable()) {
+                    await interaction.reply({ content: 'There was an error while executing this command', ephemeral: true });
+                }
+                
+                throw { err: error, int: interaction };
+                
+            }
+        }
+        // buttons
+        else if (interaction.isButton()) {
+            // check if it's a ticket event
+            try {
+                await createTicket(interaction);
+            }
+            catch (error) {
+                // let the user know there was a problem
+                // try to keep errors ephemeral so it doesn't clog the chat and only the person who initiated can see the error
+                if (error instanceof DiscordAPIError) {
+                    // if we already replied, send a new one
+                    if (interaction.replied) {
+                        await interaction.channel?.send(error.message);
+                    }
+                    // if we haven't replied yet, but we deferred a reply, follow up
+                    else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
+                        await interaction.followUp(error.message);
+                    }
+                    // if we haven't deferred or replied, reply
+                    else if (!interaction.replied && interaction.isRepliable()) {
+                        await interaction.reply({ content: error.message, ephemeral: true });
+                    }
+                    
+                    throw { err: error, int: interaction };
+                }
+                // if it's a collector timeout error, just return without letting them know
+                 else if (error instanceof Error && error.message === 'Collector received no interactions before ending with reason: time') {
                     throw { err: error, int: interaction };
                 }
                 // if we already replied, send a new one

@@ -163,6 +163,15 @@ CREATE TABLE chatot.gbans (
     PRIMARY KEY (target)
 );
 
+
+CREATE TABLE chatot.tickets (
+    serverid varchar(20),
+    messageid varchar(20),
+    threadchanid varchar(20),
+    staffid varchar(20),
+    PRIMARY KEY (serverid)
+);
+
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------

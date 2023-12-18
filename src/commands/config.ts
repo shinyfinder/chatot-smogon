@@ -1,8 +1,10 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, ChannelType, AutocompleteInteraction } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, ChannelType, AutocompleteInteraction, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 import { ccMetaObj } from '../helpers/constants.js';
 import { validateCCTier } from '../helpers/validateCCTier.js';
+import { getRandInt } from '../helpers/getRandInt.js';
+import { checkChanPerms } from '../helpers/checkChanPerms.js';
 
 /**
  * Sets up the requirements for a user to be considered verified within the discord server
@@ -170,7 +172,23 @@ export const command: SlashCommand = {
             .addBooleanOption(option =>
                 option.setName('removeall')
                 .setDescription('Removes all C&C tracking from the server')
-                .setRequired(false))),
+                .setRequired(false)))
+                
+        /**
+         * TICKETS
+         */
+        .addSubcommand(new SlashCommandSubcommandBuilder()
+            .setName('tickets')
+            .setDescription('Initializes a button for users to submit a help ticket to server staff')
+            .addChannelOption(option =>
+                option.setName('threadchan')
+                .setDescription('The top-level channel for the private threads and button')
+                .addChannelTypes(ChannelType.GuildText)
+                .setRequired(true))
+            .addRoleOption(option =>
+                option.setName('staff')
+                .setDescription('The staff role that can access the ticket')
+                .setRequired(true))),
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {
@@ -446,5 +464,57 @@ export const command: SlashCommand = {
             // let them know we're done
             await interaction.followUp('Preferences updated');
         }
+
+
+        /**
+         * TICKETS
+         */
+        else if (interaction.options.getSubcommand() === 'tickets') {
+            // get inputs
+            const threadChannel = interaction.options.getChannel('threadchan', true, [ChannelType.GuildText]);
+            const staffRole = interaction.options.getRole('staff', true);
+            
+            // create a button for the users to click
+            const embed = new EmbedBuilder()
+                .setTitle('Contact the mods')
+                .setDescription('If you have any feedback or concerns regarding the server, you can press the button below to create a private thread with the server staff.')
+                .setColor('Red');
+
+            const randInt = getRandInt(0, 65535);
+            const openBtn = new ButtonBuilder()
+                .setCustomId(`ticket${randInt}`)
+                .setLabel('Open a thread')
+                .setStyle(ButtonStyle.Secondary)
+                .setEmoji('🎟️');
+
+            const row = new ActionRowBuilder<ButtonBuilder>()
+                .addComponents(openBtn);
+
+            
+            // make sure we can complete the task
+            const canComplete = await checkChanPerms(interaction, threadChannel, ['ViewChannel', 'CreatePrivateThreads', 'SendMessagesInThreads']);
+            if (!canComplete) {
+                return;
+            }
+
+            // we have the perms, so send the message
+            const msg = await threadChannel.send({
+                embeds: [embed],
+                components: [row],
+            });
+
+            
+            // upsert into the table            
+            await pool.query(`INSERT INTO chatot.tickets (serverid, messageid, threadchanid, staffid)
+                VALUES ($1, $2, $3, $4)
+                ON CONFLICT (serverid) DO UPDATE
+                SET serverid=EXCLUDED.serverid, messageid=EXCLUDED.messageid, threadchanid=EXCLUDED.threadchanid, staffid=EXCLUDED.staffid`,
+                [interaction.guildId, msg.id, threadChannel.id, staffRole.id]);
+              
+
+            // let them know we're done
+            await interaction.followUp('Ticket system updated; a new button has been created. Please delete any old posts containing the original submission button.');
+        }
+
     },
 };
