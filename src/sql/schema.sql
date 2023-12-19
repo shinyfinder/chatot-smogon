@@ -169,7 +169,7 @@ CREATE TABLE chatot.tickets (
     messageid varchar(20),
     threadchanid varchar(20),
     staffid varchar(20),
-    PRIMARY KEY (serverid)
+    PRIMARY KEY (serverid, staffid)
 );
 
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only

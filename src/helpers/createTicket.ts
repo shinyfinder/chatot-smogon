@@ -8,7 +8,6 @@ import { getRandInt } from './getRandInt.js';
 export async function createTicket(interaction: ButtonInteraction) {
     // check if this button is in the db of help ticket initiators
     const ticketQuery = await pool.query('SELECT threadchanid, staffid FROM chatot.tickets WHERE messageid=$1', [interaction.message.id]);
-    // there will only be 1 match at most
     const threadSetup: { threadchanid: string, staffid: string }[] | [] = ticketQuery.rows;
 
     if (!threadSetup.length) {
@@ -68,9 +67,13 @@ export async function createTicket(interaction: ButtonInteraction) {
         invitable: false,
     });
 
+    const staffPings: string[] = [];
+    for (const staffrow of threadSetup) {
+        staffPings.push(`<@&${staffrow.staffid}>`);
+    }
     // invite the users to the thread
     // await thread.members.add(interaction.user.id);
-    await thread.send(`<@${interaction.user.id}> this is the start of your private thread with <@&${threadSetup[0].staffid}> for the reason below. If you wish to provide more information, you can do so here. Staff will respond as soon as they can.\n\`\`\`\n${txt}\n\`\`\``);
+    await thread.send(`<@${interaction.user.id}> this is the start of your private thread with ${staffPings.join(', ')} for the reason below. If you wish to provide more information, you can do so here. Staff will respond as soon as they can.\n\`\`\`\n${txt}\n\`\`\``);
 
     
     // reply to the interaction so we don't leave it hanging

@@ -188,7 +188,15 @@ export const command: SlashCommand = {
             .addRoleOption(option =>
                 option.setName('staff')
                 .setDescription('The staff role that can access the ticket')
-                .setRequired(true))),
+                .setRequired(true))
+            .addRoleOption(option =>
+                option.setName('staff2')
+                .setDescription('Additional staff role that can access the ticket')
+                .setRequired(false))
+            .addRoleOption(option =>
+                option.setName('staff3')
+                .setDescription('Additional staff role that can access the ticket')
+                .setRequired(false))),
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {
@@ -443,7 +451,7 @@ export const command: SlashCommand = {
                     // delete -- delete the corresponding 'all' row
                     await pgClient.query('DELETE FROM chatot.ccprefs WHERE serverid=$1 AND channelid=$2 AND tier=$3 AND gen=$4 AND stage=$5', [interaction.guildId, channel.id, tier, gen, 'all']);
                     // upsert
-                    await pool.query(`INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage, cooldown)
+                    await pgClient.query(`INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage, cooldown)
                         VALUES ($1, $2, $3, $4, $5, $6, $7)
                         ON CONFLICT (serverid, channelid, tier, gen, stage) DO UPDATE
                         SET serverid=EXCLUDED.serverid, channelid=EXCLUDED.channelid, tier=EXCLUDED.tier, role=EXCLUDED.role, gen=EXCLUDED.gen, stage=EXCLUDED.stage, cooldown=EXCLUDED.cooldown`,
@@ -473,6 +481,12 @@ export const command: SlashCommand = {
             // get inputs
             const threadChannel = interaction.options.getChannel('threadchan', true, [ChannelType.GuildText]);
             const staffRole = interaction.options.getRole('staff', true);
+            const staff2 = interaction.options.getRole('staff2');
+            const staff3 = interaction.options.getRole('staff3');
+
+            // create an array of the unique, non-null values
+            let staffRoles = [staffRole, staff2, staff3].filter(role => role).map(role => role?.id);
+            staffRoles = [...new Set(staffRoles)];
             
             // create a button for the users to click
             const embed = new EmbedBuilder()
@@ -504,14 +518,28 @@ export const command: SlashCommand = {
             });
 
             
-            // upsert into the table            
-            await pool.query(`INSERT INTO chatot.tickets (serverid, messageid, threadchanid, staffid)
-                VALUES ($1, $2, $3, $4)
-                ON CONFLICT (serverid) DO UPDATE
-                SET serverid=EXCLUDED.serverid, messageid=EXCLUDED.messageid, threadchanid=EXCLUDED.threadchanid, staffid=EXCLUDED.staffid`,
-                [interaction.guildId, msg.id, threadChannel.id, staffRole.id]);
-              
-
+            // upsert into the table
+            // query the pool with a transaction
+            const pgClient = await pool.connect();
+            try {
+                // start
+                await pgClient.query('BEGIN');
+                // delete -- delete the rows for this server
+                await pgClient.query('DELETE FROM chatot.tickets WHERE serverid=$1', [interaction.guildId]);
+                // upsert
+                await pgClient.query('INSERT INTO chatot.tickets (serverid, messageid, threadchanid, staffid) VALUES ($1, $2, $3, UNNEST($4::text[]))', [interaction.guildId, msg.id, threadChannel.id, staffRoles]);
+                // end
+                await pgClient.query('COMMIT');
+            }
+            catch (e) {
+                await pgClient.query('ROLLBACK');
+                // if this errors we have bigger problems, so log it
+                throw e;
+            }
+            finally {
+                pgClient.release();
+            }
+            
             // let them know we're done
             await interaction.followUp('Ticket system updated; a new button has been created. Please delete any old posts containing the original submission button.');
         }
