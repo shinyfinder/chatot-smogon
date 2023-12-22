@@ -7,8 +7,8 @@ import { getRandInt } from './getRandInt.js';
  */
 export async function createTicket(interaction: ButtonInteraction) {
     // check if this button is in the db of help ticket initiators
-    const ticketQuery = await pool.query('SELECT threadchanid, staffid FROM chatot.tickets WHERE messageid=$1', [interaction.message.id]);
-    const threadSetup: { threadchanid: string, staffid: string }[] | [] = ticketQuery.rows;
+    const ticketQuery = await pool.query('SELECT threadchanid, staffid, logchanid FROM chatot.tickets WHERE messageid=$1', [interaction.message.id]);
+    const threadSetup: { threadchanid: string, staffid: string, logchanid: string }[] | [] = ticketQuery.rows;
 
     if (!threadSetup.length) {
         return;
@@ -69,13 +69,26 @@ export async function createTicket(interaction: ButtonInteraction) {
 
     const staffPings: string[] = [];
     for (const staffrow of threadSetup) {
-        staffPings.push(`<@&${staffrow.staffid}>`);
+        // if it's some sort of id, push it to the array
+        if (staffrow.staffid !== '-') {
+            staffPings.push(`<@&${staffrow.staffid}>`);
+        }
+        // if it's the dummy value, just use a default
+        else {
+            staffPings.push('staff');
+        }
     }
     // invite the users to the thread
     // await thread.members.add(interaction.user.id);
     await thread.send(`<@${interaction.user.id}> this is the start of your private thread with ${staffPings.join(', ')} for the reason below. If you wish to provide more information, you can do so here. Staff will respond as soon as they can.\n\`\`\`\n${txt}\n\`\`\``);
 
-    
+    // log the creation
+    if (threadSetup[0].logchanid) {
+        const logchan = interaction.client.channels.cache.get(threadSetup[0].logchanid);
+        if (logchan?.type === ChannelType.GuildText || logchan?.type === ChannelType.PublicThread || logchan?.type === ChannelType.PrivateThread) {
+            await logchan.send(`<@${interaction.user.id}> (${interaction.user.username}) created a support ticket: <#${thread.id}>`);
+        }
+    }
     // reply to the interaction so we don't leave it hanging
     await submittedModal.followUp({ content: 'Private thread created', ephemeral: true });
 

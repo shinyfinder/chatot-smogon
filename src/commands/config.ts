@@ -185,10 +185,15 @@ export const command: SlashCommand = {
                 .setDescription('The top-level channel for the private threads and button')
                 .addChannelTypes(ChannelType.GuildText)
                 .setRequired(true))
+            .addChannelOption(option =>
+                option.setName('logchan')
+                .setDescription('The channel to which new thread alerts are logged')
+                .setRequired(false)
+                .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread))
             .addRoleOption(option =>
                 option.setName('staff')
                 .setDescription('The staff role that can access the ticket')
-                .setRequired(true))
+                .setRequired(false))
             .addRoleOption(option =>
                 option.setName('staff2')
                 .setDescription('Additional staff role that can access the ticket')
@@ -480,18 +485,25 @@ export const command: SlashCommand = {
         else if (interaction.options.getSubcommand() === 'tickets') {
             // get inputs
             const threadChannel = interaction.options.getChannel('threadchan', true, [ChannelType.GuildText]);
-            const staffRole = interaction.options.getRole('staff', true);
+            const staffRole = interaction.options.getRole('staff');
+            const logchan = interaction.options.getChannel('logchan', false, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
             const staff2 = interaction.options.getRole('staff2');
             const staff3 = interaction.options.getRole('staff3');
 
             // create an array of the unique, non-null values
             let staffRoles = [staffRole, staff2, staff3].filter(role => role).map(role => role?.id);
             staffRoles = [...new Set(staffRoles)];
+
+            // if they didn't specify any roles, enter a dummy value
+            // this can't be null because it's part of the PK in the chatot.tickets schema
+            if (!staffRoles.length) {
+                staffRoles = ['-'];
+            }
             
             // create a button for the users to click
             const embed = new EmbedBuilder()
                 .setTitle('Contact the mods')
-                .setDescription('If you have any feedback or concerns regarding the server, you can press the button below to create a private thread with the server staff.')
+                .setDescription('If you have any feedback or concerns regarding the server, you can press the button below to create a private thread with server staff.')
                 .setColor('Red');
 
             const randInt = getRandInt(0, 65535);
@@ -506,9 +518,22 @@ export const command: SlashCommand = {
 
             
             // make sure we can complete the task
-            const canComplete = await checkChanPerms(interaction, threadChannel, ['ViewChannel', 'CreatePrivateThreads', 'SendMessagesInThreads']);
+            let canComplete = await checkChanPerms(interaction, threadChannel, ['ViewChannel', 'CreatePrivateThreads', 'SendMessagesInThreads']);
             if (!canComplete) {
                 return;
+            }
+
+            if (logchan) {
+                if (logchan.type === ChannelType.PublicThread || logchan.type === ChannelType.PrivateThread) {
+                    canComplete = await checkChanPerms(interaction, logchan, ['ViewChannel', 'SendMessagesInThreads']);
+                }
+                else if (logchan.type === ChannelType.GuildText) {
+                    canComplete = await checkChanPerms(interaction, logchan, ['ViewChannel', 'SendMessages']);
+                }
+
+                if (!canComplete) {
+                    return;
+                }
             }
 
             // we have the perms, so send the message
@@ -527,7 +552,7 @@ export const command: SlashCommand = {
                 // delete -- delete the rows for this server
                 await pgClient.query('DELETE FROM chatot.tickets WHERE serverid=$1', [interaction.guildId]);
                 // upsert
-                await pgClient.query('INSERT INTO chatot.tickets (serverid, messageid, threadchanid, staffid) VALUES ($1, $2, $3, UNNEST($4::text[]))', [interaction.guildId, msg.id, threadChannel.id, staffRoles]);
+                await pgClient.query('INSERT INTO chatot.tickets (serverid, messageid, threadchanid, staffid, logchanid) VALUES ($1, $2, $3, UNNEST($4::text[]), $5)', [interaction.guildId, msg.id, threadChannel.id, staffRoles, logchan?.id]);
                 // end
                 await pgClient.query('COMMIT');
             }

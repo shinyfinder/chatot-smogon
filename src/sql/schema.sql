@@ -169,6 +169,7 @@ CREATE TABLE chatot.tickets (
     messageid varchar(20),
     threadchanid varchar(20),
     staffid varchar(20),
+    logchanid varchar(20),
     PRIMARY KEY (serverid, staffid)
 );
 
