@@ -200,6 +200,11 @@ export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url
         tiers: ['bdsp ou'],
         url: 'https://www.smogon.com/forums/forums/bdsp-ou-analyses.707/',
     },
+    '871' : {
+        gens: ['9'],
+        tiers: ['draft'],
+        url: 'https://www.smogon.com/forums/forums/draft-league-analyses.871/',
+    },
 };
 
 
@@ -240,6 +245,7 @@ const ccIntegrationMeta = [
     'Tradebacks OU',
     'STAB',
     'ZU',
+    'Draft',
     'All',
 ];
 
