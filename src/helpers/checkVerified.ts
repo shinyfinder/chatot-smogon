@@ -30,8 +30,9 @@ export async function checkVerified(member: GuildMember) {
             // see if they meet the reqs
             // case 1: the server requires a link but doesn't care about account age
             if (reqMatches[0].age === 0) {
-                // if here, they linked their profile and we don't care about its age, so nothing to do
-                return;
+                // if here, they linked their profile and we don't care about its age
+                // remove the lockout role to be safe, in case the server uses another bot to add it
+                await member.roles.remove(role);
             }
             // case 2: the server requires a linked forum profile and set a minimum account age
             else if (reqMatches[0].age !== 0) {
@@ -49,6 +50,10 @@ export async function checkVerified(member: GuildMember) {
                 // if their account isn't old enough, give them the role
                 if (daysRegistered < reqMatches[0].age) {
                     await member.roles.add(role);
+                }
+                // if they meet the reqs, remove the role
+                else {
+                    await member.roles.remove(role);
                 }
             }
         }
