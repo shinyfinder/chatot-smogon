@@ -21,7 +21,7 @@ export function res2JSON(txt: string) {
     convertedJSONString = convertedJSONString.replace(/®/gm, '');
 
     // replace bounding '' with ""
-    convertedJSONString = convertedJSONString.replace(/(?<=\[|[,:] )'|'(?=[,\]])/gm, '"');
+    convertedJSONString = convertedJSONString.replace(/(?<=\[|[,:] )'|'(?=[,\]}])/gm, '"');
 
     // add ® after any },
     convertedJSONString = convertedJSONString.replace(/},/gm, '},®');
