@@ -22,22 +22,6 @@ export const command: SlashCommand = {
     guilds: ['192713314399289344'],
     // setup the slash command builder
     // the rater command groups all add, remove, and list conditions under the same command
-    // the command structure is as follows, where <> denote required fields
-    /**
-     * rater
-     * |
-     * --- add <generation> <meta> <user>
-     * |
-     * --- remove <generation> <meta> <user>
-     * |
-     * --- removeall <user>
-     * |
-     * --- list
-     * |
-     * ------ all
-     * |
-     * ------ meta <generation> <meta>
-     */
     data: new SlashCommandBuilder()
         .setName('rater')
         .setDescription('Manages the team raters database')
@@ -50,8 +34,17 @@ export const command: SlashCommand = {
             .setName('add')
             .setDescription('Adds a team rater to the specified meta')
             .addStringOption(option =>
+                option.setName('meta')
+                .setDescription('Tier which the user rates teams for. Start typing to filter the list')
+                .setRequired(true)
+                .setAutocomplete(true))
+            .addUserOption(option =>
+                option.setName('user')
+                .setDescription('User to be added (can accept IDs)')
+                .setRequired(true))
+            .addStringOption(option =>
                 option.setName('generation')
-                .setDescription('Which gen this user rates teams for')
+                .setDescription('Which gen this user rates teams for. Default: latest')
                 .addChoices(
                     { name: 'SV', value: 'SV' },
                     { name: 'SS', value: 'SS' },
@@ -65,16 +58,8 @@ export const command: SlashCommand = {
                     { name: 'LGPE', value: 'LGPE' },
                     { name: 'BDSP', value: 'BDSP' },
                 )
-                .setRequired(true))
-            .addStringOption(option =>
-                option.setName('meta')
-                .setDescription('Tier which the user rates teams for. Start typing to filter the list')
-                .setRequired(true)
-                .setAutocomplete(true))
-            .addUserOption(option =>
-                option.setName('user')
-                .setDescription('User to be added (can accept IDs)')
-                .setRequired(true)))
+                .setRequired(false)))
+            
         /**
          * Remove TR
          */
@@ -82,8 +67,17 @@ export const command: SlashCommand = {
             .setName('remove')
             .setDescription('Removes a team rater from the specified meta')
             .addStringOption(option =>
+                option.setName('meta')
+                .setDescription('Tier which the user rates teams for. Start typing to filter the list')
+                .setRequired(true)
+                .setAutocomplete(true))
+            .addUserOption(option =>
+                option.setName('user')
+                .setDescription('User to be added (can accept IDs)')
+                .setRequired(true))
+            .addStringOption(option =>
                 option.setName('generation')
-                .setDescription('Which gen this user rates teams for')
+                .setDescription('Which gen this user rates teams for. Default: latest')
                 .addChoices(
                     { name: 'SV', value: 'SV' },
                     { name: 'SS', value: 'SS' },
@@ -97,16 +91,7 @@ export const command: SlashCommand = {
                     { name: 'LGPE', value: 'LGPE' },
                     { name: 'BDSP', value: 'BDSP' },
                 )
-                .setRequired(true))
-            .addStringOption(option =>
-                option.setName('meta')
-                .setDescription('Tier which the user rates teams for. Start typing to filter the list')
-                .setRequired(true)
-                .setAutocomplete(true))
-            .addUserOption(option =>
-                option.setName('user')
-                .setDescription('User to be added (can accept IDs)')
-                .setRequired(true)))
+                .setRequired(false)))
 
         /**
          * Remove ALL
@@ -133,8 +118,13 @@ export const command: SlashCommand = {
                 .setName('meta')
                 .setDescription('Lists the raters for the specified meta')
                 .addStringOption(option =>
+                    option.setName('meta')
+                    .setDescription('Meta which the user rates teams for')
+                    .setRequired(true)
+                    .setAutocomplete(true))
+                .addStringOption(option =>
                     option.setName('generation')
-                    .setDescription('Respective gen the user rates teams for')
+                    .setDescription('Respective gen the user rates teams for. Default: latest')
                     .addChoices(
                         { name: 'SV', value: 'SV' },
                         { name: 'SS', value: 'SS' },
@@ -148,12 +138,7 @@ export const command: SlashCommand = {
                         { name: 'LGPE', value: 'LGPE' },
                         { name: 'BDSP', value: 'BDSP' },
                     )
-                    .setRequired(true))
-                .addStringOption(option =>
-                    option.setName('meta')
-                    .setDescription('Meta which the user rates teams for')
-                    .setRequired(true)
-                    .setAutocomplete(true)))),
+                    .setRequired(false)))),
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {
@@ -187,7 +172,7 @@ export const command: SlashCommand = {
             // get the user inputs
             // get the inputs
             const metaIn = interaction.options.getString('meta', true).toLowerCase();
-            const gen = interaction.options.getString('generation', true);
+            const gen = interaction.options.getString('generation') ?? 'SV';
             const user = interaction.options.getUser('user', true);
 
             await addRater(interaction, metaIn, gen, user);
@@ -196,7 +181,7 @@ export const command: SlashCommand = {
         else if (interaction.options.getSubcommand() === 'remove') {
             // get the inputs
             const metaIn = interaction.options.getString('meta', true).toLowerCase();
-            const gen = interaction.options.getString('generation', true);
+            const gen = interaction.options.getString('generation') ?? 'SV';
             const user = interaction.options.getUser('user', true);
 
             await removeRater(interaction, metaIn, gen, user);
@@ -220,7 +205,7 @@ export const command: SlashCommand = {
         else if (interaction.options.getSubcommand() === 'meta') {
             // get the inputs
             const metaIn = interaction.options.getString('meta', true).toLowerCase();
-            const gen = interaction.options.getString('generation', true);
+            const gen = interaction.options.getString('generation') ?? 'SV';
 
             await listRater(interaction, metaIn, gen);
             return;
