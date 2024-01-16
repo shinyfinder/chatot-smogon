@@ -41,7 +41,7 @@ export const command: SlashCommand = {
 		const response = await interaction.reply({
 			content: `This action will delete all instances of your data from the databases. Before confirming, please note:
 * Any preferences and information you've previously provided will be lost.
-* Deletion of your data may break some of Chatot's functionality for you and, if you were previously globally banned, may render you unable to be globally unbanned from select Smogon servers.
+* Deletion of your data may break some of Chatot's functionality for you and, if you were previously globally banned, may render you unable to be globally unbanned from select Smogon servers using Chatot.
 * This will not lift any existing punishments on your account.
 * Preferences and information can be provided again by running the appropriate commands.
 Are you sure?
@@ -74,7 +74,7 @@ Are you sure?
                         await pgClient.query('DELETE FROM chatot.fc WHERE userid=$1', [interaction.user.id]);
                         await pgClient.query('DELETE FROM chatot.reminders WHERE userid=$1', [interaction.user.id]);
                         await pgClient.query('DELETE FROM chatot.gbans WHERE target=$1', [interaction.user.id]);
-                        await pgClient.query('DELETE FROM chatot.modlog WHERE target=$1', [interaction.user.id]);
+                        await pgClient.query('UPDATE chatot.modlog SET target=REPLACE(target, $1, \'unknown\'), executor=REPLACE(executor, $1, \'unknown\');', [interaction.user.id]);
                         // end
                         await pgClient.query('COMMIT');
                     }
@@ -82,7 +82,7 @@ Are you sure?
                         await pgClient.query('ROLLBACK');
                         hadError = true;
                         errorHandler(e);
-                        await i.editReply('An error occurred and your data was not deleted');
+                        await i.editReply({ content: 'An error occurred and your data was not deleted', components: [] });
                     }
                     finally {
                         pgClient.release();
