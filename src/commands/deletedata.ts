@@ -41,8 +41,8 @@ export const command: SlashCommand = {
 		const response = await interaction.reply({
 			content: `This action will delete all instances of your data from the databases. Before confirming, please note:
 * Any preferences and information you've previously provided will be lost.
-* Deletion of your data may break some of Chatot's functionality for you and, if you were previously globally banned, may render you unable to be globally unbanned from select Smogon servers using Chatot.
-* This will not lift any existing punishments on your account.
+* Deletion of your data may break some of Chatot's functionality for you and, if you were previously globally banned, will render you unable to be globally unbanned from select Smogon servers using Chatot.
+* This will **not** lift any existing punishments on your account.
 * Preferences and information can be provided again by running the appropriate commands.
 Are you sure?
 `,
