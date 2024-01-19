@@ -21,6 +21,7 @@ import { loadCCCooldowns } from './helpers/manageCCCooldownCache.js';
 import config from './config.js';
 import { recreateReminders } from './helpers/reminderWorkers.js';
 import { ContextCommand } from './types/context-command-base';
+import { initGarbageCollection } from './helpers/garbage.js';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
@@ -190,6 +191,9 @@ setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)
 // schedule checking for new/updated QC threads
 createCCTimer(client);
 createCATimer(client);
+
+// garbage day
+initGarbageCollection(client);
 
 /**
  * Everything is done, so create a new net.Server listending on fd 3
