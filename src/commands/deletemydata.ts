@@ -1,8 +1,9 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, ButtonBuilder, ButtonStyle, ActionRowBuilder, ButtonInteraction, ComponentType } from 'discord.js';
-import { SlashCommand } from '../types/slash-command-base';
+import { SlashCommand } from '../types/slash-command-base.js';
 import { pool } from '../helpers/createPool.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { errorHandler } from '../helpers/errorHandler.js';
+import { resetVerificationRoles } from '../helpers/resetVerificationRoles.js';
 
 /**
  * Command to test the bot is online and working.
@@ -17,7 +18,7 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('deletemydata')
-        .setDescription('Removes all instances of your personal information from the databases'),
+        .setDescription('Removes all instances of your data from the databases where possible'),
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
@@ -41,9 +42,11 @@ export const command: SlashCommand = {
 		const response = await interaction.reply({
 			content: `This action will delete all instances of your data from the databases. Before confirming, please note:
 * Any preferences and information you've previously provided will be lost.
-* Deletion of your data may break some of Chatot's functionality for you and, if you were previously globally banned, will render you unable to be globally unbanned from select Smogon servers using Chatot.
+* Deletion of your data may break some of Chatot's functionality for you.
+* You will be rendered unverified in any servers that use a Smogon profile for verification. You may lose access to the server and your messages until you reverify.
 * This will **not** lift any existing punishments on your account.
-* Preferences and information can be provided again by running the appropriate commands.
+* This will **not** remove any logs of moderation actions taken against your account if logging is enabled in a server.
+* Preferences, information, and verification can be provided again by running the appropriate commands.
 Are you sure?
 `,
 			components: [row],
@@ -71,10 +74,9 @@ Are you sure?
                         // delete
                         await pgClient.query('DELETE FROM chatot.raters WHERE userid=$1', [interaction.user.id]);
                         await pgClient.query('DELETE FROM chatot.identities WHERE discordid=$1', [interaction.user.id]);
+                        await resetVerificationRoles(interaction.user.id, interaction.client);
                         await pgClient.query('DELETE FROM chatot.fc WHERE userid=$1', [interaction.user.id]);
                         await pgClient.query('DELETE FROM chatot.reminders WHERE userid=$1', [interaction.user.id]);
-                        await pgClient.query('DELETE FROM chatot.gbans WHERE target=$1', [interaction.user.id]);
-                        await pgClient.query('UPDATE chatot.modlog SET target=REPLACE(target, $1, \'unknown\'), executor=REPLACE(executor, $1, \'unknown\');', [interaction.user.id]);
                         // end
                         await pgClient.query('COMMIT');
                     }
@@ -105,7 +107,7 @@ Are you sure?
         collector.on('end', async (i) => {
             try {
                 if (!i.size) {
-                    await interaction.editReply({ content: 'Confirmation not received within the allotted time, cancelling', components: [] });
+                    await interaction.editReply({ content: 'Confirmation not received within the allotted time, action cancelled', components: [] });
                 }
                 
             }

@@ -1,4 +1,16 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, ChannelType, AutocompleteInteraction, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } from 'discord.js';
+import {
+    SlashCommandBuilder,
+    ChatInputCommandInteraction,
+    PermissionFlagsBits,
+    SlashCommandSubcommandBuilder,
+    SlashCommandSubcommandGroupBuilder,
+    ChannelType,
+    AutocompleteInteraction,
+    EmbedBuilder,
+    ButtonBuilder,
+    ButtonStyle,
+    ActionRowBuilder,
+ } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 import { ccMetaObj } from '../helpers/constants.js';
@@ -296,14 +308,6 @@ export const command: SlashCommand = {
             // query the db so we can update the info if necessary
             const q = await pool.query('SELECT ignoreid, deletescope, logedits FROM chatot.logprefs WHERE serverid=$1', [interaction.guildId]);
             const storedVal: { ignoreid: string, deletescope: string, logedits: boolean }[] | [] = q.rows;
-
-            /*
-            // make sure they didn't duplicate the ignore chan
-            if (storedVal.some(row => row.ignoreid === ignoreChan?.id && row.ignoreid !== '0')) {
-                await interaction.followUp('This channel is already being ignored! Nothing was updated.');
-                return;
-            }
-            */
 
             // default delete preferences to mod scope if not provided and not previously stored
             if (!del && storedVal.length) {
