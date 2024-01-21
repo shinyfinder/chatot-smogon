@@ -19,7 +19,7 @@ import { getRandInt } from '../helpers/getRandInt.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
 
 /**
- * Sets up the requirements for a user to be considered verified within the discord server
+ * Command for configuring multiple aspects of the bot
  * 
  */
 export const command: SlashCommand = {

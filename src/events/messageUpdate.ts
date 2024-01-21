@@ -4,10 +4,9 @@ import { buildEmbed, postLogEvent, embedField, loggedEventTypes } from '../helpe
 import { pool } from '../helpers/createPool.js';
 
 /**
- * Update member handler
+ * Update message handler
  *
- * Event handler for has their roles,  nickname, status, etc changed.
- * This includes boosting.
+ * Event handler when a user edits a message
  */
 
 export const clientEvent: eventHandler = {

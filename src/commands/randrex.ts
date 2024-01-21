@@ -1,9 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, ChannelType } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 /**
- * Command to lookup information about a user
- * @param user Userid or forum profile URL to lookup
- *
+ * Posts a random picture of Rex, the goodest of boys
  */
 export const command: SlashCommand = {
     global: true,

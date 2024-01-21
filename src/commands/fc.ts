@@ -4,7 +4,6 @@ import { pool } from '../helpers/createPool.js';
 
 /**
  * Command to manage the friend code database.
- * Subcommands are add, remove, list
  */
 export const command: SlashCommand = {
     global: false,

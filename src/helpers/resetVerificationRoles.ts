@@ -1,5 +1,6 @@
 import { Client } from 'discord.js';
 import { pool } from './createPool.js';
+import { errorHandler } from './errorHandler.js';
 
 export async function resetVerificationRoles(uid: string, client: Client) {
     // poll the db
@@ -13,7 +14,7 @@ export async function resetVerificationRoles(uid: string, client: Client) {
             // get their member object
             // if this fails, (probably) they aren't in the guild anymore
             // it'll throw, which is fine since there's nothing we'd have to do with roles anyway
-            const member = await guild.members.fetch(uid);
+            const member = await guild.members.fetch({ user: uid, cache: false });
 
             // undo their verification
             // if the server adds a role when verified, remove it
@@ -27,6 +28,7 @@ export async function resetVerificationRoles(uid: string, client: Client) {
 
         }
         catch (e) {
+            errorHandler(e);
             continue;
         }
         

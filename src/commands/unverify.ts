@@ -5,7 +5,8 @@ import { getRandInt } from '../helpers/getRandInt.js';
 import { errorHandler } from '../helpers/errorHandler.js';
 import { resetVerificationRoles } from '../helpers/resetVerificationRoles.js';
 /**
- * Links a user's discord account to their profile
+ * Removes the link between a user's discord account and their Smogon profile
+ * This undoes whatever role manipulation was originally done during verification
  * 
  */
 export const command: SlashCommand = {

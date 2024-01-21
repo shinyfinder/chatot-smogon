@@ -6,11 +6,8 @@ import { errorHandler } from '../helpers/errorHandler.js';
 import { resetVerificationRoles } from '../helpers/resetVerificationRoles.js';
 
 /**
- * Command to test the bot is online and working.
- * @param data SlashCommandBuilder() instance from discord.js
- * @returns Replies Pong! in the chat
- *
- * Can be used as a template for future commands
+ * Deletes a user's information from the database
+ * Modlog entries are kept
  */
 export const command: SlashCommand = {
     global: true,

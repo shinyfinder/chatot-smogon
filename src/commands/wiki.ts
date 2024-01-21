@@ -2,11 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 
 /**
- * Command to test the bot is online and working.
- * @param data SlashCommandBuilder() instance from discord.js
- * @returns Replies Pong! in the chat
- *
- * Can be used as a template for future commands
+ * Posts a link to the bot's wiki
  */
 export const command: SlashCommand = {
     global: true,

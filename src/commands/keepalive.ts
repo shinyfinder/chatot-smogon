@@ -5,7 +5,6 @@ import { pool } from '../helpers/createPool.js';
 /**
  * Command to prevent a thread from archiving
  * Unarchiving locked threads requires the Manage Threads permission
- * Subcommands are on and off
  */
 
 export const command: SlashCommand = {
