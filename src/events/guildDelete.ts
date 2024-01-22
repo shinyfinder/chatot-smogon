@@ -16,10 +16,9 @@ export const clientEvent: eventHandler = {
     name: 'guildDelete',
     // execute the code for this event
     async execute(guild: Guild) {
-        // determine the list of channel ids within the guild
-        // these will be cached by the client if we ever had access to them
-        // so we can just look in the cache since we are no longer in the guild
-        const chanIDs = guild.channels.cache.map(chan => chan.id);
+        // get the list of channel IDs the bot has access to
+        // upon removal of a guild, the guild info is uncached
+        const chanIDs = guild.client.channels.cache.map(chan => chan.id);
 
         // transaction the deletions
         const pgClient = await pool.connect();
@@ -27,21 +26,21 @@ export const clientEvent: eventHandler = {
             // start
             await pgClient.query('BEGIN');
             // delete
-            await pgClient.query('DELETE FROM chatot.cooldown WHERE channelid=ANY($1)', [chanIDs]);
+            await pgClient.query('DELETE FROM chatot.cooldown WHERE NOT channelid=ANY($1)', [chanIDs]);
             // raters are only in the main discord
             if (guild.id === config.GUILD_ID) {
-                await pgClient.query('DELETE FROM chatot.raters WHERE channelid=ANY($1)', [chanIDs]);
+                await pgClient.query('DELETE FROM chatot.raters WHERE NOT channelid=ANY($1)', [chanIDs]);
             }
             await pgClient.query('DELETE FROM chatot.customs WHERE serverid=$1', [guild.id]);
-            await pgClient.query('DELETE FROM chatot.logchan WHERE guildid=$1', [guild.id]);
+            await pgClient.query('DELETE FROM chatot.logchan WHERE serverid=$1', [guild.id]);
             await pgClient.query('DELETE FROM chatot.modlog WHERE serverid=$1', [guild.id]);
-            await pgClient.query('DELETE FROM chatot.keepalives WHERE id=ANY($1)', [chanIDs]);
+            await pgClient.query('DELETE FROM chatot.keepalives WHERE NOT id=ANY($1)', [chanIDs]);
             await pgClient.query('DELETE FROM chatot.reactroles WHERE serverid=$1', [guild.id]);
             await pgClient.query('DELETE FROM chatot.dexdefaults WHERE serverid=$1', [guild.id]);
             await pgClient.query('DELETE FROM chatot.verifyreqs WHERE serverid=$1', [guild.id]);
             await pgClient.query('DELETE FROM chatot.logprefs WHERE serverid=$1', [guild.id]);
             await pgClient.query('DELETE FROM chatot.ccprefs WHERE serverid=$1', [guild.id]);
-            await pgClient.query('DELETE FROM chatot.reminders WHERE channelid=ANY($1)', [chanIDs]);
+            await pgClient.query('DELETE FROM chatot.reminders WHERE NOT channelid=ANY($1)', [chanIDs]);
             await pgClient.query('DELETE FROM chatot.stickies WHERE serverid=$1', [guild.id]);
             await pgClient.query('DELETE FROM chatot.tickets WHERE serverid=$1', [guild.id]);
             // end

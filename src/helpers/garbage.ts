@@ -20,6 +20,7 @@ interface IGarageCheck {
     reminders: { timerid: number, tstamp: Date }[],
     raters: { userid: string }[],
     fcs: { userid: string }[],
+    tickets: { threadchanid: string, messageid: string}[],
 }
 
 /**
@@ -36,12 +37,16 @@ async function pruneDatabase(client: Client) {
         (SELECT userid FROM chatot.raters),
 
         fcs AS
-        (SELECT userid FROM chatot.fc)
+        (SELECT userid FROM chatot.fc),
+
+        tickets AS
+        (SELECT threadchanid, messageid FROM chatot.tickets)
 
         SELECT json_build_object(
             'reminders', (SELECT COALESCE(JSON_AGG(reminders.*), '[]') FROM reminders),
-            'raters', (SELECT COALESCE(JSON_AGG(raters.*), '[]') FROM raters)
-            'fcs', (SELECT COALESCE(JSON_AGG(fcs.*), '[]') FROM fcs)
+            'raters', (SELECT COALESCE(JSON_AGG(raters.*), '[]') FROM raters),
+            'fcs', (SELECT COALESCE(JSON_AGG(fcs.*), '[]') FROM fcs),
+            'tickets', (SELECT COALESCE(JSON_AGG(tickets.*), '[]') FROM tickets)
         ) AS data`);
     
     // unpack
@@ -50,6 +55,7 @@ async function pruneDatabase(client: Client) {
     // create garbage cans for each thing we have to clear
     const reminderCan: number[] = [];
     const raterCan: string[] = [];
+    const ticketCan: string[] = [];
 
     // queue old reminders for deletion
     for (const oldReminder of oldData.reminders) {
@@ -102,9 +108,31 @@ async function pruneDatabase(client: Client) {
     // add the userids to the deletion queue
     const fcCan = Object.keys(isStillMember).filter(uid => !isStillMember[uid]);
 
+    // to see if the ticket button still exists, we need to try to fetch the message
+    // if it fails, we can safely delete it from the db
+    for (const ticketChannel of oldData.tickets) {
+        const chan = await client.channels.fetch(ticketChannel.threadchanid);
+        if (chan && chan.isTextBased()) {
+            const buttonMessage = await chan.messages.fetch(ticketChannel.messageid);
+            if (!buttonMessage) {
+                ticketCan.push(ticketChannel.messageid);
+            }
+
+        }
+    }
+
     // delete the leftover data from the databases
     // we want to delete as much as we can, so if it errors we'll just get it on the next garbage day
-    await pool.query('DELETE FROM chatot.reminders WHERE timerid=ANY($1)', [reminderCan]);
-    await pool.query('DELETE FROM chatot.raters WHERE userid=ANY($1)', [raterCan]);
-    await pool.query('DELETE FROM chatot.fc WHERE userid=ANY($1)', [fcCan]);
+    if (reminderCan.length) {
+        await pool.query('DELETE FROM chatot.reminders WHERE timerid=ANY($1)', [reminderCan]);
+    }
+    if (raterCan.length) {
+        await pool.query('DELETE FROM chatot.raters WHERE userid=ANY($1)', [raterCan]);
+    }
+    if (fcCan.length) {
+        await pool.query('DELETE FROM chatot.fc WHERE userid=ANY($1)', [fcCan]);
+    }
+    if (ticketCan.length) {
+        await pool.query('DELETE FROM chatot.tickets WHERE messageid=ANY($1)', [ticketCan]);
+    }
 }

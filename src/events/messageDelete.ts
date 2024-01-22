@@ -4,6 +4,7 @@ import { sleep } from '../helpers/sleep.js';
 import { pool } from '../helpers/createPool.js';
 import { buildEmbed, buildMsgDeleteEmbedParams, postLogEvent, loggedEventTypes } from '../helpers/logging.js';
 import config from '../config.js';
+import { rrMessages, removeRRMessage } from '../helpers/loadReactRoleMessages.js';
 
 /**
  * messageDelete handler
@@ -24,14 +25,32 @@ export const clientEvent: eventHandler = {
     // execute the code for this event
     async execute(message: Message) {
         // ignore DMs and uncached messages
-        // also ignore bot self deletes
-        if (!message.guild || !message.author || message.author.id === config.CLIENT_ID) {
+        // also ignore bot self deletes if it doesn't have a message component (i.e. button)
+        // we ultimately won't log the bot deletions, but we need to keep it around for a bit so we can clear up the tickets database
+        if (!message.guild || !message.author || (message.author.id === config.CLIENT_ID && !message.components)) {
             return;
         }
 
         // if it's a deleted light-bot message from wifi, ignore
         if (message.guildId === '265293623778607104' && message.content.startsWith('$')) {
             return;
+        }
+
+        // determine if we need to delete the react role entry from the database and cache
+        if (rrMessages.includes(message.id)) {
+            await pool.query('DELETE FROM chatot.reactroles WHERE messageid=$1', [message.id]);
+            removeRRMessage(message.id);
+        }
+
+        // check if the message has a button component
+        // if it does, they probably deleted the tickets post
+        // this may duplicate a deletion query if they followed the proper procedure, but if they didn't at least we can catch it
+        // we don't log these, so if it's a Chatot message, just return
+        if (message.components) {
+            await pool.query('DELETE FROM chatot.tickets WHERE messageid=$1', [message.id]);
+            if (message.author.id === config.CLIENT_ID) {
+                return;
+            }
         }
 
         // determine if the channel is ignored from logging in the server by first querying the db

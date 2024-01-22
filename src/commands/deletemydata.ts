@@ -39,8 +39,8 @@ export const command: SlashCommand = {
 		const response = await interaction.reply({
 			content: `This action will delete all instances of your data from the databases. Before confirming, please note:
 * Any preferences and information you've previously provided will be lost.
-* Deletion of your data may break some of Chatot's functionality for you.
-* You will be rendered unverified in any servers that use a Smogon profile for verification. You may lose access to the server and your messages until you reverify.
+* Deletion of your data may prevent you from getting notified for RMTs or reminders.
+* You will be rendered unverified in any servers that use a Smogon profile for verification. You may lose access to those servers and your messages within until you reverify.
 * This will **not** lift any existing punishments on your account.
 * This will **not** remove any logs of moderation actions taken against your account if logging is enabled in a server.
 * Preferences, information, and verification can be provided again by running the appropriate commands.
