@@ -73,11 +73,13 @@ export async function createTicket(interaction: ButtonInteraction) {
         if (staffrow.staffid !== '-') {
             staffPings.push(`<@&${staffrow.staffid}>`);
         }
-        // if it's the dummy value, just use a default
-        else {
-            staffPings.push('staff');
-        }
     }
+
+    // if you get here and you still don't have any staff roles to ping, then use the default value
+    if (!staffPings.length) {
+        staffPings.push('staff');
+    }
+    
     // invite the users to the thread
     // await thread.members.add(interaction.user.id);
     await thread.send(`<@${interaction.user.id}> this is the start of your private thread with ${staffPings.join(', ')} for the reason below. If you wish to provide more information, you can do so here. Staff will respond as soon as they can.\n\`\`\`\n${txt}\n\`\`\``);
