@@ -5,11 +5,7 @@ import config from '../config.js';
 import { buildEmbed, postLogEvent, echoPunishment, embedField, loggedEventTypes } from '../helpers/logging.js';
 
 /**
- * Ban handler
- *
- * Event handler for when a user is banned.
- * Ban events are logged with the user, the mod, and the reason to the specified channel in the config file.
- * Content information is supplied by the audit log.
+ * Common handler to parse audit log updates (used to log when a user is kicked, banned, timed out, etc)
  *
  * Note that there is no guarantee when the audit log is populated, nor an event when it is.
  * If the person who deleted the message is a bot or the author, no audit log event is created.

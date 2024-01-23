@@ -14,7 +14,7 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('logging')
-        .setDescription('Toggles mod logging for this server')
+        .setDescription('Toggles logging to a channel for this server')
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .addSubcommand(new SlashCommandSubcommandBuilder()

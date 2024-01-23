@@ -9,7 +9,6 @@ import { getRandInt } from '../helpers/getRandInt.js';
  * Command to create a custom prefix command in the server
  * Commands can be prefixed from a set number of special charaters and invoked with, for example,
  * ![custon command name]
- * Subcommands are add, remove, and list
  */
 
 export const command: SlashCommand = {

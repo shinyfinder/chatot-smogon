@@ -2,8 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, 
 import { SlashCommand } from '../types/slash-command-base';
 
 /**
- * Command to lookup information about a user
- * @param user Userid or forum profile URL to lookup
+ * Command to lookup information about a user or to find a particular ban in the ban list
  *
  */
 export const command: SlashCommand = {

@@ -11,7 +11,6 @@ interface IModlogPG {
 /**
  * Populates the database of gban information
  * This is currently a dev-only command
- * Messages must be newer than 2 weeks
  */
 export const command: SlashCommand = {
     global: false,

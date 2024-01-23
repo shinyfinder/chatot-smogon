@@ -6,7 +6,7 @@ import { pool } from '../helpers/createPool.js';
 /**
  * Reaction handler
  *
- * Event is triggered whenever someone reacts to a message.
+ * Event is triggered whenever someone removes a reaction from a message.
  * This is needed for reaction roles so that we can assign the proper role to them
  */
 

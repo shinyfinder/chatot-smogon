@@ -6,10 +6,7 @@ import { IPSLearnsets } from '../types/ps';
 import { latestGen, myColors } from '../helpers/constants.js';
 import { res2JSON } from '../helpers/res2JSON.js';
 /**
- * Posts a link in the chat to the specified Pokemon analysis
- * @param pokemon Name of the pokemon
- * @param gen Which gen to pull up the analysis for
- *
+ * Determines whether and how a Pokemon learns a move in the specified generation
  */
 export const command: SlashCommand = {
     global: true,

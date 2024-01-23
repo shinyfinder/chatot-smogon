@@ -2,7 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 
 /**
- * Posts the discord server directory to the chat
+ * Posts the Smogon discord server directory to the chat
  */
 export const command: SlashCommand = {
     global: true,
