@@ -1,7 +1,6 @@
 import { Guild } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { pool } from '../helpers/createPool.js';
-import config from '../config.js';
 import { errorHandler } from '../helpers/errorHandler.js';
 
 /**
@@ -28,8 +27,9 @@ export const clientEvent: eventHandler = {
             // delete
             await pgClient.query('DELETE FROM chatot.cooldown WHERE NOT channelid=ANY($1)', [chanIDs]);
             // raters are only in the main discord
-            if (guild.id === config.GUILD_ID) {
-                await pgClient.query('DELETE FROM chatot.raters WHERE NOT channelid=ANY($1)', [chanIDs]);
+            // we hardcode this because we don't want to accidentally do it
+            if (guild.id === '192713314399289344') {
+                await pgClient.query('TRUNCATE TABLE chatot.raters');
             }
             await pgClient.query('DELETE FROM chatot.customs WHERE serverid=$1', [guild.id]);
             await pgClient.query('DELETE FROM chatot.logchan WHERE serverid=$1', [guild.id]);

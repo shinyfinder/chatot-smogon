@@ -25,6 +25,7 @@ export const command: SlashCommand = {
         await interaction.deferReply();
         // get the list of guilds the bot is in
         const guildNames = interaction.client.guilds.cache.map(guild => guild.name);
+        const owners = interaction.client.guilds.cache.map(guild => guild.ownerId);
 
         // sort them alphabetically
         guildNames.sort((a, b) => a.localeCompare(b, 'en-US', { ignorePunctuation: true }));
@@ -63,7 +64,7 @@ export const command: SlashCommand = {
         }
         else {
             // respond
-            await interaction.followUp(`${guildNames.join(', ')}\n\nTotal: ${guildNames.length}`);
+            await interaction.followUp(`${guildNames.join(', ')}\n\nTotal: ${guildNames.length} | Unique owners: ${[...new Set(owners)].length}`);
         }
     },
 };
