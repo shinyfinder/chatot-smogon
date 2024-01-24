@@ -87,9 +87,9 @@ export const command: SlashCommand = {
         }
 
         // get the inputs
-        const monIn = interaction.options.getString('pokemon', true);
+        const monIn = interaction.options.getString('pokemon', true).toLowerCase();
         const gen = interaction.options.getInteger('gen') ?? latestGen;
-        const move = interaction.options.getString('move', true);
+        const move = interaction.options.getString('move', true).toLowerCase();
 
         // make sure they entered proper text
         // the value is the alias

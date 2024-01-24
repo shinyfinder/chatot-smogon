@@ -404,7 +404,7 @@ export const command: SlashCommand = {
         else if (interaction.options.getSubcommand() === 'cc') {
             // get inputs
             const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
-            const tier = interaction.options.getString('tier', true);
+            const tier = interaction.options.getString('tier', true).toLowerCase();
             const role = interaction.options.getRole('role');
             const stage = interaction.options.getString('stage') ?? 'all';
             const gen = interaction.options.getInteger('gen', true).toString();

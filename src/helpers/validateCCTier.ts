@@ -7,6 +7,6 @@ import { ccMetaObj } from './constants.js';
  */
 export function validateCCTier(tier: string) {
     // make sure what they entered is a valid entry
-    const valid = ccMetaObj.some(pair => pair.value === tier.toLowerCase());
+    const valid = ccMetaObj.some(pair => pair.value === tier);
     return valid;
 }
