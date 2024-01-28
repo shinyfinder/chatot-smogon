@@ -1,112 +1,22 @@
 import { Message } from 'discord.js';
 import { pool } from './createPool.js';
-import config from '../config.js';
-
-/**
- * Handler to determine whether to ping raters for a new rate
- * Triggered by messageCreate event
- *
- */
-
+import { genAbbreviations, genAliases, latestGen, rmtChannels } from './constants.js';
 
 // cooldown time in hours
 const cd = 6;
 
+/**
+ * Handler to determine whether to ping raters for a new rate.
+ * Triggered by messageCreate event.
+ * Messages are parsed for their channel and content to determine which team of raters to ping.
+ */
+
 export async function rmtMonitor(msg: Message) {
     // check whether the message is a valid case to consider for pinging RMT raters
     // we need to check: channel, cooldown, pokepaste
-    // the only thing we track are current gen OU, so only ping for those
-
-    // define the viable channel IDs
-    // some of the channels are not ready for gen 9, so we don't track those
-    let rmtChannels: string[];
-    if (config.MODE === 'dev') {
-        rmtChannels = ['1060628096442708068'];
-    }
-    else {
-        rmtChannels = [
-            // pu
-            '1061136198208344084',
-            // nu
-            '1061136091056439386',
-            // ru
-            '1061135917160607766',
-            // lc
-            '1061135027599048746',
-            // bss
-            '1060690402711183370',
-            // other
-            '1060682530094862477',
-            // ag
-            '1060682013453078711',
-            // old gen ou
-            '1060339824537641152',
-            // natdex non ou
-            '1060037469472555028',
-            // uber
-            '1059901370477576272',
-            // uu
-            '1059743348728004678',
-            // nat dex ou'
-            '1059714627384115290',
-            // cap
-            '1059708679814918154',
-            // vgc
-            '1059704283072831499',
-            // 1v1
-            '1089349311080439882',
-            // mono
-            '1059658237097545758',
-            // om
-            '1059657287293222912',
-            // dou
-            '1059655497587888158',
-            // ou
-            '1059653209678950460',
-            // rmt1 -- legacy system
-            '630478290729041920',
-            // rmt2 -- legacy system
-            '635257209416187925',
-        ];
-    }
     
-
-    // define the gen abbreviations
-    // we need to store cooldowns for SS, BDSP, and LGPE separately because they have separate metas we need to ping for
-    const gens: {[key: string]: string} = {
-        'sv': 'SV',
-        '9': 'SV',
-        'swsh': 'SS',
-        'ss': 'SS',
-        '8': 'SS',
-        'bdsp': 'BDSP',
-        'lgpe': 'LGPE',
-        'usum': 'SM',
-        'usm': 'SM',
-        'sm': 'SM',
-        '7': 'SM',
-        'oras': 'XY',
-        'xy': 'XY',
-        '6': 'XY',
-        'b2w2': 'BW',
-        'bw2': 'BW',
-        'bw': 'BW',
-        '5': 'BW',
-        'hgss': 'DP',
-        'dpp': 'DP',
-        'dp': 'DP',
-        '4': 'DP',
-        'rse': 'RS',
-        'rs': 'RS',
-        'adv': 'RS',
-        '3': 'RS',
-        'gsc': 'GS',
-        'gs': 'GS',
-        '2': 'GS',
-        'rby': 'RB',
-        'rb': 'RB',
-        '1': 'RB',
-    };
+    // so we don't have to keep typing it out, get the latest gen abbreviation (last element in the array)
+    const latestAbbr = genAbbreviations[latestGen - 1];
 
     // check channel list
     if (!rmtChannels.includes(msg.channelId)) {
@@ -131,7 +41,9 @@ export async function rmtMonitor(msg: Message) {
     // this regex tries to find Gen #, G#, or the smogon prefix used to denote the gen
     // it excludes possible matches within the pokepaste link
     // ... in theory
-    const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|BDSP|LGPE|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|RS|ADV|GSC|GS|RBY|RB))[ou]*\b/i;
+    const genAliasArr = [...Object.keys(genAliases), ...Object.values(genAliases)];
+    const genRegex = new RegExp(`\\b((Gen|G|Generation)\\s*([1-${latestGen}])|(${genAliasArr.join('|')}))[ou]*\\b`, 'i');
+    // const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|BDSP|LGPE|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|RS|ADV|GSC|GS|RBY|RB))[ou]*\b/i;
     const matchArr = msg.content.match(genRegex);
 
     // if there are no gen matches, they didn't specify the gen
@@ -151,12 +63,27 @@ export async function rmtMonitor(msg: Message) {
     let identifier = '';
     // if there was a match from the regex test...
     if (matchArr !== null) {
-        const genDesr = (matchArr[3] || matchArr[4]).toLowerCase();
-        identifier = gens[genDesr];
+        // if you matched the number, we just need to get the index of that number - 1 in the array of gen abbreviations
+        if (matchArr[3]) {
+            identifier = genAbbreviations[Number(matchArr[3]) - 1];
+        }
+        // if it's some sort of gen abbreviation, figure out which one it was, then get that index
+        else if (matchArr[4]) {
+            if (matchArr[4].toUpperCase() === 'LGPE' || matchArr[4] === 'BDSP') {
+                identifier = matchArr[4].toUpperCase();
+            }
+            else {
+                // translation: combine all of the values of the genAlias array into a single array (results in string[][]).
+                // Then, find the index in the top level array where an element in the nested array (the aliases) is the same as the regex match.
+                const genMatchIdx = Object.values(genAliases).findIndex(aliasArr => aliasArr.some(alias => alias.toUpperCase() === matchArr[4].toUpperCase()));
+                identifier = genAbbreviations[genMatchIdx - 1];
+            }
+            
+        }
     }
-    // else, no gen was specified, so assume they mean gen 9
+    // else, no gen was specified, so assume they mean the latest gen
     else {
-        identifier = 'SV';
+        identifier = latestAbbr;
     }
 
     /**
@@ -167,12 +94,12 @@ export async function rmtMonitor(msg: Message) {
      */
 
     // if the channel is not a special case (can have multiple gens) and they specified a gen other than 9, return
-    if (identifier !== 'SV' && !specialCases.includes(msg.channelId)) {
+    if (identifier !== latestAbbr && !specialCases.includes(msg.channelId)) {
         return;
     }
 
     // Check for metas
-    const metaRegex = /\b(?:om ?|nd ?|National Dex ?)*(BH|AAA|MnM|STABmons|Godly Gift|GG|NFE|2v2|OMM|Mashup|PH|UU|AG|PiC|Inh|Monotype|Mono)\b/i;
+    const metaRegex = /\b(?:om ?|nd ?|National Dex ?)*(BH|AAA|MnM|M&M|STABmons|Godly Gift|GG|NFE|2v2|OMM|Mashup|PH|UU|AG|PiC|Inh|Monotype|Mono)\b/i;
     const metamatchArr = msg.content.match(metaRegex);
 
     // check to see if you're in the right channel and if you found a meta match
@@ -189,8 +116,8 @@ export async function rmtMonitor(msg: Message) {
             else if (meta == 'mashup' || meta == 'omm') {
                 identifier = 'OM Mashup';
             }
-            else if (meta == 'mnm') {
-                identifier = 'MnM';
+            else if (meta == 'mnm' || meta == 'm&m') {
+                identifier = 'M&M';
             }
             else if (meta == '2v2') {
                 identifier = '2v2';
@@ -234,7 +161,7 @@ export async function rmtMonitor(msg: Message) {
      * OM Mashup
      * BH
      * AAA
-     * MnM
+     * M&M
      * STABmons
      * NFE
      * 2v2
@@ -254,9 +181,8 @@ export async function rmtMonitor(msg: Message) {
     }
     
     const cooldownPostgres = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, identifier]);
-    // const { rows } = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, identifier]);
     const dbmatches = cooldownPostgres.rows[0] as pgres;
-    // const dbmatches = rows[0] as pgres | undefined;
+    
     if (dbmatches !== undefined) {
         cooldown = new Date(dbmatches.date).valueOf();
     }
@@ -375,5 +301,5 @@ export async function rmtMonitor(msg: Message) {
         await pool.query('UPDATE chatot.cooldown SET date = default WHERE channelid = $1 AND identifier = $2', [msg.channelId, identifier]);
     }
     // ping them
-    await msg.channel.send(`New ${ratersdbmatches[0].meta} RMT ${pingOut}. I won't notify you again for at least 6 hours.`);
+    await msg.channel.send(`New ${ratersdbmatches[0].meta} RMT ${pingOut}. I won't notify you again for at least ${cd} hours.`);
 }

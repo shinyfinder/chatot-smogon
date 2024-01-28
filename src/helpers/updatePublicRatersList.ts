@@ -1,6 +1,7 @@
 import { pool } from './createPool.js';
-import { EmbedBuilder, ChannelType, Embed, Message, Channel, User, Client } from 'discord.js';
+import { EmbedBuilder, ChannelType, Embed, Channel, User, Client } from 'discord.js';
 import config from '../config.js';
+import { genAbbreviations } from './constants.js';
 
 interface raterGroup {
     meta: string,
@@ -45,20 +46,6 @@ export async function updatePublicRatersList(client: Client, editMeta?: string, 
     const raterArr: string[][] = [];
     const genArr: number[] = [];
 
-    // create a map of prefix to gen number for sorting
-    // we put bdsp/lgpe further below because we want less priority on those (lower listed)
-    const genConversion: { [key: string] : number} = {
-        'SV': 9,
-        'SS': 8,
-        'SM': 7,
-        'XY': 6,
-        'BW': 5,
-        'DP': 4,
-        'RS': 3,
-        'GS': 2,
-        'RB': 1,
-    };
-
     // get the entire raters db
     interface ratersTable {
         channelid: string,
@@ -85,7 +72,8 @@ export async function updatePublicRatersList(client: Client, editMeta?: string, 
         const genDB = dbRow.gen;
         // create a header string based on the gen/meta
         const stringOut = `${genDB === 'XY' ? 'ORAS' : genDB} ${metaDB}`;
-        const genNum = genConversion[genDB];
+        const genNum = genAbbreviations.findIndex(abbr => abbr === genDB);
+
         // push the header to the array of headers if it's not already there
         if (!stringArr.includes(stringOut)) {
             stringArr.push(stringOut);

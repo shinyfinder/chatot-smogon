@@ -1,19 +1,24 @@
 import { ChatInputCommandInteraction, User } from 'discord.js';
-import { validateMeta } from '../helpers/validateMeta.js';
+import { mapRMTMeta } from './mapRMTMeta.js';
 import { pool } from '../helpers/createPool.js';
 import { updatePublicRatersList } from './updatePublicRatersList.js';
+import { validateAutocomplete } from './validateAutocomplete.js';
+import { supportedMetaPairs } from './constants.js';
 /**
  * Helper function to renove a team rater from a specific gen+meta
  */
 export async function removeRater(interaction: ChatInputCommandInteraction, metaIn: string, gen: string, user: User) {
-    // make sure the provided meta is accurate
-    // autocomplete doesn't check like static options do
-    const [valid, meta, channel] = validateMeta(metaIn, gen);
+   // if it's invalid input, let them know and return
+    if (!validateAutocomplete(metaIn, supportedMetaPairs)) {
+        await interaction.followUp('I did not recognize that meta or am not setup to track it.');
+        return;
+    }
 
-    // if it's invalid input, let them know and return
-    // we resuse the meta variable to include the list of allowable names if it's invalid
-    if (!valid) {
-        await interaction.followUp({ content: `I did not recognize that meta or am not setup to track it. Please choose one from the following (case insensitive) and try again:\`\`\`${meta}\`\`\`` });
+    // get the channel for the provided meta and gen
+    const [meta, channel] = mapRMTMeta(metaIn, gen);
+
+    // if it doesn't map to a channel, return
+    if (channel === '') {
         return;
     }
 
@@ -40,7 +45,7 @@ export async function removeRater(interaction: ChatInputCommandInteraction, meta
 }
 
 /**
- * Helper  function to remove a team rater from all of their metas
+ * Helper function to remove a team rater from all of their metas
  */
 export async function removeRaterAll(interaction: ChatInputCommandInteraction, id: string[]) {
     // remove them from the db

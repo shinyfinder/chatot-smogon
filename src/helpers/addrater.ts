@@ -1,21 +1,25 @@
 import { ChatInputCommandInteraction, User } from 'discord.js';
-import { validateMeta } from './validateMeta.js';
+import { mapRMTMeta } from './mapRMTMeta.js';
 import { pool } from './createPool.js';
 import { updatePublicRatersList } from './updatePublicRatersList.js';
-
+import { validateAutocomplete } from './validateAutocomplete.js';
+import { supportedMetaPairs } from './constants.js';
 /**
  * Command to add a team rater
  * @param user Username or ID to add to the list of raters
  */
 export async function addRater(interaction: ChatInputCommandInteraction, metaIn: string, gen: string, user: User) {
-    // make sure the provided meta is accurate
-    // autocomplete doesn't check like static options do
-    const [valid, meta, channel] = validateMeta(metaIn, gen);
-
     // if it's invalid input, let them know and return
-    // we resuse the meta variable to include the list of allowable names if it's invalid
-    if (!valid) {
-        await interaction.followUp({ content: `I did not recognize that meta or am not setup to track it. Please choose one from the following (case insensitive) and try again:\`\`\`${meta}\`\`\`` });
+    if (!validateAutocomplete(metaIn, supportedMetaPairs)) {
+        await interaction.followUp('I did not recognize that meta or am not setup to track it.');
+        return;
+    }
+
+    // get the channel for the provided meta and gen
+    const [meta, channel] = mapRMTMeta(metaIn, gen);
+
+    // if it doesn't map to a channel, return
+    if (channel === '') {
         return;
     }
 

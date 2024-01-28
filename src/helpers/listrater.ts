@@ -1,7 +1,9 @@
 import { ChatInputCommandInteraction, EmbedBuilder, MessageReaction, User, APIEmbedField } from 'discord.js';
-import { validateMeta } from '../helpers/validateMeta.js';
+import { mapRMTMeta } from './mapRMTMeta.js';
 import { pool } from '../helpers/createPool.js';
 import { fetchUser } from './updatePublicRatersList.js';
+import { supportedMetaPairs } from './constants.js';
+import { validateAutocomplete } from './validateAutocomplete.js';
 /**
  * Command to list a set of team raters from the database
  * @param interaction ChatInputCommandInteraction from discord.js
@@ -192,16 +194,18 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
         });
     }
     else if (metaIn !== undefined && gen !== undefined) {
-        const [valid, meta, channel] = validateMeta(metaIn, gen);
         // if they chose a gen, it will be mapped to the gen number
         // if they didn't choose a gen, it will return as '' from the function call
 
-        // if it's invalid input, let them know and return
-        // we resuse the channel variable to include the list of allowable names if it's invalid
-        if (!valid) {
-            await interaction.followUp({ content: `I did not recognize that meta or am not setup to track it. Please choose one from the following (case insensitive) and try again:\`\`\`${channel}\`\`\`` });
+         // if it's invalid input, let them know and return
+        if (!validateAutocomplete(metaIn, supportedMetaPairs)) {
+            await interaction.followUp('I did not recognize that meta or am not setup to track it.');
             return;
         }
+
+        // get the proper case meta for what they provided
+        // we do this because the db is used to forumlate the titles for the public rater list
+        const meta = mapRMTMeta(metaIn, gen)[0];
 
         // retrieve the rater list from the db
         const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);

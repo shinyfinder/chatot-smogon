@@ -11,7 +11,7 @@ import * as net from 'node:net';
 import { createPool } from './helpers/createPool.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
-import { loadItems, loadMoves, loadSpriteDex, loadAllDexNames } from './helpers/loadDex.js';
+import { loadItems, loadMoves, loadSpriteDex, loadAllDexNames, loadFormats } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
@@ -22,6 +22,7 @@ import config from './config.js';
 import { recreateReminders } from './helpers/reminderWorkers.js';
 import { ContextCommand } from './types/context-command-base';
 import { initGarbageCollection } from './helpers/garbage.js';
+import { createDexCacheTimer } from './helpers/updateCache.js';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
@@ -162,6 +163,7 @@ await Promise.all([
     loadAllDexNames(),
     loadMoves(),
     loadItems(),
+    loadFormats(),
 ]);
 
 
@@ -194,6 +196,9 @@ createCATimer(client);
 
 // garbage day
 initGarbageCollection(client);
+
+// set a timer to update the cached data from the db/PS
+createDexCacheTimer();
 
 /**
  * Everything is done, so create a new net.Server listending on fd 3

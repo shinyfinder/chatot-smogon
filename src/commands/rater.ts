@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { allowedMetasObj } from '../helpers/constants.js';
+import { supportedMetaPairs, raterChoicePairs } from '../helpers/constants.js';
 import { addRater } from '../helpers/addrater.js';
 import { removeRater, removeRaterAll } from '../helpers/removerater.js';
 import { listRater } from '../helpers/listrater.js';
@@ -45,19 +45,7 @@ export const command: SlashCommand = {
             .addStringOption(option =>
                 option.setName('generation')
                 .setDescription('Which gen this user rates teams for. Default: latest')
-                .addChoices(
-                    { name: 'SV', value: 'SV' },
-                    { name: 'SS', value: 'SS' },
-                    { name: 'SM', value: 'SM' },
-                    { name: 'ORAS', value: 'XY' },
-                    { name: 'BW', value: 'BW' },
-                    { name: 'DP', value: 'DP' },
-                    { name: 'RS', value: 'RS' },
-                    { name: 'GS', value: 'GS' },
-                    { name: 'RB', value: 'RB' },
-                    { name: 'LGPE', value: 'LGPE' },
-                    { name: 'BDSP', value: 'BDSP' },
-                )
+                .addChoices(...raterChoicePairs)
                 .setRequired(false)))
             
         /**
@@ -78,19 +66,7 @@ export const command: SlashCommand = {
             .addStringOption(option =>
                 option.setName('generation')
                 .setDescription('Which gen this user rates teams for. Default: latest')
-                .addChoices(
-                    { name: 'SV', value: 'SV' },
-                    { name: 'SS', value: 'SS' },
-                    { name: 'SM', value: 'SM' },
-                    { name: 'ORAS', value: 'XY' },
-                    { name: 'BW', value: 'BW' },
-                    { name: 'DP', value: 'DP' },
-                    { name: 'RS', value: 'RS' },
-                    { name: 'GS', value: 'GS' },
-                    { name: 'RB', value: 'RB' },
-                    { name: 'LGPE', value: 'LGPE' },
-                    { name: 'BDSP', value: 'BDSP' },
-                )
+                .addChoices(...raterChoicePairs)
                 .setRequired(false)))
 
         /**
@@ -125,19 +101,7 @@ export const command: SlashCommand = {
                 .addStringOption(option =>
                     option.setName('generation')
                     .setDescription('Respective gen the user rates teams for. Default: latest')
-                    .addChoices(
-                        { name: 'SV', value: 'SV' },
-                        { name: 'SS', value: 'SS' },
-                        { name: 'SM', value: 'SM' },
-                        { name: 'ORAS', value: 'XY' },
-                        { name: 'BW', value: 'BW' },
-                        { name: 'DP', value: 'DP' },
-                        { name: 'RS', value: 'RS' },
-                        { name: 'GS', value: 'GS' },
-                        { name: 'RB', value: 'RB' },
-                        { name: 'LGPE', value: 'LGPE' },
-                        { name: 'BDSP', value: 'BDSP' },
-                    )
+                    .addChoices(...raterChoicePairs)
                     .setRequired(false)))),
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
@@ -150,7 +114,7 @@ export const command: SlashCommand = {
             const filteredOut: {name: string, value: string }[] = [];
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
-            for (const pair of allowedMetasObj) {
+            for (const pair of supportedMetaPairs) {
                 if (filteredOut.length < 25) {
                     if (pair.value.includes(enteredText)) {
                         filteredOut.push(pair);

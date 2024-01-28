@@ -1,9 +1,8 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, EmbedBuilder, APIEmbedField } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pokedex, allNames, fullDexNameQuery, items, moves } from '../helpers/loadDex.js';
-import { latestGen, myColors } from '../helpers/constants.js';
+import { genAbbreviations, latestGen, myColors } from '../helpers/constants.js';
 import { pool } from '../helpers/createPool.js';
-import { genConversion } from '../helpers/genConversion.js';
 
 /**
  * Posts detailed information about the provided query
@@ -71,7 +70,7 @@ export const command: SlashCommand = {
 
         // gen_ids in the dex db are stored as the lowercase abbreciations
         // so we need to convert the number to the letters
-        const genAbbr = genConversion(gen).toLowerCase();
+        const genAbbr = genAbbreviations[gen - 1].toLowerCase();
 
         /**
          * POKEDEX

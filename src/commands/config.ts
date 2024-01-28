@@ -13,10 +13,10 @@ import {
  } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
-import { ccMetaObj } from '../helpers/constants.js';
-import { validateCCTier } from '../helpers/validateCCTier.js';
+import { supportedMetaPairs } from '../helpers/constants.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
+import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
 
 /**
  * Command for configuring multiple aspects of the bot
@@ -225,7 +225,7 @@ export const command: SlashCommand = {
             const filteredOut: {name: string, value: string }[] = [];
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
-            for (const pair of ccMetaObj) {
+            for (const pair of supportedMetaPairs) {
                 if (filteredOut.length < 25) {
                     if (pair.value.includes(enteredText)) {
                         filteredOut.push(pair);
@@ -413,10 +413,8 @@ export const command: SlashCommand = {
             const removeAllRows = interaction.options.getBoolean('removeall');
 
             // validate the autocomplete entry
-            const valid = validateCCTier(tier);
-            
             // if it's not valid, return and let them know
-            if (!valid) {
+            if (!validateAutocomplete(tier, supportedMetaPairs)) {
                 await interaction.followUp('I did not understand that meta or I am not setup to track it. Please choose one from the list');
                 return;
             }

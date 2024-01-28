@@ -15,6 +15,7 @@ export let items: IPSItems = {};
 export const allNames: { name: string, value: string}[] = [];
 export let fullDexNameQuery: IDexNameDump;
 export let moves: IPSMoves = {};
+export let formats: { name: string, value: string }[];
 
 /**
  * Queries the info we need from the dex tables
@@ -158,4 +159,22 @@ export async function loadItems() {
 
     // convert to JSON
     items = res2JSON(itemsRes) as IPSItems;
+}
+
+/**
+ * Loads the list of perma format names from PS
+ */
+export async function loadFormats() {
+    // fetch the json from the PS API
+    const res = await fetch('https://raw.githubusercontent.com/smogon/pokemon-showdown/master/config/formats.ts');
+    const formatsRes = await res.text();
+
+    // extract all of the names
+    const matchArr = formatsRes.match(/(?<=^\s*name:\s*["']).*(?=['"],$)/gm);
+
+    if (!matchArr) {
+        throw 'Unable to load formats from PS!';
+    }
+
+    formats = matchArr.map(format => ({ name: format, value: format.replace(/[^a-z0-9]/g, '').toLowerCase() }));
 }

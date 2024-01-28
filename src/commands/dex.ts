@@ -3,7 +3,7 @@ import { SlashCommand } from '../types/slash-command-base';
 import { dexMondb, monNames } from '../helpers/loadDex.js';
 import { pool } from '../helpers/createPool.js';
 import { IPokedexDB } from '../types/dex';
-
+import { genChoicePairs } from '../helpers/constants.js';
 /**
  * Posts a link in the chat to the specified Pokemon analysis
  * @param pokemon Name of the pokemon
@@ -25,17 +25,7 @@ export const command: SlashCommand = {
         .addStringOption(option =>
             option.setName('gen')
             .setDescription('Which gen the analysis is for. If blank, the latest available is used')
-            .addChoices(
-                { name: 'SV', value: 'sv' },
-                { name: 'SS', value: 'ss' },
-                { name: 'SM', value: 'sm' },
-                { name: 'XY', value: 'xy' },
-                { name: 'BW', value: 'bw' },
-                { name: 'DP', value: 'dp' },
-                { name: 'RS', value: 'rs' },
-                { name: 'GS', value: 'gs' },
-                { name: 'RB', value: 'rb' },
-            )
+            .addChoices(...genChoicePairs)
             .setRequired(false))
         .addStringOption(option =>
             option.setName('format')

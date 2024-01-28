@@ -1,14 +1,12 @@
 import { Colors } from 'discord.js';
-
+import config from '../config.js';
 /**
  * This is a placeholder file to export various constants needed for mutiple files
  * If you need a place to import a variable from, it could go here rather than making a new file
  */
 
-/**
- * List of allowable metas to add/remove/list a team rater for
- */
-const allowedMetas = [
+
+const supportedMetas = [
     'OU',
     'Ubers',
     'DOU',
@@ -29,9 +27,9 @@ const allowedMetas = [
     'BDSP OU',
     'General OM',
     '2v2',
-    'OM Mashup',
     'BH',
-    'MnM',
+    'M&M',
+    'OM Mashup',
     'STABmons',
     'AAA',
     'GG',
@@ -39,11 +37,68 @@ const allowedMetas = [
     'VGC',
     'BSS',
     'PH',
+    'Stadium OU',
+    'Tradebacks OU',
+    'STAB',
+    'ZU',
+    'Draft',
     'PiC',
     'Inh',
+    'All',
 ];
 
-export const allowedMetasObj = allowedMetas.map(meta => ({ name: meta, value: meta.toLowerCase() }));
+export const supportedMetaPairs = supportedMetas.map(meta => ({ name: meta, value: meta.toLowerCase() }));
+
+export let rmtChannels: string[] = [];
+if (config.MODE === 'dev') {
+    rmtChannels = ['1060628096442708068'];
+}
+else {
+    rmtChannels = [
+        // pu
+        '1061136198208344084',
+        // nu
+        '1061136091056439386',
+        // ru
+        '1061135917160607766',
+        // lc
+        '1061135027599048746',
+        // bss
+        '1060690402711183370',
+        // other
+        '1060682530094862477',
+        // ag
+        '1060682013453078711',
+        // old gen ou
+        '1060339824537641152',
+        // natdex non ou
+        '1060037469472555028',
+        // uber
+        '1059901370477576272',
+        // uu
+        '1059743348728004678',
+        // nat dex ou'
+        '1059714627384115290',
+        // cap
+        '1059708679814918154',
+        // vgc
+        '1059704283072831499',
+        // 1v1
+        '1089349311080439882',
+        // mono
+        '1059658237097545758',
+        // om
+        '1059657287293222912',
+        // dou
+        '1059655497587888158',
+        // ou
+        '1059653209678950460',
+        // rmt1 -- legacy system
+        '630478290729041920',
+        // rmt2 -- legacy system
+        '635257209416187925',
+    ];
+}
 
 /**
  * Time interval for checking for new C&C threads (sec)
@@ -207,52 +262,6 @@ export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url
     },
 };
 
-
-/**
- * List of supported metas for C&C integration
- * This is mostly the same as the rmt system, plus a few extras based on the thread prefixes
- */
-const ccIntegrationMeta = [
-    'OU',
-    'Ubers',
-    'DOU',
-    'UU',
-    'LC',
-    'RU',
-    'NU',
-    'PU',
-    'Mono',
-    'NatDex OU',
-    'NatDex UU',
-    'NatDex AG',
-    'NatDex Mono',
-    '1v1',
-    'AG',
-    'CAP',
-    'LGPE OU',
-    'BDSP OU',
-    '2v2',
-    'BH',
-    'M&M',
-    'STABmons',
-    'AAA',
-    'GG',
-    'NFE',
-    'VGC',
-    'BSS',
-    'PH',
-    'Stadium OU',
-    'Tradebacks OU',
-    'STAB',
-    'ZU',
-    'Draft',
-    'PiC',
-    'Inh',
-    'All',
-];
-
-export const ccMetaObj = ccIntegrationMeta.map(meta => ({ name: meta, value: meta.toLowerCase() }));
-
 // lockout functions to prevent concurrency issues
 export const lockout: { [key: string]: boolean } = {
     'cc': false,
@@ -270,6 +279,13 @@ export const rbyOtherPrefix = ['NU', 'PU', 'Stadium OU', 'Tradebacks OU', 'UU', 
 /**
  * Gens
  */
+
+// list of 2-letter gen abbreviaations
+// these should be ordered by gen (i.e. gen 1 is the first element, gen 2 is the second, etc)
+export const genAbbreviations = ['RB', 'GS', 'RS', 'DP', 'BW', 'XY', 'SM', 'SS', 'SV'];
+// create a list of name-values pairs of the abbreviations so we can use them in autocompletes/selections
+export const genChoicePairs = genAbbreviations.map(abbr => ({ name: abbr, value: abbr.toLowerCase() }));
+
 // create a map of gen numbers to abbreviations
 export const gens: {[key: string]: string} = {
     'sv': '9',
@@ -304,7 +320,32 @@ export const gens: {[key: string]: string} = {
     '1': '1',
 };
 
-export const latestGen = 9;
+// list of aliases for the gen abbreivations
+// we dont need the numbers because we can get those by indexing into the gen abbreviation array
+// LGPE and BDSP are there because they're special snowflakes
+export const genAliases = {
+    'RB': ['RBY'],
+    'GS': ['GSC'],
+    'RS': ['RSE', 'ADV'],
+    'DP': ['DPP', 'HGSS'],
+    'BW': ['BW2', 'B2W2'],
+    'XY': ['ORAS'],
+    'SM': ['USM', 'USUM'],
+    'SS': ['SWSH'],
+    'SV': [],
+    'LGPE': [],
+    'BDSP': [],
+};
+export const raterChoicePairs: { name: string, value: string }[] = [];
+Object.keys(genAliases).forEach(a => {
+    let str = a;
+    if (a === 'XY') {
+        str = 'ORAS';
+    }
+    raterChoicePairs.push({ name: str, value: a });
+});
+
+export const latestGen = genAbbreviations.length;
 
 /**
  * CUSTOM AVATAR SUBS
@@ -530,3 +571,9 @@ const customColors = {
 };
 
 export const myColors = { ...Colors, ...customColors };
+
+/**
+ * Interval to update the cached data from the db/PS
+ */
+
+export const cacheInterval = 30 * 60 * 1000;
