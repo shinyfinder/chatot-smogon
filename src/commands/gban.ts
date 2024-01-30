@@ -11,7 +11,6 @@ import {
     Message,
     DiscordAPIError,
     ChannelType,
-    Guild,
 } from 'discord.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
