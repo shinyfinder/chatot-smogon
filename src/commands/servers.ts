@@ -8,7 +8,7 @@ import { buildEmbed, embedField } from '../helpers/logging.js';
  */
 export const command: SlashCommand = {
     global: false,
-    guilds: ['1040378543626002442'],
+    guilds: ['1040378543626002442', '192713314399289344'],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('servers')

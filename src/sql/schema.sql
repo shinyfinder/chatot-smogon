@@ -177,6 +177,10 @@ CREATE TABLE chatot.gbans (
     PRIMARY KEY (target)
 );
 
+CREATE TABLE chatot.gbanignores (
+    serverid varchar(20) PRIMARY KEY
+);
+
 
 CREATE TABLE chatot.tickets (
     serverid varchar(20),
