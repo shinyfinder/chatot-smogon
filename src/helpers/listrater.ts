@@ -1,31 +1,28 @@
 import { ChatInputCommandInteraction, EmbedBuilder, MessageReaction, User, APIEmbedField } from 'discord.js';
-import { mapRMTMeta } from './mapRMTMeta.js';
 import { pool } from '../helpers/createPool.js';
 import { fetchUser } from './updatePublicRatersList.js';
-import { supportedMetaPairs } from './constants.js';
 import { validateAutocomplete } from './validateAutocomplete.js';
+import { formats } from './loadDex.js';
+
 /**
  * Command to list a set of team raters from the database
  * @param interaction ChatInputCommandInteraction from discord.js
- * @param metaIn Optional - meta which you want the list of raters for. Must be combined with gen
- * @param gen Optional - gen which you want the list of raters for. Must be combined with meta
+ * @param meta Optional - meta which you want the list of raters for
  * @returns Posts embed containing the list of team raters
  */
-export async function listRater(interaction: ChatInputCommandInteraction, metaIn?: string, gen?: string) {
+export async function listRater(interaction: ChatInputCommandInteraction, meta?: string) {
     // if they didn't specify a meta, list all of the raters
-    if (metaIn === undefined) {
+    if (meta === undefined) {
         const stringArr: string[] = [];
         const raterArr: string[][] = [];
 
         // get the entire raters db
         interface ratersTable {
-            channelid: string,
             meta: string,
-            gen: string,
             userid: string,
         }
         // query the db
-        const ratersPostgres = await pool.query('SELECT channelid, meta, gen, userid FROM chatot.raters ORDER BY channelid ASC, meta ASC, gen DESC');
+        const ratersPostgres = await pool.query('SELECT meta, userid FROM chatot.raterlists ORDER BY meta ASC');
         const dbmatches: ratersTable[] | [] = ratersPostgres.rows;
         if (!dbmatches.length) {
             await interaction.followUp('No raters found');
@@ -33,35 +30,31 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
         }
 
         // loop over the object
-        // the database is organized by channel id, then meta, then gen
         let tempRaterArr: string[] = [];
         let oldMeta = '';
-        let oldGen = '';
         for (const dbRow of dbmatches) {
             // extraxt the data from the row
             const metaDB = dbRow.meta;
-            const genDB = dbRow.gen;
+            
             // create a header string based on the gen/meta
-            const stringOut = `${genDB === 'XY' ? 'ORAS' : genDB} ${metaDB}`;
+            const stringOut = formats.find(format => format.value === metaDB)?.name ?? metaDB;
 
             // push the header to the array of headers if it's not already there
             if (!stringArr.includes(stringOut)) {
                 stringArr.push(stringOut);
                 // we don't want to push an empty array on the first iteration, so check for the trackers equal to their initial values
-                if (oldGen === '' && oldMeta === '') {
+                if (oldMeta === '') {
                     oldMeta = metaDB;
-                    oldGen = genDB;
                 }
             }
             // if we are looking at the same combination of gens and metas, push the userid to a temp array
-            if (metaDB === oldMeta && genDB === oldGen) {
+            if (metaDB === oldMeta) {
                 tempRaterArr.push(dbRow.userid);
             }
             // if we've come across a new combo, push the temp array to the main array of raters and reset the temp array and trackers
             else {
                 raterArr.push(tempRaterArr);
                 oldMeta = metaDB;
-                oldGen = genDB;
                 tempRaterArr = [dbRow.userid];
             }
         }
@@ -193,22 +186,15 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
             })();
         });
     }
-    else if (metaIn !== undefined && gen !== undefined) {
-        // if they chose a gen, it will be mapped to the gen number
-        // if they didn't choose a gen, it will return as '' from the function call
-
-         // if it's invalid input, let them know and return
-        if (!validateAutocomplete(metaIn, supportedMetaPairs)) {
+    else if (meta) {
+        // if it's invalid input, let them know and return
+        if (!validateAutocomplete(meta, formats)) {
             await interaction.followUp('I did not recognize that meta or am not setup to track it.');
             return;
         }
 
-        // get the proper case meta for what they provided
-        // we do this because the db is used to forumlate the titles for the public rater list
-        const meta = mapRMTMeta(metaIn, gen)[0];
-
         // retrieve the rater list from the db
-        const ratersPostgres = await pool.query('SELECT userid FROM chatot.raters WHERE meta = $1 AND gen = $2', [meta, gen]);
+        const ratersPostgres = await pool.query('SELECT userid FROM chatot.raterlists WHERE meta=$1', [meta]);
         const dbmatches: { userid: string}[] | [] = ratersPostgres.rows;
         if (!dbmatches.length) {
             await interaction.followUp('No raters found');
@@ -240,9 +226,13 @@ export async function listRater(interaction: ChatInputCommandInteraction, metaIn
             pingOut = taggablePings.join('\n');
         }
 
+        // get the type-cased name of the meta so that the output is pretty
+        // we already know what they entered is in the list of formats, but we need to typecheck the find to make TS happy
+        const metaName = formats.find(format => format.value === meta)?.name ?? meta;
+
         // build the embed for output
         const embed = new EmbedBuilder()
-            .setTitle(`Raters for ${gen === 'XY' ? 'ORAS' : gen} ${meta}`)
+            .setTitle(`Raters for ${metaName}`)
             .setDescription(`${pingOut}`);
 
         // post it to the channel

@@ -16,6 +16,20 @@ CREATE TABLE chatot.raters (
     PRIMARY KEY (channelid, meta, gen, userid)
 );
 
+CREATE TABLE chatot.raterlists (
+    meta text,
+    userid varchar(20),
+    ping text NOT NULL DEFAULT 'All',
+    PRIMARY KEY (meta, userid)
+);
+
+CREATE TABLE chatot.rmts (
+    channelid varchar(20),
+    meta text,
+    PRIMARY KEY (channelid, meta)
+);
+
+
 CREATE TABLE chatot.customs (
     serverid varchar(20),
     cmd text,

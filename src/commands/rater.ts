@@ -4,7 +4,7 @@ import { supportedMetaPairs, raterChoicePairs } from '../helpers/constants.js';
 import { addRater } from '../helpers/addrater.js';
 import { removeRater, removeRaterAll } from '../helpers/removerater.js';
 import { listRater } from '../helpers/listrater.js';
-
+import { formats } from '../helpers/loadDex.js';
 /**
  * Command to manage the team rater database.
  * Subcommands are add, remove, list all, and list meta.
@@ -41,12 +41,7 @@ export const command: SlashCommand = {
             .addUserOption(option =>
                 option.setName('user')
                 .setDescription('User to be added (can accept IDs)')
-                .setRequired(true))
-            .addStringOption(option =>
-                option.setName('generation')
-                .setDescription('Which gen this user rates teams for. Default: latest')
-                .addChoices(...raterChoicePairs)
-                .setRequired(false)))
+                .setRequired(true)))
             
         /**
          * Remove TR
@@ -62,12 +57,7 @@ export const command: SlashCommand = {
             .addUserOption(option =>
                 option.setName('user')
                 .setDescription('User to be added (can accept IDs)')
-                .setRequired(true))
-            .addStringOption(option =>
-                option.setName('generation')
-                .setDescription('Which gen this user rates teams for. Default: latest')
-                .addChoices(...raterChoicePairs)
-                .setRequired(false)))
+                .setRequired(true)))
 
         /**
          * Remove ALL
@@ -97,12 +87,7 @@ export const command: SlashCommand = {
                     option.setName('meta')
                     .setDescription('Meta which the user rates teams for')
                     .setRequired(true)
-                    .setAutocomplete(true))
-                .addStringOption(option =>
-                    option.setName('generation')
-                    .setDescription('Respective gen the user rates teams for. Default: latest')
-                    .addChoices(...raterChoicePairs)
-                    .setRequired(false)))),
+                    .setAutocomplete(true)))),
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {
@@ -114,9 +99,10 @@ export const command: SlashCommand = {
             const filteredOut: {name: string, value: string }[] = [];
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
-            for (const pair of supportedMetaPairs) {
+            for (const pair of formats) {
                 if (filteredOut.length < 25) {
-                    if (pair.value.includes(enteredText)) {
+                    const nameLower = pair.name.toLowerCase();
+                    if (nameLower.includes(enteredText)) {
                         filteredOut.push(pair);
                     }
                 }
@@ -136,20 +122,16 @@ export const command: SlashCommand = {
             // get the user inputs
             // get the inputs
             const metaIn = interaction.options.getString('meta', true).toLowerCase();
-            const gen = interaction.options.getString('generation') ?? 'SV';
             const user = interaction.options.getUser('user', true);
 
-            await addRater(interaction, metaIn, gen, user);
-            return;
+            await addRater(interaction, metaIn, user);
         }
         else if (interaction.options.getSubcommand() === 'remove') {
             // get the inputs
             const metaIn = interaction.options.getString('meta', true).toLowerCase();
-            const gen = interaction.options.getString('generation') ?? 'SV';
             const user = interaction.options.getUser('user', true);
 
-            await removeRater(interaction, metaIn, gen, user);
-            return;
+            await removeRater(interaction, metaIn, user);
         }
         else if (interaction.options.getSubcommand() === 'removeall') {
             // get the input
@@ -157,22 +139,17 @@ export const command: SlashCommand = {
 
             // remove them
             await removeRaterAll(interaction, [user.id]);
-            
-            // done
-            await interaction.followUp(`${user.username} was removed from all rater lists`);      
 
+            // done
+            await interaction.followUp(`${user.username} was removed from all rater lists`);  
         }
         else if (interaction.options.getSubcommand() === 'all') {
             await listRater(interaction);
-            return;
         }
         else if (interaction.options.getSubcommand() === 'meta') {
             // get the inputs
             const metaIn = interaction.options.getString('meta', true).toLowerCase();
-            const gen = interaction.options.getString('generation') ?? 'SV';
-
-            await listRater(interaction, metaIn, gen);
-            return;
+            await listRater(interaction, metaIn);
         }
     },
 };

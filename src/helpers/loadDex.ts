@@ -176,5 +176,9 @@ export async function loadFormats() {
         throw 'Unable to load formats from PS!';
     }
 
-    formats = matchArr.map(format => ({ name: format, value: format.replace(/[^a-z0-9]/g, '').toLowerCase() }));
+    // remove any repeats from the match array
+    // I don't think there should be any?
+    const uniqMatchArr = [...new Set(matchArr)];
+
+    formats = uniqMatchArr.map(format => ({ name: format, value: format.replace(/[^a-z0-9]/gi, '').toLowerCase() }));
 }
