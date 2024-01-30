@@ -1,4 +1,18 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction, Message, DiscordAPIError, ChannelType } from 'discord.js';
+import {
+    SlashCommandBuilder,
+    ChatInputCommandInteraction,
+    SlashCommandSubcommandBuilder,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle,
+    ActionRowBuilder,
+    ModalActionRowComponentBuilder,
+    ModalSubmitInteraction,
+    Message,
+    DiscordAPIError,
+    ChannelType,
+    Guild,
+} from 'discord.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
 import config from '../config.js';
@@ -37,6 +51,22 @@ export const command: SlashCommand = {
         .addSubcommand(new SlashCommandSubcommandBuilder()
                 .setName('group')
                 .setDescription('Bans a group of users from every server the bot is in'),
+        )
+        .addSubcommand(new SlashCommandSubcommandBuilder()
+                .setName('ignore')
+                .setDescription('Errors in this server will not be reported')
+                .addStringOption(option =>
+                    option.setName('server')
+                    .setDescription('Full name or id of the server')
+                    .setRequired(true)),
+        )
+        .addSubcommand(new SlashCommandSubcommandBuilder()
+                .setName('unignore')
+                .setDescription('Restores error logging for the specified server')
+                .addStringOption(option =>
+                    option.setName('server')
+                    .setDescription('Full name or id of the server')
+                    .setRequired(true)),
         ),
 
     // execute our desired task
@@ -94,7 +124,7 @@ export const command: SlashCommand = {
                 return;
             }
             const confirmMsgContent = confirmMsg.first()?.content?.toLowerCase();
-            const failedGuilds: string[] = [];
+            const failedGuilds: { name: string, id: string }[] = [];
 
             if (confirmMsgContent === 'yes' || confirmMsgContent === 'y') {
                 // confirm we got the message
@@ -129,7 +159,7 @@ export const command: SlashCommand = {
                         failedBans = true;
 
                         // store the guild name for error logging
-                        failedGuilds.push(guild.name);
+                        failedGuilds.push({ name: guild.name, id: guild.id });
 
                         // try to send a message to their logging channel so they know we tried and they may have to tweak their settings
                         // first, fetch the member of this guild so we can tell them who it is
@@ -159,10 +189,23 @@ export const command: SlashCommand = {
 
                 // let them know you're done and whether you had issues along the way
                 if (failedBans) {
-                    await interaction.channel?.send(`I attempted to ban the user from every server I am in, but I had issues in:\n\n${failedGuilds.join(', ')}`);
+                    // query the db to see if any of the failed channels are being ignored
+                    const ignoredGuilds: { serverid: string }[] | [] = (await pool.query('SELECT serverid FROM chatot.gbanignores')).rows;
+                    
+                    const filteredFailures = failedGuilds.filter(obj => !ignoredGuilds.some(iguild => iguild.serverid === obj.id));
+
+                    if (filteredFailures.length) {
+                        // get the list of names 
+                        const failedNames = [...new Set(filteredFailures.map(f => f.name))];
+                        await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}`);
+                    }
+                    else {
+                        await interaction.channel?.send('I have banned the user from every server of interest.');
+                    }
+                    
                 }
                 else {
-                    await interaction.channel?.send('I have banned the user from every server I am in.');
+                    await interaction.channel?.send('I have banned the user from every server of interest.');
                 }
 
                 // add this entry to the gban db
@@ -276,7 +319,7 @@ export const command: SlashCommand = {
                 return;
             }
             const confirmMsgContent = confirmMsg.first()?.content?.toLowerCase();
-            const failedGuilds: string[] = [];
+            const failedGuilds: { name: string, id: string }[] = [];
 
             if (confirmMsgContent === 'yes' || confirmMsgContent === 'y') {
                 // confirm we got the message
@@ -320,7 +363,7 @@ export const command: SlashCommand = {
                                 // continue, instead of throwing, so that we can ban from as many servers as we can
 
                                 // store the guild name for error logging
-                                failedGuilds.push(guild.name);
+                                failedGuilds.push({ name: guild.name, id: guild.id });
 
                                 // try to send a message to their logging channel so they know we tried and they may have to tweak their settings
                                 // first, fetch the member of this guild so we can tell them who it is
@@ -355,12 +398,25 @@ export const command: SlashCommand = {
                 
                 // let the user know you're done, and indicate whether all bans were successful. 
                 if (failedBans) {
-                    // get the unique guild names
-                    const uniqFailedGuilds = [...new Set(failedGuilds)];
-                    await interaction.channel?.send(`I attempted to ban the provided id(s) from every server I am in, but I had some issues in:\n\n${uniqFailedGuilds.join(', ')}`);
+                    // query the db to see if any of the failed channels are being ignored
+                    const ignoredGuilds: { serverid: string }[] | [] = (await pool.query('SELECT serverid FROM chatot.gbanignores')).rows;
+                    
+                    // filter out the ones we want to ignore
+                    const filteredFailures = failedGuilds.filter(obj => !ignoredGuilds.some(iguild => iguild.serverid === obj.id));
+
+                    if (filteredFailures.length) {
+                        // get the unique names of the guilds left
+                        const failedNames = [...new Set(filteredFailures.map(f => f.name))];
+
+                        await interaction.channel?.send(`I attempted to ban the provided id(s) from every server I am in, but I had some issues in:\n\n${failedNames.join(', ')}`);
+                    }
+                    else {
+                        await interaction.channel?.send('I have banned the provided id(s) from every server of interest.');
+                    }
+
                 }
                 else {
-                    await interaction.channel?.send('I have banned the provided id(s) from every server I am in.');
+                    await interaction.channel?.send('I have banned the provided id(s) from every server of interest.');
                 }
 
                 // add these entries to the gban db
@@ -382,6 +438,53 @@ export const command: SlashCommand = {
             }
 
             
+        }
+
+        /**
+         * IGNORE
+         */
+        else if (interaction.options.getSubcommand() === 'ignore') {
+            await interaction.deferReply({ ephemeral: true });
+
+            // get the user input
+            const id = interaction.options.getString('server', true);
+
+            const guildCollection = interaction.client.guilds.cache.filter(g => g.id === id || g.name.toLowerCase() === id.toLowerCase());
+
+            if (guildCollection.size === 0) {
+                await interaction.followUp('No guilds found by that info, returning');
+            }
+            else if (guildCollection.size > 1) {
+                await interaction.followUp('More than one guild found by that name. Please provide the id of the server to ignore');
+            }
+            else {
+                await pool.query('INSERT INTO chatot.gbanignores (serverid) VALUES ($1)', [guildCollection.first()?.id]);
+                await interaction.followUp(`I will no longer log gban errors in ${guildCollection.first()?.name}`);
+            }
+
+        }
+
+        /**
+         * UNIGNORE
+         */
+        else if (interaction.options.getSubcommand() === 'unignore') {
+            await interaction.deferReply({ ephemeral: true });
+
+            // get the user input
+            const id = interaction.options.getString('server', true);
+
+            const guildCollection = interaction.client.guilds.cache.filter(g => g.id === id || g.name.toLowerCase() === id.toLowerCase());
+
+            if (guildCollection.size === 0) {
+                await interaction.followUp('No guilds found by that info, returning');
+            }
+            else if (guildCollection.size > 1) {
+                await interaction.followUp('More than one guild found by that name. Please provide the id of the server to unignore');
+            }
+            else {
+                await pool.query('DELETE FROM chatot.gbanignores WHERE serverid=$1', [guildCollection.first()?.id]);
+                await interaction.followUp(`I will again log gban errors in ${guildCollection.first()?.name}`);
+            }
         }
         
     },
