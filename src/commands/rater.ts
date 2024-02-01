@@ -1,6 +1,5 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { supportedMetaPairs, raterChoicePairs } from '../helpers/constants.js';
 import { addRater } from '../helpers/addrater.js';
 import { removeRater, removeRaterAll } from '../helpers/removerater.js';
 import { listRater } from '../helpers/listrater.js';

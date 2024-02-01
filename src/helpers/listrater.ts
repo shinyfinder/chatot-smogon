@@ -33,7 +33,7 @@ export async function listRater(interaction: ChatInputCommandInteraction, meta?:
         let tempRaterArr: string[] = [];
         let oldMeta = '';
         for (const dbRow of dbmatches) {
-            // extraxt the data from the row
+            // extract the data from the row
             const metaDB = dbRow.meta;
             
             // create a header string based on the gen/meta

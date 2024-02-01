@@ -4,6 +4,7 @@ import { pool } from './createPool.js';
 import fetch from 'node-fetch';
 import { res2JSON } from './res2JSON.js';
 import { IDexNameDump, IPokedexDB } from '../types/dex';
+import { overwriteTier } from './overwriteTier.js';
 
 
 export let dexMondb: IPokedexDB[] | [];
@@ -176,9 +177,16 @@ export async function loadFormats() {
         throw 'Unable to load formats from PS!';
     }
 
+    // combine stuff like vgc and bss into 1 category per gen
+    const storedTiers: string[] = [];
+    for (const tier of matchArr) {
+        const fixedTier = overwriteTier(tier);
+        storedTiers.push(fixedTier);
+
+    }
+
     // remove any repeats from the match array
-    // I don't think there should be any?
-    const uniqMatchArr = [...new Set(matchArr)];
+    const uniqMatchArr = [...new Set(storedTiers)];
 
     formats = uniqMatchArr.map(format => ({ name: format, value: format.replace(/[^a-z0-9]/gi, '').toLowerCase() }));
 }

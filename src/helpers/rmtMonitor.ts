@@ -2,6 +2,7 @@ import { Message } from 'discord.js';
 import { pool } from './createPool.js';
 import { genAbbreviations, genAliases, latestGen, rmtChannels } from './constants.js';
 import fetch from 'node-fetch';
+import { overwriteTier } from './overwriteTier.js';
 // cooldown time in hours
 const cd = 6;
 
@@ -60,11 +61,13 @@ export async function rmtMonitor(msg: Message) {
         return;
     }
 
-    
+    // overwrite the vgc and bss formats
+    const unifiedFormat = overwriteTier(rmtFormat[0]);
+
     // check cooldown
     let cooldown = 0;
     
-    const cooldownPostgres = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, rmtFormat]);
+    const cooldownPostgres = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, unifiedFormat]);
     const dbmatches: { date: Date }[] | [] = cooldownPostgres.rows;
     
     if (dbmatches.length) {
@@ -86,11 +89,11 @@ export async function rmtMonitor(msg: Message) {
     // if you're in the OM or ND nonou channels, we need to earch by the meta
     // otherwise, you can search by gen
     if (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028') {
-        const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND meta = $2', [msg.channelId, rmtFormat]);
+        const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND meta = $2', [msg.channelId, unifiedFormat]);
         ratersdbmatches = ratersPostgres.rows;
     }
     else {
-        const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND gen = $2', [msg.channelId, rmtFormat]);
+        const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND gen = $2', [msg.channelId, unifiedFormat]);
         ratersdbmatches = ratersPostgres.rows;
     }
 
@@ -173,10 +176,10 @@ export async function rmtMonitor(msg: Message) {
     // if the cooldown is not 0, then the gen/channel combo did exist. So we need to UPDATE the row in the db
     // the table is setup so that it users the time on the db server for the timestamp by default
     if (cooldown === 0) {
-        await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2)', [msg.channelId, rmtFormat]);
+        await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2)', [msg.channelId, unifiedFormat]);
     }
     else {
-        await pool.query('UPDATE chatot.cooldown SET date = default WHERE channelid = $1 AND identifier = $2', [msg.channelId, rmtFormat]);
+        await pool.query('UPDATE chatot.cooldown SET date = default WHERE channelid = $1 AND identifier = $2', [msg.channelId, unifiedFormat]);
     }
     // ping them
     await msg.channel.send(`New ${ratersdbmatches[0].meta} RMT ${pingOut}. I won't notify you again for at least ${cd} hours.`);
