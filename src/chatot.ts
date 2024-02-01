@@ -196,7 +196,7 @@ createCATimer(client);
 initGarbageCollection(client);
 
 /**
- * Everything is done, so create a new net.Server listending on fd 3
+ * Everything is done, so close fd 3 to signal ready.
  * Only do this in production so we can test in dev mode
  */
 if (config.MODE === 'production') {
