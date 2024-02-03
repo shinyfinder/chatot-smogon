@@ -22,6 +22,7 @@ import config from './config.js';
 import { recreateReminders } from './helpers/reminderWorkers.js';
 import { ContextCommand } from './types/context-command-base';
 import { initGarbageCollection } from './helpers/garbage.js';
+import { recreateLiveTours } from './helpers/livetourWorkers.js';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
@@ -162,6 +163,7 @@ await Promise.all([
     loadAllDexNames(),
     loadMoves(),
     loadItems(),
+    recreateLiveTours(client),
 ]);
 
 
