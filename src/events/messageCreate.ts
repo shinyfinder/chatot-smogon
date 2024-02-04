@@ -2,6 +2,7 @@ import { Message, MessageType } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { rmtMonitor } from '../helpers/rmtMonitor.js';
 import { dbmatches } from '../helpers/manageCustomsCache.js';
+import { justForFun } from '../helpers/justForFun.js';
 /**
  * messageCreate handler
  *
@@ -46,15 +47,6 @@ export const clientEvent: eventHandler = {
         await rmtMonitor(msg);
 
         // fun
-        const replyText = [
-            'thank you chatot',
-            'ty chatot',
-            'thanks chatot',
-        ];
-
-        if (replyText.includes(msg.content.toLowerCase())) {
-            await msg.channel.send(`you're welcome ${msg.author.displayName} <3`);
-            return;
-        }
+        await justForFun(msg);
     },
 };

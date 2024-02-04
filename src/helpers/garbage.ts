@@ -20,6 +20,7 @@ interface IGarageCheck {
     reminders: { timerid: number, tstamp: string }[],
     raters: { userid: string }[],
     fcs: { userid: string }[],
+    livetours: { messageid: string, tstamp: string }[],
     // tickets: { threadchanid: string, messageid: string}[],
 }
 
@@ -33,6 +34,9 @@ async function pruneDatabase(client: Client) {
         WITH reminders AS
         (SELECT timerid, tstamp FROM chatot.reminders),
 
+        livetours AS
+        (SELECT messageid, tstamp FROM chatot.livetours),
+
         raters AS
         (SELECT userid FROM chatot.raters),
 
@@ -41,6 +45,7 @@ async function pruneDatabase(client: Client) {
 
         SELECT json_build_object(
             'reminders', (SELECT COALESCE(JSON_AGG(reminders.*), '[]') FROM reminders),
+            'livetours', (SELECT COALESCE(JSON_AGG(livetours.*), '[]') FROM livetours),
             'raters', (SELECT COALESCE(JSON_AGG(raters.*), '[]') FROM raters),
             'fcs', (SELECT COALESCE(JSON_AGG(fcs.*), '[]') FROM fcs)
         ) AS data`);
@@ -56,6 +61,8 @@ async function pruneDatabase(client: Client) {
     // create garbage cans for each thing we have to clear
     const reminderCan: number[] = [];
     const raterCan: string[] = [];
+    const tourCan: string[] = [];
+
     // const ticketCan: string[] = [];
 
     // queue old reminders for deletion
@@ -70,7 +77,7 @@ async function pruneDatabase(client: Client) {
     // first, get the current member list of the main cord
     try {
         const mainCord = config.MODE === 'dev' ? await client.guilds.fetch(config.GUILD_ID) : await client.guilds.fetch('192713314399289344');
-        const mainCordMembers = await mainCord.members.fetch();
+        const mainCordMembers = await mainCord.members.fetch({ time: 15 * 1000 });
         if (mainCordMembers.size) {
             for (const oldRater of oldData.raters) {
                 // check to see if this member is still in the guild
@@ -103,7 +110,7 @@ async function pruneDatabase(client: Client) {
     for (const guild of fcGuilds) {
         try {
             const guildObj = await client.guilds.fetch(guild);
-            const fcMembers = await guildObj.members.fetch();
+            const fcMembers = await guildObj.members.fetch({ time: 15 * 1000 });
 
             // check to see if the stored members are still in the guild
             // if they are, flip the flag in the object
@@ -123,6 +130,15 @@ async function pruneDatabase(client: Client) {
     // if by the end of this there are any flags that are still false,
     // add the userids to the deletion queue
     const fcCan = Object.keys(isStillMember).filter(uid => !isStillMember[uid]);
+
+
+    // queue old tours for deletion
+    for (const oldTour of oldData.livetours) {
+        // if it has an old timestamp, throw it into the garbage can
+        if (new Date(oldTour.tstamp).valueOf() < Date.now().valueOf()) {
+            tourCan.push(oldTour.messageid);
+        }
+    }
 
     /*
     // For now, let's ignore tickets. 
@@ -168,6 +184,9 @@ async function pruneDatabase(client: Client) {
     }
     if (fcCan.length) {
         await pool.query('DELETE FROM chatot.fc WHERE userid=ANY($1)', [fcCan]);
+    }
+    if (tourCan.length) {
+        await pool.query('DELETE FROM chatot.livetours WHERE messageid=ANY($1)', [tourCan]);
     }
     /*
     if (ticketCan.length) {

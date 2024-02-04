@@ -17,6 +17,7 @@ export function errorHandler(err: unknown) {
             'IMAGE_INVALID',
             'Unknown Emoji',
             'Unknown Role',
+            'Members didn\'t arrive in time',
         ];
 
         if (swallowedErrors.some(str => errObj.message.includes(str))) {

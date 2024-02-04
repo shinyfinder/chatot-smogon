@@ -191,6 +191,17 @@ CREATE TABLE chatot.tickets (
     PRIMARY KEY (serverid, staffid)
 );
 
+CREATE TABLE chatot.livetours (
+    interactionchanid varchar(20),
+    messageid varchar(20),
+    hostid varchar(20),
+    title text,
+    timerid integer,
+    tstamp timestamptz,
+    announcechanid varchar(20),
+    PRIMARY KEY (messageid)
+);
+
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------

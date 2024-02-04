@@ -7,7 +7,7 @@ import { Client, GatewayIntentBits, Collection, Partials } from 'discord.js';
 import type { SlashCommand } from './types/slash-command-base';
 import type { eventHandler } from './types/event-base';
 import { readdir } from 'node:fs/promises';
-import * as net from 'node:net';
+import fs from 'fs';
 import { createPool } from './helpers/createPool.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
@@ -23,6 +23,7 @@ import { recreateReminders } from './helpers/reminderWorkers.js';
 import { ContextCommand } from './types/context-command-base';
 import { initGarbageCollection } from './helpers/garbage.js';
 import { createDexCacheTimer } from './helpers/updateCache.js';
+import { recreateLiveTours } from './helpers/livetourWorkers.js';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
@@ -164,6 +165,7 @@ await Promise.all([
     loadMoves(),
     loadItems(),
     loadFormats(),
+    recreateLiveTours(client),
 ]);
 
 
@@ -201,12 +203,12 @@ initGarbageCollection(client);
 createDexCacheTimer();
 
 /**
- * Everything is done, so create a new net.Server listending on fd 3
+ * Everything is done, so close fd 3 to signal ready.
  * Only do this in production so we can test in dev mode
  */
 if (config.MODE === 'production') {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const server = new net.Server().listen({ fd: 3 });
+    // const server = new net.Server().listen({ fd: 3 });
+    fs.close(3);
 }
 
 

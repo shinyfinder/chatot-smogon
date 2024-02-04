@@ -187,12 +187,12 @@ export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url
     },
     '763' : {
         gens: ['9'],
-        tiers: ['nfe', 'aaa', '2v2', 'gg', 'ag', 'bh', 'm&m', 'stab', 'zu', 'pic', 'inheritance'],
+        tiers: ['nfe', 'aaa', '2v2', 'gg', 'ag', 'bh', 'm&m', 'stab', 'zu', 'pic', 'inheritance', 'uubers'],
         url: 'https://www.smogon.com/forums/forums/om-analyses.763/',
     },
     '770' : {
         gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
-        tiers: ['nfe', 'aaa', '2v2', 'gg', 'ag', 'bh', 'm&m', 'stab', 'zu', 'pic', 'inheritance'],
+        tiers: ['nfe', 'aaa', '2v2', 'gg', 'ag', 'bh', 'm&m', 'stab', 'zu', 'pic', 'inheritance', 'uubers'],
         url: 'https://www.smogon.com/forums/forums/past-generation-om-analyses.770/',
     },
     '764' : {
@@ -272,7 +272,7 @@ export const lockout: { [key: string]: boolean } = {
 /**
  * Thread Prefixes
  */
-export const OMPrefix = ['NFE', 'AAA', '2v2', 'GG', 'AG', 'BH', 'M&M', 'STAB', 'ZU', 'PH', 'PiC', 'Inheritance'];
+export const OMPrefix = ['NFE', 'AAA', '2v2', 'GG', 'AG', 'BH', 'M&M', 'STAB', 'ZU', 'PH', 'PiC', 'Inheritance', 'UUbers'];
 export const pastGenPrefix = ['Gen 1', 'Gen 2', 'Gen 3', 'Gen 4', 'Gen 5', 'Gen 6', 'Gen 7', 'Gen 8'];
 export const rbyOtherPrefix = ['NU', 'PU', 'Stadium OU', 'Tradebacks OU', 'UU', 'Ubers'];
 
