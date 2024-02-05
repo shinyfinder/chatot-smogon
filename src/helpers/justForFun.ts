@@ -161,6 +161,11 @@ export async function justForFun(msg: Message) {
     }
 }
 
+/**
+ * Creates a timer to clear the cooldown on the fun functions.
+ * This cooldown rate limits the functions so that they can't be spammed over a short period.
+ * @param server ID of the server that's on cooldown
+ */
 function clearCooldown(server: string) {
     setTimeout(() => { delete counter[server]; }, 5 * 60 * 1000);
 }
