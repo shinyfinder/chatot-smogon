@@ -1,4 +1,5 @@
 import { Message, MessageFlags } from 'discord.js';
+import config from '../config.js';
 
 // reset the sayings if lily apologizes
 // also create a counter per server so that people can't spam it
@@ -6,8 +7,7 @@ let apologized = false;
 const counter: { [key: string]: number } = {};
 
 export async function justForFun(msg: Message) {
-    // const lilyID = '150324099988586496';
-    const lilyID = '212315209740713984';
+    const lilyID = config.MODE === 'dev' ? '212315209740713984' : '150324099988586496';
 
     /**
      * Reply to thank you
