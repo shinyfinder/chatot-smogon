@@ -1,4 +1,4 @@
-import { Message } from 'discord.js';
+import { Message, MessageFlags } from 'discord.js';
 
 // reset the sayings if lily apologizes
 // also create a counter per server so that people can't spam it
@@ -6,8 +6,8 @@ let apologized = false;
 const counter: { [key: string]: number } = {};
 
 export async function justForFun(msg: Message) {
-    const lilyID = '150324099988586496';
-    // const lilyID = '212315209740713984';
+    // const lilyID = '150324099988586496';
+    const lilyID = '212315209740713984';
 
     /**
      * Reply to thank you
@@ -36,7 +36,7 @@ export async function justForFun(msg: Message) {
     // if lily aplogizes, set the flag to give her a normal response to hello
 
     if (msg.author.id === lilyID) {
-        if (!apologized && msg.content.toLowerCase() === `I'm sorry ${msg.client.user.displayName}`.toLowerCase() || msg.content.toLowerCase() === `I'm sorry ${msg.client.user.toString()}`.toLowerCase()) {
+        if (!apologized && (msg.content.toLowerCase() === `I'm sorry ${msg.client.user.displayName}`.toLowerCase() || msg.content.toLowerCase() === `I'm sorry ${msg.client.user.toString()}`.toLowerCase())) {
             apologized = true;
             await msg.channel.send(`Thank you ${msg.author.toString()}. I forgive you.`);
             return;
@@ -85,21 +85,22 @@ export async function justForFun(msg: Message) {
 
             // search the cord for a display name matching what they entered
             await msg.guild?.members.fetch({ time: 3000 });
-            const user = msg.guild?.members.cache.find(mem => mem.displayName.toLowerCase() === mentionedUser.toLowerCase() || mem.user.displayName.toLowerCase() === mentionedUser || mem.user.username === mentionedUser.toLowerCase());
+            const member = msg.guild?.members.cache.find(mem => mem.displayName.toLowerCase() === mentionedUser.toLowerCase() || mem.user.displayName.toLowerCase() === mentionedUser || mem.user.username === mentionedUser.toLowerCase() || mem.user.toString() === mentionedUser);
 
-            if (!user) {
+            if (!member) {
+                await msg.channel.send('Who? I couldn\'t find them in this server.');
                 return;
             }
 
             // formulate it into a tag
-            const taggedUser = user.toString();
-            
+            const taggedUser = member.toString();
+
             // build the responses depending on the user
             const normalGreetings = [
-                `Hi ${taggedUser}! <3`,
-                `Oh ok. Hi ${taggedUser}!`,
-                `${taggedUser}, ${msg.author.username} told me to say hi, so....Hi!`,
-                `Hi ${taggedUser}! You're amazing and I hope you have a great day!`,
+                `Hi ${taggedUser}! ${msg.author.displayName} asked me to check in on you. I hope you're well! <3`,
+                `Hi ${taggedUser}! Thanks for being here. ${msg.author.displayName} and I appreciate having you around!`,
+                `Hey ${taggedUser}, ${msg.author.displayName} and I are sending you good vibes!`,
+                `Hi ${taggedUser}! You're amazing and ${msg.author.displayName} and I hope you have a great day!`,
             ];
     
             const lilyGreetings = [
@@ -120,7 +121,7 @@ export async function justForFun(msg: Message) {
                             clearCooldown(msg.guildId);
                         }
 
-                        await msg.channel.send(res);
+                        await msg.channel.send({ content: res, flags: MessageFlags.SuppressNotifications });
                         // increment the counter
                         counter[msg.guildId] = (counter[msg.guildId] || 0) + 1;
                     }
@@ -141,7 +142,7 @@ export async function justForFun(msg: Message) {
                             clearCooldown(msg.guildId);
                         }
 
-                        await msg.channel.send(res);
+                        await msg.channel.send({ content: res, flags: MessageFlags.SuppressNotifications });
 
                         // increment the counter
                         counter[msg.guildId] = (counter[msg.guildId] || 0) + 1;
