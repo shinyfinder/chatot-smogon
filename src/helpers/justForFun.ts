@@ -1,6 +1,9 @@
 import { Message } from 'discord.js';
 
+// reset the sayings if lily apologizes
+// also create a counter per server so that people can't spam it
 let apologized = false;
+const counter: { [key: string]: number } = {};
 
 export async function justForFun(msg: Message) {
     const lilyID = '150324099988586496';
@@ -43,6 +46,7 @@ export async function justForFun(msg: Message) {
     // setup the regex to check for hello's
     const greeting1 = new RegExp(`^hi,*\\s*(?:chatot|${msg.client.user.toString()})`, 'mi');
     const greeting2 = new RegExp(`^(?:chatot|${msg.client.user.toString()})*,*\\s*say hi to (.*?)(?:,*\\s*chatot|${msg.client.user.toString()})*$`, 'mi');
+    const apologyReset = new RegExp(`^(?:chatot|${msg.client.user.toString()})*,*\\s*lily was being mean to you again(?:,*\\s*chatot|${msg.client.user.toString()})*$`, 'mi');
     
     // first case: saying hi to chatot
     if (greeting1.test(msg.content)) {
@@ -80,8 +84,8 @@ export async function justForFun(msg: Message) {
             const mentionedUser = matchArr[1];
 
             // search the cord for a display name matching what they entered
-            await msg.guild?.members.fetch();
-            const user = msg.guild?.members.cache.find(mem => mem.displayName === mentionedUser || mem.user.displayName === mentionedUser);
+            await msg.guild?.members.fetch({ time: 3000 });
+            const user = msg.guild?.members.cache.find(mem => mem.displayName.toLowerCase() === mentionedUser.toLowerCase() || mem.user.displayName.toLowerCase() === mentionedUser || mem.user.username === mentionedUser.toLowerCase());
 
             if (!user) {
                 return;
@@ -102,20 +106,61 @@ export async function justForFun(msg: Message) {
                 'No thanks',
                 `Hey ${taggedUser}, you need a hug? My friend Maractus gives great ones!`,
                 'lol',
-                `Fiiiine. Hello ${taggedUser}`,
                 `I won't say hi until she apologises to me and says "I'm sorry ${msg.client.user.displayName}".`,
             ];
 
             // and respond
             if (taggedUser == `<@${lilyID}>` && !apologized) {
                 const res = lilyGreetings[Math.floor(Math.random() * lilyGreetings.length)];
-                await msg.channel.send(res);
+                if (msg.inGuild()) {
+                    // set a tigger limit so we don't spam
+                    if (!counter[msg.guildId] || counter[msg.guildId] <= 5) {
+                        // if the counter hasn't been cleared yet, set a timer to clear it
+                        if (!counter[msg.guildId]) {
+                            clearCooldown(msg.guildId);
+                        }
+
+                        await msg.channel.send(res);
+                        // increment the counter
+                        counter[msg.guildId] = (counter[msg.guildId] || 0) + 1;
+                    }
+                    else {
+                        await msg.channel.send('I\'m feeling kind of shy right now, maybe later.');
+                        
+                    }
+                }
+                
             }
             else {
                 const res = normalGreetings[Math.floor(Math.random() * normalGreetings.length)];
-                await msg.channel.send(res);
+                if (msg.inGuild()) {
+                    // set a trigger limit so we don't spam
+                    if (!counter[msg.guildId] || counter[msg.guildId] <= 5) {
+                        // if the counter hasn't been cleared yet, set a timer to clear it
+                        if (!counter[msg.guildId]) {
+                            clearCooldown(msg.guildId);
+                        }
+
+                        await msg.channel.send(res);
+
+                        // increment the counter
+                        counter[msg.guildId] = (counter[msg.guildId] || 0) + 1;
+                    }
+                    else {
+                        await msg.channel.send('I\'m feeling kind of shy right now, maybe later.');
+                        
+                    }
+                }
             }
         }
     }
+
+    else if (apologyReset.test(msg.content)) {
+        apologized = false;
+        await msg.channel.send(':(');
+    }
 }
 
+function clearCooldown(server: string) {
+    setTimeout(() => { delete counter[server]; }, 5 * 60 * 1000);
+}
