@@ -3,7 +3,7 @@ import { SlashCommand } from '../types/slash-command-base';
 import { addRater } from '../helpers/addrater.js';
 import { removeRater, removeRaterAll } from '../helpers/removerater.js';
 import { listRater } from '../helpers/listrater.js';
-import { formats } from '../helpers/loadDex.js';
+import { psFormats } from '../helpers/loadDex.js';
 /**
  * Command to manage the team rater database.
  * Subcommands are add, remove, list all, and list meta.
@@ -98,7 +98,7 @@ export const command: SlashCommand = {
             const filteredOut: {name: string, value: string }[] = [];
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
-            for (const pair of formats) {
+            for (const pair of psFormats) {
                 if (filteredOut.length < 25) {
                     const nameLower = pair.name.toLowerCase();
                     if (nameLower.includes(enteredText)) {

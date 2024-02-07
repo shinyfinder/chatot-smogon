@@ -11,7 +11,7 @@ import fs from 'fs';
 import { createPool } from './helpers/createPool.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
-import { loadItems, loadMoves, loadSpriteDex, loadAllDexNames, loadFormats } from './helpers/loadDex.js';
+import { loadItems, loadMoves, loadSpriteDex, loadAllDexNames, loadPSFormats } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
@@ -24,6 +24,7 @@ import { ContextCommand } from './types/context-command-base';
 import { initGarbageCollection } from './helpers/garbage.js';
 import { createDexCacheTimer } from './helpers/updateCache.js';
 import { recreateLiveTours } from './helpers/livetourWorkers.js';
+import { loadRMTChans } from './helpers/manageRMTCache.js';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
@@ -164,8 +165,9 @@ await Promise.all([
     loadAllDexNames(),
     loadMoves(),
     loadItems(),
-    loadFormats(),
+    loadPSFormats(),
     recreateLiveTours(client),
+    loadRMTChans(),
 ]);
 
 

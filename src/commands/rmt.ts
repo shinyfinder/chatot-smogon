@@ -2,9 +2,10 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, Channel, ChannelType,
 import { SlashCommand } from '../types/slash-command-base';
 import config from '../config.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
-import { formats } from '../helpers/loadDex.js';
+import { psFormats } from '../helpers/loadDex.js';
 import { pool } from '../helpers/createPool.js';
 import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
+import { addRMTCache, removeAllRMTCache, removeRMTCache } from '../helpers/manageRMTCache.js';
 /**
  * Command to dump the line count of the comp helpers in the RMT channels of the main Smogon discord.
  * Line counts are calcuated over a specified date range.
@@ -90,7 +91,7 @@ export const command: SlashCommand = {
             const filteredOut: {name: string, value: string }[] = [];
             // filter the options shown to the user based on what they've typed in
             // everything is cast to lower case to handle differences in case
-            for (const pair of formats) {
+            for (const pair of psFormats) {
                 if (filteredOut.length < 25) {
                     const nameLower = pair.name.toLowerCase();
                     if (nameLower.includes(enteredText)) {
@@ -463,7 +464,7 @@ export const command: SlashCommand = {
 
             // inputs
             const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
-            const meta = interaction.options.getString('meta', true);
+            const meta = interaction.options.getString('meta', true).toLowerCase();
 
             // make sure we have the necessary perms to post there
             let canComplete = true;
@@ -478,13 +479,16 @@ export const command: SlashCommand = {
                 return;
             }
 
-            if (!validateAutocomplete(meta, formats)) {
+            if (!validateAutocomplete(meta, psFormats)) {
                 await interaction.followUp('Invalid meta choice; please pick one from the list');
                 return;
             }
 
             // add it to the db
             await pool.query('INSERT INTO chatot.rmts (channelid, meta) VALUES ($1, $2) ON CONFLICT (channelid, meta) DO NOTHING', [chan.id, meta]);
+
+            // cache it
+            addRMTCache(chan.id, meta);
 
             // done
             await interaction.followUp('Channel tracking updated');
@@ -495,20 +499,26 @@ export const command: SlashCommand = {
             
             // inputs
             const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
-            const meta = interaction.options.getString('meta');
+            const meta = interaction.options.getString('meta')?.toLowerCase();
             
             if (meta) {
-                if (!validateAutocomplete(meta, formats)) {
+                if (!validateAutocomplete(meta, psFormats)) {
                     await interaction.followUp('Invalid meta choice; please pick one from the list');
                     return;
                 }
                 
                 // remove from the db
                 await pool.query('DELETE FROM chatot.rmts WHERE channelid=$1 AND meta=$2', [chan.id, meta]);
+
+                // uncache this chan + meta
+                removeRMTCache(chan.id, meta);
             }
             else {
                 // delete all the rows using this channel from the db
                 await pool.query('DELETE FROM chatot.rmts WHERE channelid=$1', [chan.id]);
+
+                // uncache this channel completly
+                removeAllRMTCache(chan.id);
             }
 
             // done

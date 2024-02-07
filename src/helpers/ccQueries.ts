@@ -18,7 +18,7 @@ export async function loadCCData() {
         (SELECT thread_id, stage, progress FROM chatot.ccstatus),
 
         alert_chans AS
-        (SELECT serverid, channelid, tier, role, gen, stage, cooldown FROM chatot.ccprefs)
+        (SELECT serverid, channelid, tier, role, gen, stage, cooldown, prefix FROM chatot.ccprefs)
 
         SELECT json_build_object(
             'threads', (SELECT COALESCE(JSON_AGG(cc_status.*), '[]') FROM cc_status),
@@ -107,6 +107,16 @@ export async function getCCAlertCooldowns() {
 
 
 export async function updateCCAlertCooldowns(chanid: string, id: string) {
-    await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2) ON CONFLICT (channelid, identifier) DO UPDATE SET channelid=EXCLUDED.channelid, identifier=EXCLUDED.identifier', [chanid, id]);
+    await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2) ON CONFLICT (channelid, identifier) DO UPDATE SET date=default', [chanid, id]);
     return;
+}
+
+export async function getGenAlias(num: string) {
+    const genAlias: { alias: string }[] | [] = (await pool.query('SELECT alias FROM dex.gens WHERE "order"=$1-1 LIMIT 1', [num])).rows;
+    return genAlias;
+}
+
+export async function getFromForumMap(col: string, threadID: string) {
+    const rows: { [key: string]: string }[] | [] = (await pool.query('SELECT $1 FROM chatot.ccforums WHERE forumid=$2', [col, threadID])).rows;
+    return rows;
 }

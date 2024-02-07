@@ -2,7 +2,7 @@ import { ChatInputCommandInteraction, EmbedBuilder, MessageReaction, User, APIEm
 import { pool } from '../helpers/createPool.js';
 import { fetchUser } from './updatePublicRatersList.js';
 import { validateAutocomplete } from './validateAutocomplete.js';
-import { formats } from './loadDex.js';
+import { psFormats } from './loadDex.js';
 
 /**
  * Command to list a set of team raters from the database
@@ -37,7 +37,7 @@ export async function listRater(interaction: ChatInputCommandInteraction, meta?:
             const metaDB = dbRow.meta;
             
             // create a header string based on the gen/meta
-            const stringOut = formats.find(format => format.value === metaDB)?.name ?? metaDB;
+            const stringOut = psFormats.find(format => format.value === metaDB)?.name ?? metaDB;
 
             // push the header to the array of headers if it's not already there
             if (!stringArr.includes(stringOut)) {
@@ -188,7 +188,7 @@ export async function listRater(interaction: ChatInputCommandInteraction, meta?:
     }
     else if (meta) {
         // if it's invalid input, let them know and return
-        if (!validateAutocomplete(meta, formats)) {
+        if (!validateAutocomplete(meta, psFormats)) {
             await interaction.followUp('I did not recognize that meta or am not setup to track it.');
             return;
         }
@@ -228,7 +228,7 @@ export async function listRater(interaction: ChatInputCommandInteraction, meta?:
 
         // get the type-cased name of the meta so that the output is pretty
         // we already know what they entered is in the list of formats, but we need to typecheck the find to make TS happy
-        const metaName = formats.find(format => format.value === meta)?.name ?? meta;
+        const metaName = psFormats.find(format => format.value === meta)?.name ?? meta;
 
         // build the embed for output
         const embed = new EmbedBuilder()

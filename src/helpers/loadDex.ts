@@ -3,7 +3,7 @@ import { alcremieFormes, genderDiffs } from './constants.js';
 import { pool } from './createPool.js';
 import fetch from 'node-fetch';
 import { res2JSON } from './res2JSON.js';
-import { IDexNameDump, IPokedexDB } from '../types/dex';
+import { IDtNameDump, IDexNameDump, IPokedexDB } from '../types/dex';
 import { overwriteTier } from './overwriteTier.js';
 
 
@@ -16,7 +16,9 @@ export let items: IPSItems = {};
 export const allNames: { name: string, value: string}[] = [];
 export let fullDexNameQuery: IDexNameDump;
 export let moves: IPSMoves = {};
-export let formats: { name: string, value: string }[];
+export let psFormats: { name: string, value: string }[];
+export let dexFormats: { name: string, value: string }[];
+export let dexGens: { name: string, value: string }[];
 
 /**
  * Queries the info we need from the dex tables
@@ -89,7 +91,13 @@ export async function loadAllDexNames() {
         (SELECT dex.natures.name, dex.natures.alias FROM dex.natures),
 
         types AS
-        (SELECT dex.types.name, dex.types.alias, dex.types.description FROM dex.types)
+        (SELECT dex.types.name, dex.types.alias, dex.types.description FROM dex.types),
+
+        formats AS
+        (SELECT dex.formats.shorthand, dex.formats.alias FROM dex.formats),
+
+        gens AS
+        (SELECT dex.gens.shorthand, dex.gens.alias FROM dex.gens)
 
         SELECT json_build_object(
             'pokemon', (SELECT COALESCE(JSON_AGG(pokemon.*), '[]') FROM pokemon),
@@ -97,17 +105,28 @@ export async function loadAllDexNames() {
             'abilities', (SELECT COALESCE(JSON_AGG(abilities.*), '[]') FROM abilities),
             'moves', (SELECT COALESCE(JSON_AGG(moves.*), '[]') FROM moves),
             'natures', (SELECT COALESCE(JSON_AGG(natures.*), '[]') FROM natures),
-            'types', (SELECT COALESCE(JSON_AGG(types.*), '[]') FROM types)
+            'types', (SELECT COALESCE(JSON_AGG(types.*), '[]') FROM types),
+            'formats', (SELECT COALESCE(JSON_AGG(formats.*), '[]') FROM formats),
+            'gens', (SELECT COALESCE(JSON_AGG(gens.*), '[]') FROM gens)
         ) AS data`);
     
     // unpack and update cache
     fullDexNameQuery = dexNameDump.rows.map((row: { data: IDexNameDump }) => row.data)[0];
 
+    // create another obj array for just the pokemon so we can reference just those
     dexMondb = fullDexNameQuery.pokemon;
+
+    // extract the formats and gens because we don't need those for /dt
+    const { formats, gens, ...dtNames } = fullDexNameQuery;
+
+    // formulate those auto pairs
+    dexFormats = formats.map(f => ({ name: f.shorthand, value: f.alias }));
+    dexGens = gens.map(g => ({ name: g.shorthand, value: g.alias }));
+
 
     // map the unique name alias pairs so we can use them for autocomplete
     // loop over the entire array of objects from the query
-    fullDexNameQuery.pokemon.forEach(obj => {
+    dexMondb.forEach(obj => {
         // try to find an obj in the unique array where the name and alias are the same as the row in the query
         const i = monNames.findIndex(uniqObj => uniqObj.name === obj.name && uniqObj.value === obj.alias);
         // if no matches are found, add the entry to the unique array
@@ -116,9 +135,9 @@ export async function loadAllDexNames() {
         }
     });
 
-    // similarly, create a name/alias map for everything so we can autocompletee /dt
-    for (const table in fullDexNameQuery) {
-        const tableData = fullDexNameQuery[table as keyof IDexNameDump];
+    // similarly, create a name/alias map for everything so we can autocomplete /dt
+    for (const table in dtNames) {
+        const tableData = dtNames[table as keyof IDtNameDump];
         tableData.forEach(obj => {
             const i = allNames.findIndex(uniqObj => uniqObj.name === obj.name && uniqObj.value === obj.alias);
             if (i === -1) {
@@ -165,7 +184,7 @@ export async function loadItems() {
 /**
  * Loads the list of perma format names from PS
  */
-export async function loadFormats() {
+export async function loadPSFormats() {
     // fetch the json from the PS API
     const res = await fetch('https://raw.githubusercontent.com/smogon/pokemon-showdown/master/config/formats.ts');
     const formatsRes = await res.text();
@@ -188,5 +207,5 @@ export async function loadFormats() {
     // remove any repeats from the match array
     const uniqMatchArr = [...new Set(storedTiers)];
 
-    formats = uniqMatchArr.map(format => ({ name: format, value: format.replace(/[^a-z0-9]/gi, '').toLowerCase() }));
+    psFormats = uniqMatchArr.map(format => ({ name: format, value: format.replace(/[^a-z0-9]/gi, '').toLowerCase() }));
 }

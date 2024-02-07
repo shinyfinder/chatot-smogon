@@ -1,8 +1,11 @@
 import { Message } from 'discord.js';
 import { pool } from './createPool.js';
-import { genAbbreviations, genAliases, latestGen, rmtChannels } from './constants.js';
+import { rmtChannels } from './manageRMTCache.js';
 import fetch from 'node-fetch';
 import { overwriteTier } from './overwriteTier.js';
+import { psFormats } from './loadDex.js';
+import config from '../config.js';
+
 // cooldown time in hours
 const cd = 6;
 
@@ -14,7 +17,7 @@ const cd = 6;
 
 export async function rmtMonitor(msg: Message) {
     // check channel list
-    if (!rmtChannels.includes(msg.channelId)) {
+    if (!rmtChannels.some(chan => chan.channelid === msg.channelId)) {
         return;
     }
 
@@ -26,7 +29,8 @@ export async function rmtMonitor(msg: Message) {
 
     // check to make sure the person who made the message isn't a comp helper
     // if they are, return
-    const isHelper = msg.member?.roles.cache.some(role => role.id === '630430864634937354');
+    const helperid = config.MODE === 'dev' ? '1046554598783062066' : '630430864634937354';
+    const isHelper = msg.member?.roles.cache.some(role => role.id === helperid);
     if (isHelper) {
         return;
     }
@@ -64,17 +68,19 @@ export async function rmtMonitor(msg: Message) {
     // overwrite the vgc and bss formats
     const unifiedFormat = overwriteTier(rmtFormat[0]);
 
-    // check cooldown
-    let cooldown = 0;
-    
-    const cooldownPostgres = await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, unifiedFormat]);
-    const dbmatches: { date: Date }[] | [] = cooldownPostgres.rows;
-    
-    if (dbmatches.length) {
-        cooldown = new Date(dbmatches[0].date).valueOf();
+    // if this channel isn't setup to track this meta, return
+    if (!rmtChannels.some(chan => chan.channelid === msg.channelId && chan.meta === unifiedFormat)) {
+        return;
     }
 
-    // cooldown = cooldowns[msg.channelId]?.[genNum];
+    // check cooldown
+    let cooldown = 0;
+    const cooldowns: { date: Date }[] | [] = (await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, unifiedFormat])).rows;
+    
+    if (cooldowns.length) {
+        cooldown = new Date(cooldowns[0].date).valueOf();
+    }
+
     // if the CD exists, check if the current time is after the end of the CD
     // if we haven't waited the full cooldown for this tier, return and don't ping
 	if (cooldown && cooldown + (cd * 60 * 60 * 1000) >= Date.now()) {
@@ -84,37 +90,25 @@ export async function rmtMonitor(msg: Message) {
 
     // ping the relevant parties
     // retrieve the info from the db
-    let ratersdbmatches: { meta: string, userid: string, ping: string }[] | undefined;
+    const ratersdbmatches: { userid: string, ping: string }[] | [] = (await pool.query('SELECT userid, ping FROM chatot.raterlists WHERE meta=$1', [unifiedFormat])).rows;
     
-    // if you're in the OM or ND nonou channels, we need to earch by the meta
-    // otherwise, you can search by gen
-    if (msg.channelId == '1059657287293222912' || msg.channelId == '1060037469472555028') {
-        const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND meta = $2', [msg.channelId, unifiedFormat]);
-        ratersdbmatches = ratersPostgres.rows;
-    }
-    else {
-        const ratersPostgres = await pool.query('SELECT meta, userid, ping FROM chatot.raters WHERE channelID = $1 AND gen = $2', [msg.channelId, unifiedFormat]);
-        ratersdbmatches = ratersPostgres.rows;
-    }
-
     // if you didn't get a match from the raters db, return because we don't know who to ping
-    if (ratersdbmatches === undefined || ratersdbmatches.length === 0) {
+    if (!ratersdbmatches.length) {
         return;
     }
+
     // format the userids as taggable output
     const taggablePings: string[] = [];
-    for (const element of ratersdbmatches) {
-        const id = element.userid;
-
+    for (const user of ratersdbmatches) {
         // fetch the id to check their online status
-        const member = await msg.guild?.members.fetch({ user: id, withPresences: true });
+        const member = await msg.guild?.members.fetch({ user: user.userid, withPresences: true });
         /**
          * Get their status
          * Because invisible returns null (is this intended?) we need another check to make sure the user is actually in the guild
          * Let's use the id
          */
-        // if member.id does not exist, we didn't fetch the member, probably because they aren't in the guild
-        if (!member?.id || member === undefined) {
+        // if member does not exist, we didn't fetch the member, probably because they aren't in the guild
+        if (!member) {
             continue;
         }
 
@@ -122,45 +116,42 @@ export async function rmtMonitor(msg: Message) {
         // options are online, idle, dnd, undefined (technically should be invisible and offline as well but idk if discord is handling those properly)
         const status = member.presence?.status;
 
-        // get their ping settings from the db
-        const pingConstraint = element.ping;
-
         // determine whether we should ping them based on their desired settings
-        if (pingConstraint === 'Online') {
+        if (user.ping === 'Online') {
             if (status !== 'online') {
                 continue;
             }
         }
-        else if (pingConstraint === 'Idle') {
+        else if (user.ping === 'Idle') {
             if (status !== 'idle') {
                 continue;
             }
         }
-        else if (pingConstraint === 'Busy') {
+        else if (user.ping === 'Busy') {
             if (status !== 'dnd') {
                 continue;
             }
         }
-        else if (pingConstraint === 'Offline') {
+        else if (user.ping === 'Offline') {
             if (status !== undefined) {
                 continue;
             }
         }
-        else if (pingConstraint === 'Avail') {
+        else if (user.ping === 'Avail') {
             if (status !== 'online' && status !== 'idle') {
                 continue;
             }
         }
-        else if (pingConstraint === 'Around') {
+        else if (user.ping === 'Around') {
             if (status === undefined) {
                 continue;
             }
         }
-        else if (pingConstraint === 'None') {
+        else if (user.ping === 'None') {
             continue;
         }
 
-        taggablePings.push('<@' + id + '>');
+        taggablePings.push(`<@${user.userid}>`);
     }
 
     // concat the taggable ids as a single string
@@ -172,15 +163,12 @@ export async function rmtMonitor(msg: Message) {
     }
 
     // save the entry to the postgres database
-    // if the cooldown is 0, that means we did have this entry yet for the gen/channel combo. So we need to INSERT a new row into the db
+    // if the cooldown is 0, that means we didn't have this entry yet for the gen/channel combo. So we need to INSERT a new row into the db
     // if the cooldown is not 0, then the gen/channel combo did exist. So we need to UPDATE the row in the db
-    // the table is setup so that it users the time on the db server for the timestamp by default
-    if (cooldown === 0) {
-        await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2)', [msg.channelId, unifiedFormat]);
-    }
-    else {
-        await pool.query('UPDATE chatot.cooldown SET date = default WHERE channelid = $1 AND identifier = $2', [msg.channelId, unifiedFormat]);
-    }
-    // ping them
-    await msg.channel.send(`New ${ratersdbmatches[0].meta} RMT ${pingOut}. I won't notify you again for at least ${cd} hours.`);
+    // the table is setup so that it uses the time on the db server for the timestamp by default
+    await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2) ON CONFLICT (channelid, identifier) DO UPDATE SET date=default', [msg.channelId, unifiedFormat]);
+
+    // ping them, but first get the name from the n-v pair used in autocomplete
+    const metaName = psFormats.find(format => format.value === unifiedFormat)?.name ?? unifiedFormat;
+    await msg.channel.send(`New ${metaName} RMT ${pingOut}. I won't notify you again for at least ${cd} hours.`);
 }

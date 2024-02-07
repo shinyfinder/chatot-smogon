@@ -2,13 +2,13 @@ import { ChatInputCommandInteraction, User } from 'discord.js';
 import { pool } from '../helpers/createPool.js';
 import { updatePublicRatersList } from './updatePublicRatersList.js';
 import { validateAutocomplete } from './validateAutocomplete.js';
-import { formats } from './loadDex.js';
+import { psFormats } from './loadDex.js';
 /**
  * Helper function to renove a team rater from a specific gen+meta
  */
 export async function removeRater(interaction: ChatInputCommandInteraction, meta: string, user: User) {
     // if it's invalid input, let them know and return
-    if (!validateAutocomplete(meta, formats)) {
+    if (!validateAutocomplete(meta, psFormats)) {
         await interaction.followUp('I did not recognize that meta or am not setup to track it.');
         return;
     }
@@ -24,7 +24,7 @@ export async function removeRater(interaction: ChatInputCommandInteraction, meta
 
     // get the type-cased name of the meta so that the output is pretty
     // we already know what they entered is in the list of formats, but we need to typecheck the find to make TS happy
-    const metaName = formats.find(format => format.value === meta)?.name ?? meta;
+    const metaName = psFormats.find(format => format.value === meta)?.name ?? meta;
 
     // let them know we're done
     await interaction.followUp(`${user.username} was removed from the list of ${metaName} raters.`);

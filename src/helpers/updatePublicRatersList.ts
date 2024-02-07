@@ -2,7 +2,7 @@ import { pool } from './createPool.js';
 import { EmbedBuilder, ChannelType, Embed, Channel, User, Client } from 'discord.js';
 import config from '../config.js';
 import { latestGen } from './constants.js';
-import { formats } from './loadDex.js';
+import { psFormats } from './loadDex.js';
 
 interface raterGroup {
     meta: string,
@@ -70,7 +70,7 @@ export async function updatePublicRatersList(client: Client, editMeta?: string) 
         const metaDB = dbRow.meta;
         
         // create a header string based on the meta
-        const stringOut = formats.find(format => format.value === metaDB)?.name ?? metaDB;
+        const stringOut = psFormats.find(format => format.value === metaDB)?.name ?? metaDB;
 
         // push the header to the array of headers if it's not already there
         if (!stringArr.includes(stringOut)) {

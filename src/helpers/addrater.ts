@@ -2,14 +2,14 @@ import { ChatInputCommandInteraction, User } from 'discord.js';
 import { pool } from './createPool.js';
 import { updatePublicRatersList } from './updatePublicRatersList.js';
 import { validateAutocomplete } from './validateAutocomplete.js';
-import { formats } from './loadDex.js';
+import { psFormats } from './loadDex.js';
 /**
  * Command to add a team rater
  * @param user Username or ID to add to the list of raters
  */
 export async function addRater(interaction: ChatInputCommandInteraction, meta: string, user: User) {
     // if it's invalid input, let them know and return
-    if (!validateAutocomplete(meta, formats)) {
+    if (!validateAutocomplete(meta, psFormats)) {
         await interaction.followUp('I did not recognize that meta or am not setup to track it.');
         return;
     }
@@ -37,7 +37,7 @@ export async function addRater(interaction: ChatInputCommandInteraction, meta: s
     
     // get the type-cased name of the meta so that the output is pretty
     // we already know what they entered is in the list of formats, but we need to typecheck the find to make TS happy
-    const metaName = formats.find(format => format.value === meta)?.name ?? meta;
+    const metaName = psFormats.find(format => format.value === meta)?.name ?? meta;
     await interaction.followUp(`${user.username} was added to the list of ${metaName} raters.`);
     return;
 }

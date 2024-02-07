@@ -39,6 +39,7 @@ export interface IAlertChans {
     gen: string,
     stage: string,
     cooldown: number | undefined,
+    prefix: string | null,
 }
 
 /**
