@@ -6,26 +6,28 @@ export function errorHandler(err: unknown) {
     // unpack the error message if it's a slash command error
     const errObj = isErrPack(err) ? err.err : err;
 
-    // if it's a missing permission error, don't log to console
-    if (errObj instanceof DiscordAPIError) {
-        const swallowedErrors = [
-            'Missing Permissions',
-            'Missing Access',
-            'exceeds maximum size',
-            'Thread is locked',
-            'Thread is archived',
-            'IMAGE_INVALID',
-            'Unknown Emoji',
-            'Unknown Role',
-            'Members didn\'t arrive in time',
-        ];
+    const swallowedErrors = [
+        'Missing Permissions',
+        'Missing Access',
+        'exceeds maximum size',
+        'Thread is locked',
+        'Thread is archived',
+        'IMAGE_INVALID',
+        'Unknown Emoji',
+        'Unknown Role',
+        'Members didn\'t arrive in time',
+        'Collector received no interactions before ending with reason: time',
+    ];
 
+    // some errors we don't want to log, so make sure it's not in the list above
+    if (errObj instanceof DiscordAPIError || errObj instanceof Error) {
         if (swallowedErrors.some(str => errObj.message.includes(str))) {
             return;
         }
     }
+    
     // if it's a collector timeout error, don't log to console
-    else if ((errObj instanceof Error && errObj.message === 'Collector received no interactions before ending with reason: time') || errObj instanceof Collection && errObj.size === 0) {
+    else if (errObj instanceof Collection && errObj.size === 0) {
         return;
     }
     // if it's a custom error packet (command failed), print out the interaction info as well
