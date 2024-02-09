@@ -275,7 +275,6 @@ export const lockout: { [key: string]: boolean } = {
 export const OMPrefix = ['NFE', 'AAA', '2v2', 'GG', 'AG', 'BH', 'M&M', 'STAB', 'ZU', 'PH', 'PiC', 'Inheritance', 'UUbers'];
 export const pastGenPrefix = ['Gen 1', 'Gen 2', 'Gen 3', 'Gen 4', 'Gen 5', 'Gen 6', 'Gen 7', 'Gen 8'];
 export const rbyOtherPrefix = ['NU', 'PU', 'Stadium OU', 'Tradebacks OU', 'UU', 'Ubers'];
-
 /**
  * Gens
  */
@@ -333,8 +332,6 @@ export const genAliases = {
     'SM': ['USM', 'USUM'],
     'SS': ['SWSH'],
     'SV': [],
-    'LGPE': [],
-    'BDSP': [],
 };
 export const raterChoicePairs: { name: string, value: string }[] = [];
 Object.keys(genAliases).forEach(a => {

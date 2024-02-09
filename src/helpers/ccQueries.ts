@@ -117,6 +117,6 @@ export async function getGenAlias(num: string) {
 }
 
 export async function getFromForumMap(col: string, threadID: string) {
-    const rows: { [key: string]: string }[] | [] = (await pool.query('SELECT $1 FROM chatot.ccforums WHERE forumid=$2', [col, threadID])).rows;
+    const rows: { [key: string]: string }[] | [] = (await pool.query(`SELECT DISTINCT ${col} FROM chatot.ccforums WHERE forumid=$1`, [threadID])).rows;
     return rows;
 }

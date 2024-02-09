@@ -180,8 +180,8 @@ export const command: SlashCommand = {
                         .setMaxValue(12)
                         .setRequired(false))
                     .addStringOption(option =>
-                        option.setName('threadprefix')
-                        .setDescription('Non-standard thread prefix (i.e. OMs, Old Gens, RBY Other)')
+                        option.setName('tierprefix')
+                        .setDescription('Non-stage thread prefix used by your monitored tier (i.e. OMs, Old Gens, RBY Other)')
                         .setRequired(false)))
                 .addSubcommand(new SlashCommandSubcommandBuilder()
                     .setName('remove')
@@ -447,10 +447,26 @@ export const command: SlashCommand = {
                 const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
                 const tier = interaction.options.getString('tier', true).toLowerCase();
                 const role = interaction.options.getRole('role');
-                const gen = interaction.options.getString('gen', true);
+                const gen = interaction.options.getString('gen', true).toLowerCase();
                 const stage = interaction.options.getString('stage') ?? 'all';
                 const cooldown = interaction.options.getInteger('cooldown');
-                const prefix = interaction.options.getString('prefix');
+                const prefix = interaction.options.getString('tierprefix')?.toLowerCase();
+
+                const standardPrefixes = [
+                    'wip',
+                    'resource',
+                    'announcement',
+                    'quality control',
+                    'copyediting',
+                    'done',
+                    'project',
+                ];
+
+                // make sure they followed directions
+                if (prefix && standardPrefixes.includes(prefix)) {
+                    await interaction.followUp('The tierprefix field is used for prefixes that are used to determine which tier (or gen) you are referring to (like in OMs or Old Gens). You entered a C&C stage prefix. If your threads do not use prefixes other than those to track C&C progress, please leave this field blank.');
+                    return;
+                }
 
                 // validate the autocomplete entry
                 // if it's not valid, return and let them know
@@ -522,7 +538,7 @@ export const command: SlashCommand = {
                 // get inputs
                 const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
                 const tier = interaction.options.getString('tier', true).toLowerCase();
-                const gen = interaction.options.getString('gen', true);
+                const gen = interaction.options.getString('gen', true).toLowerCase();
 
                 // validate the autocomplete entry
                 // if it's not valid, return and let them know

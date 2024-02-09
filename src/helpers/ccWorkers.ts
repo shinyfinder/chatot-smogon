@@ -1,13 +1,14 @@
 /**
  * Functions related to C&C integration
  */
-import { gens } from './constants.js';
+import { genAliases } from './constants.js';
 import { ChannelType, Client } from 'discord.js';
 import { getFromForumMap, getGenAlias, loadCCData, pollCCForums, updateCCAlertCooldowns, updateCCCache } from './ccQueries.js';
 import { IXFParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
 import { lockout, ccTimeInterval } from './constants.js';
 import { errorHandler } from './errorHandler.js';
 import { ccCooldowns, updateCCCooldownMem } from './manageCCCooldownCache.js';
+import { dexGens } from './loadDex.js';
 
 
 /**
@@ -100,15 +101,25 @@ export async function uncacheRemovedThreads(currentData: IXFStatusQuery[], cache
 async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData, client: Client) {
     for (const newData of newDataArr) {
         // to be safe, cast each element in the tier array to lower case
-        const newTierLower = newData.tier.map(tier => tier.toLowerCase());
+        let newTierLower = newData.tier.map(tier => tier.toLowerCase());
 
-        // if the tier or gen length isn't 1, we couldn't figure out exactly which tier/gen it is, so don't alert
-        if (newTierLower.length !== 1 || newData.gen.length !== 1) {
+        // if there are multiple possible tiers, just assume the prefix is the tier
+        if (newData.phrase_text && newTierLower.length !== 1) {
+            newTierLower = [newData.phrase_text.toLowerCase()];
+        }
+        // if there are multiple possible and they didn't use the prefix, then we don't know what it could be
+        // so skip it
+        else if (newTierLower.length !== 1) {
             continue;
         }
 
+        // if there is more than 1 possible gen, skip it
+        if (newData.gen.length !== 1) {
+            continue;
+        }
+        
         // check if there are any channels setup to receive alerts for this thread
-        const alertChans = oldData.alertchans.filter(chanData => newTierLower.includes(chanData.tier) || newTierLower.includes(chanData.prefix ?? ''));
+        const alertChans = oldData.alertchans.filter(chanData => (newTierLower.includes(chanData.tier) || newTierLower.includes(chanData.prefix ?? '')) && newData.gen.includes(chanData.gen));
         
         // if there are no channels setup to receive this update, skip
         if (!alertChans.length) {
@@ -410,13 +421,23 @@ export async function parseCCStage(threadData: IXFStatusQuery[]) {
             }
             else {
                 // try to find the gen from the title
-                const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|RS|ADV|GSC|GS|RBY|RB))*\b/i;
+                // ideally we wouldn't want to update this every time, so extend the pg query to get the gens with whatever aliases we have saved in constants
+                // at least that way part of it will always be updated, and it may be totally sufficient if people don't use other random acronyms
+                // we match with the 'i' flag, so it doesn't really matter if we use the shorthand or alias
+                const extendedGenAliases = dexGens.map(g => g.name).concat(...Object.values(genAliases));
+                const genRegex = new RegExp(`\\b(?:Gen|G|Generation)\\s*([0-9]+)\\b|\\b(${extendedGenAliases.join('|')})\\b`, 'i');
                 const matchArr = thread.title.match(genRegex);
 
                 // if there was a match from the regex test...
-                if (matchArr !== null && matchArr[0] !== '') {
-                    const genDesr = (matchArr[3] || matchArr[4]).toLowerCase();
-                    gen = [gens[genDesr]];
+                if (matchArr) {
+                    // match results in ["Gen X | abbr", "gen number" | undef, "abbr" | undef]
+                    if (matchArr[1]) {
+                        const genAlias = await getGenAlias(matchArr[1]);
+                        gen = genAlias.map(a => a.alias);
+                    }
+                    else if (matchArr[2]) {
+                        gen = [matchArr[2].toLowerCase()];
+                    }
                 }
                 // else, try to get it from the thread map
                 else {
@@ -433,7 +454,11 @@ export async function parseCCStage(threadData: IXFStatusQuery[]) {
 
             // if the list of possible tiers includes the thread prefix, filter out everything but the prefix
             // otherwise, return the original list of all possible tiers
-            tier = tier.filter(t => t === thread.phrase_text) || tier;
+            const filteredTier = tier.filter(t => t === thread.phrase_text);
+
+            if (filteredTier.length) {
+                tier = filteredTier;
+            }
         }
        
         // push the data to the holding array
