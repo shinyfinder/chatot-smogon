@@ -200,14 +200,14 @@ export const command: SlashCommand = {
         // query the db to get the info we need
         const dbQuery = await pool.query(`
         WITH raters AS
-        (SELECT chatot.channelid, chatot.meta, chatot.gen, chatot.userid, chatot.ping FROM chatot.raters),
+        (SELECT channelid, meta, gen, userid, ping FROM chatot.raters),
 
-        WITH cc AS
-        (SELECT chatot.serverid, chatot.channelid, chatot.tier, chatot.role, chatot.gen, chatot.stage, chatot.cooldown, chatot.prefix FROM chatot.ccprefs)
+        cc AS
+        (SELECT serverid, channelid, tier, role, gen, stage, cooldown, prefix FROM chatot.ccprefs)
 
         SELECT json_build_object(
             'raters', (SELECT COALESCE(JSON_AGG(raters.*), '[]') FROM raters),
-            'cc', (SELECT COALESCE(JSON_AGG(cc.*), '[]') FROM cc),
+            'cc', (SELECT COALESCE(JSON_AGG(cc.*), '[]') FROM cc)
         ) AS data`);
     
         // unpack
