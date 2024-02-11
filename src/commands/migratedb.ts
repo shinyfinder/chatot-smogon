@@ -440,7 +440,7 @@ export const command: SlashCommand = {
          * C&C FORUMS
          */
         
-        const forumIDs: string[] = [];
+        const forumIDs: number[] = [];
         const forumTiers: string[] = [];
         const forumGens: string[] = [];
 
@@ -449,7 +449,7 @@ export const command: SlashCommand = {
                 const genAbbr = genConversion(gen);
 
                 for (const tier of v.tiers) {
-                    forumIDs.push(k);
+                    forumIDs.push(Number(k));
                     forumTiers.push(tier);
                     forumGens.push(genAbbr);
                 }
@@ -503,7 +503,7 @@ export const command: SlashCommand = {
             // forum map
             await pgClient.query(`
             INSERT INTO chatot.ccforums (forumid, tier, gen)
-            VALUES (UNNEST($1::text[]), UNNEST($2::text[]), UNNEST($3::text[]))
+            VALUES (UNNEST($1::number[]), UNNEST($2::text[]), UNNEST($3::text[]))
             ON CONFLICT (forumid, tier, gen)
             DO NOTHING`, [forumIDs, forumTiers, forumGens]);
             // end

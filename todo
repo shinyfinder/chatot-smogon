@@ -1,0 +1,3 @@
+move gens from number to dex.gens syntax
+make rmt linecounts rely on db instead of hardcode
+modify garbage collection (garbage.ts, guildDelete, channelDelete)
