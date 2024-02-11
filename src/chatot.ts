@@ -23,6 +23,7 @@ import { recreateReminders } from './helpers/reminderWorkers.js';
 import { ContextCommand } from './types/context-command-base';
 import { initGarbageCollection } from './helpers/garbage.js';
 import { recreateLiveTours } from './helpers/livetourWorkers.js';
+import { startupFlags } from './helpers/constants.js';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
@@ -204,6 +205,10 @@ initGarbageCollection(client);
 if (config.MODE === 'production') {
     // const server = new net.Server().listen({ fd: 3 });
     fs.close(3);
+    startupFlags.success = true;
+}
+else {
+    startupFlags.success = true;
 }
 
 

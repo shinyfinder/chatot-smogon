@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-base-to-string */
 import { DiscordAPIError, Collection } from 'discord.js';
 import { IErrorPack } from '../types/error';
+import { startupFlags } from './constants.js';
 
 export function errorHandler(err: unknown) {
     // unpack the error message if it's a slash command error
@@ -15,6 +16,7 @@ export function errorHandler(err: unknown) {
         'IMAGE_INVALID',
         'Unknown Emoji',
         'Unknown Role',
+        'Unknown Message',
         'Members didn\'t arrive in time',
         'Collector received no interactions before ending with reason: time',
     ];
@@ -44,10 +46,17 @@ export function errorHandler(err: unknown) {
             // log it
             console.error(intInfo);
         }
+
+        if (!startupFlags.success) {
+            process.exit(1);
+        }
     }
     // otherwise, just print the error message
     else {
         console.error(errObj);
+        if (!startupFlags.success) {
+            process.exit(1);
+        }
     }
 }
 

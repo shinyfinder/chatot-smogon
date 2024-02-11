@@ -530,3 +530,5 @@ const customColors = {
 };
 
 export const myColors = { ...Colors, ...customColors };
+
+export const startupFlags: {success: boolean } = { success: false };
