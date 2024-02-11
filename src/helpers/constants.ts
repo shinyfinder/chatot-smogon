@@ -234,7 +234,6 @@ const ccIntegrationMeta = [
     '2v2',
     'BH',
     'M&M',
-    'STABmons',
     'AAA',
     'GG',
     'NFE',

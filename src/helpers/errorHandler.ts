@@ -31,7 +31,7 @@ export function errorHandler(err: unknown) {
         return;
     }
     // if it's a custom error packet (command failed), print out the interaction info as well
-    else if (isErrPack(err)) {
+    if (isErrPack(err)) {
         console.error(err.err);
 
         if (err.int) {
