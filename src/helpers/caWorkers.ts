@@ -1,6 +1,6 @@
 import { ICAStatus, IXFCAStatus } from '../types/ca';
 import { loadCAStatus, pollCAForum, updateCACache } from './caQueries.js';
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 import { Client, ChannelType, AttachmentBuilder } from 'discord.js';
 import { lockout, caTimeInterval } from './constants.js';
 import { errorHandler } from './errorHandler.js';
@@ -93,7 +93,7 @@ export async function uncacheRemovedCAThreads(currentData: IXFCAStatus[], cached
 async function alertCAStatus(newDataArr: IXFCAStatus[], client: Client) {
     let targetChan = '';
     // if in dev mode, alert to dev cord
-    if (config.MODE === 'dev') {
+    if (botConfig.MODE === Modes.Dev) {
         targetChan = '1040378543626002445';
     }
     // otherwise, post in the appropriate chan in smeargle
@@ -155,11 +155,11 @@ export function createCATimer(client: Client) {
 
 function getAttachmentPath(id: number, hash: string) {
     let filepath = '';
-    if (config.MODE === 'dev') {
-        filepath = `${config.INTERNAL_DATA_PATH}/attachments/${Math.floor(id / 1000)}/${id}-${hash}.data`;
+    if (botConfig.MODE === Modes.Dev) {
+        filepath = `${botConfig.INTERNAL_DATA_PATH}/attachments/${Math.floor(id / 1000)}/${id}-${hash}.data`;
     }
     else {
-        filepath = `${config.INTERNAL_DATA_PATH}/attachments/${Math.floor(id / 1000)}/${id}-${hash}.data`;
+        filepath = `${botConfig.INTERNAL_DATA_PATH}/attachments/${Math.floor(id / 1000)}/${id}-${hash}.data`;
     }
 
     return filepath;

@@ -119,8 +119,22 @@ export async function loadAllDexNames() {
     // extract the formats and gens because we don't need those for /dt
     const { formats, gens, ...dtNames } = fullDexNameQuery;
 
-    // formulate those auto pairs
-    dexFormats = formats.map(f => ({ name: f.shorthand, value: f.alias }));
+    // formulate their auto pairs
+    // BSS and VGC are weird in that they have a bunch of different names for the same meta
+    // for the purposes of C&C (and raters), the names don't change to whom/where it applies
+    // so map the different names to have the same value
+    dexFormats = formats.map(f => {
+        if (/^(?:Battle |BSS)/m.test(f.shorthand)) {
+            return { name: f.shorthand, value: 'bss' };
+        }
+        else if (/^VGC/m.test(f.shorthand)) {
+            return { name: f.shorthand, value: 'vgc' };
+        }
+        else {
+            return { name: f.shorthand, value: f.alias };
+        }
+    });
+    // dexFormats = formats.map(f => ({ name: f.shorthand, value: f.alias }));
     dexGens = gens.map(g => ({ name: g.shorthand, value: g.alias }));
 
 

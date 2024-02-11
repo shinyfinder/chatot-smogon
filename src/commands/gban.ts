@@ -14,7 +14,7 @@ import {
 } from 'discord.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 import { buildEmbed, postLogEvent, loggedEventTypes } from '../helpers/logging.js';
 import { errorHandler } from '../helpers/errorHandler.js';
 import { pool } from '../helpers/createPool.js';
@@ -71,7 +71,7 @@ export const command: SlashCommand = {
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         // make sure this command is used in a the main smogon server
-        const allowedGuildID = config.MODE === 'dev' ? '1040378543626002442' : '192713314399289344';
+        const allowedGuildID = botConfig.MODE === Modes.Dev ? '1040378543626002442' : '192713314399289344';
 
         if (!interaction.guild || !(interaction.guild.id === allowedGuildID)) {
             await interaction.reply({ content: 'You must use this command in the Smogon main server!', ephemeral: true });

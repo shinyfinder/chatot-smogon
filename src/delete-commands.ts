@@ -11,11 +11,11 @@
 
 
 import { REST, RESTGetAPIApplicationCommandResult, RESTGetAPIApplicationGuildCommandResult, Routes } from 'discord.js';
-import config from './config.js';
+import { botConfig } from './config.js';
 import { errorHandler } from './helpers/errorHandler.js';
 
 // setup the API call, specifying the API version number and providing the bot's authentication token
-const rest = new REST({ version: '10' }).setToken(config.TOKEN);
+const rest = new REST({ version: '10' }).setToken(botConfig.TOKEN);
 
 // get the command line arguments
 const args = process.argv.slice(2);
@@ -56,7 +56,7 @@ try {
 	 */
 	if (scope === 'guild' && commandName.length) {
 		// get the list of commands from the server specified in the .env
-		const guildCommands = await rest.get(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID)) as RESTGetAPIApplicationGuildCommandResult[];
+		const guildCommands = await rest.get(Routes.applicationGuildCommands(botConfig.CLIENT_ID, botConfig.GUILD_ID)) as RESTGetAPIApplicationGuildCommandResult[];
 		const guildCommandIDs = guildCommands.map(cmd => cmd.id);
 		const guildCommandNames = guildCommands.map(cmd => cmd.name);
 
@@ -73,9 +73,9 @@ try {
 			// find the index of the name in the list of global command names
 			const index = guildCommandNames.findIndex(n => n === name);
 			// call api
-			await rest.delete(Routes.applicationGuildCommand(config.CLIENT_ID, config.GUILD_ID, guildCommandIDs[index]));
+			await rest.delete(Routes.applicationGuildCommand(botConfig.CLIENT_ID, botConfig.GUILD_ID, guildCommandIDs[index]));
 		}
-		console.log(`Removed command(s) ${commandName.join(', ')} from guild ${config.GUILD_ID}`);
+		console.log(`Removed command(s) ${commandName.join(', ')} from guild ${botConfig.GUILD_ID}`);
 		process.exit();
 	}
 
@@ -84,8 +84,8 @@ try {
 	 * all guild commands from guild specified in .env
 	 */
 	else if (scope === 'guild' && !commandName.length) {
-		await rest.put(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID), { body: [] });
-		console.log(`Deleted all guild commands from guild ${config.GUILD_ID}`);
+		await rest.put(Routes.applicationGuildCommands(botConfig.CLIENT_ID, botConfig.GUILD_ID), { body: [] });
+		console.log(`Deleted all guild commands from guild ${botConfig.GUILD_ID}`);
 		process.exit();
 	}
 
@@ -95,7 +95,7 @@ try {
 	 */
 	else if (scope === 'global' && commandName.length) {
 		// get the list of commands from the server specified in the .env
-		const globalCommands = await rest.get(Routes.applicationCommands(config.CLIENT_ID)) as RESTGetAPIApplicationCommandResult[];
+		const globalCommands = await rest.get(Routes.applicationCommands(botConfig.CLIENT_ID)) as RESTGetAPIApplicationCommandResult[];
 		const globalCommandIDs = globalCommands.map(cmd => cmd.id);
 		const globalCommandNames = globalCommands.map(cmd => cmd.name);
 
@@ -111,8 +111,8 @@ try {
 			// find the index of the name in the list of global command names
 			const index = globalCommandNames.findIndex(n => n === name);
 			// call api
-			await rest.delete(Routes.applicationCommand(config.CLIENT_ID, globalCommandIDs[index]));
-			console.log(`Deleted global command(s) ${commandName.join(', ')} from guild ${config.GUILD_ID}`);
+			await rest.delete(Routes.applicationCommand(botConfig.CLIENT_ID, globalCommandIDs[index]));
+			console.log(`Deleted global command(s) ${commandName.join(', ')} from guild ${botConfig.GUILD_ID}`);
 			process.exit();
 		}
 	}
@@ -122,7 +122,7 @@ try {
 	 * all global commands from all guilds
 	 */
 	else if (scope === 'global' && !commandName.length) {
-		await rest.put(Routes.applicationCommands(config.CLIENT_ID), { body: [] });
+		await rest.put(Routes.applicationCommands(botConfig.CLIENT_ID), { body: [] });
 		console.log('Deleted all global commands');
 		process.exit();
 	}

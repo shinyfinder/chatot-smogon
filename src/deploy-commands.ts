@@ -9,7 +9,7 @@
 
 import { readdir } from 'node:fs/promises';
 import { REST, RESTPostAPIApplicationCommandsJSONBody, RESTGetAPIApplicationGuildCommandResult, Routes } from 'discord.js';
-import config from './config.js';
+import { botConfig } from './config.js';
 import { SlashCommand } from './types/slash-command-base';
 import { errorHandler } from './helpers/errorHandler.js';
 
@@ -79,7 +79,7 @@ interface cmdModule {
 }
 
 // setup the API call, specifying the API version number and providing the bot's authentication token
-const rest = new REST({ version: '10' }).setToken(config.TOKEN);
+const rest = new REST({ version: '10' }).setToken(botConfig.TOKEN);
 
 for (let i = 0; i < flags.length; i++) {
     try {
@@ -90,7 +90,7 @@ for (let i = 0; i < flags.length; i++) {
             const targetCommands = orgCommands[i];
             if (targetCommands.length) {
                 // get the list of current commands for the guild specified in .env
-                const currentCommandsAPI = await rest.get(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID)) as RESTGetAPIApplicationGuildCommandResult[];
+                const currentCommandsAPI = await rest.get(Routes.applicationGuildCommands(botConfig.CLIENT_ID, botConfig.GUILD_ID)) as RESTGetAPIApplicationGuildCommandResult[];
                 // extract the names of the current commands
                 const currentCommandNames = currentCommandsAPI.map(c => c.name);
     
@@ -105,7 +105,7 @@ for (let i = 0; i < flags.length; i++) {
                 const guildCommands = await loadFiles(uniqNames, scope);
                 
                 // push them to discord
-                await rest.put(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID), { body: guildCommands });
+                await rest.put(Routes.applicationGuildCommands(botConfig.CLIENT_ID, botConfig.GUILD_ID), { body: guildCommands });
                 console.log('Successfullly pushed guild commands');
         
             }
@@ -116,7 +116,7 @@ for (let i = 0; i < flags.length; i++) {
                 const commandsPath = new URL('commands', import.meta.url);
     
                 // get the list of current commands for the guild specified in .env
-                const currentCommandsAPI = await rest.get(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID)) as RESTGetAPIApplicationGuildCommandResult[];
+                const currentCommandsAPI = await rest.get(Routes.applicationGuildCommands(botConfig.CLIENT_ID, botConfig.GUILD_ID)) as RESTGetAPIApplicationGuildCommandResult[];
                 // extract the names of the current commands
                 const currentCommandNames = currentCommandsAPI.map(c => c.name);
     
@@ -135,7 +135,7 @@ for (let i = 0; i < flags.length; i++) {
                 const guildCommands = await loadFiles(commandNameList, scope);
                 
                 // push it to discord
-                await rest.put(Routes.applicationGuildCommands(config.CLIENT_ID, config.GUILD_ID), { body: guildCommands });
+                await rest.put(Routes.applicationGuildCommands(botConfig.CLIENT_ID, botConfig.GUILD_ID), { body: guildCommands });
                 console.log('Successfully registered application commands.');
                 
             }
@@ -151,7 +151,7 @@ for (let i = 0; i < flags.length; i++) {
             const globalCommands = await loadFiles(commandFiles, scope);
             
             // push to discord
-            await rest.put(Routes.applicationCommands(config.CLIENT_ID), { body: globalCommands });
+            await rest.put(Routes.applicationCommands(botConfig.CLIENT_ID), { body: globalCommands });
             console.log('Successfully registered global application commands.');
            
         }

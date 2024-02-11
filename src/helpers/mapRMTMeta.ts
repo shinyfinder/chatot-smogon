@@ -1,4 +1,4 @@
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 
 /**
  * Validates the input when adding/removing team raters
@@ -11,7 +11,7 @@ export function mapRMTMeta(meta: string, genIn: string) {
     // map the meta to the channel
     let channel = '';
     let metaOut = '';
-    if (config.MODE === 'dev') {
+    if (botConfig.MODE === Modes.Dev) {
         channel = '1060628096442708068';
         metaOut = 'NU';
     }

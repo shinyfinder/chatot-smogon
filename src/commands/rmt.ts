@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, Channel, ChannelType, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, AutocompleteInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
 import { psFormats } from '../helpers/loadDex.js';
 import { pool } from '../helpers/createPool.js';
@@ -114,8 +114,8 @@ export const command: SlashCommand = {
             await interaction.deferReply();
             // check to make sure it's actually in a guild and used in the main server
             // this should always happen, since this command is a guild command
-            const allowedGuildID = config.MODE === 'dev' ? '1040378543626002442' : '192713314399289344';
-            const roleFetchID = config.MODE === 'dev' ? '1046554598783062066' : '630430864634937354';
+            const allowedGuildID = botConfig.MODE === Modes.Dev ? '1040378543626002442' : '192713314399289344';
+            const roleFetchID = botConfig.MODE === Modes.Dev ? '1046554598783062066' : '630430864634937354';
 
             if (!interaction.guild || interaction.guild.id !== allowedGuildID) {
                 await interaction.followUp('You must use this command in the Smogon main server!');
@@ -216,7 +216,7 @@ export const command: SlashCommand = {
             // loop through the different RMT channels to get all of the messages
             // forums
             let channelIDs: string[] = [];
-            if (config.MODE === 'dev') {
+            if (botConfig.MODE === Modes.Dev) {
                 channelIDs = [
                     '1060628096442708068',
                 ];
@@ -485,7 +485,7 @@ export const command: SlashCommand = {
             }
 
             // add it to the db
-            await pool.query('INSERT INTO chatot.rmts (channelid, meta) VALUES ($1, $2) ON CONFLICT (channelid, meta) DO NOTHING', [chan.id, meta]);
+            await pool.query('INSERT INTO chatot.rmtchans (channelid, meta) VALUES ($1, $2) ON CONFLICT (channelid, meta) DO NOTHING', [chan.id, meta]);
 
             // cache it
             addRMTCache(chan.id, meta);
@@ -508,14 +508,14 @@ export const command: SlashCommand = {
                 }
                 
                 // remove from the db
-                await pool.query('DELETE FROM chatot.rmts WHERE channelid=$1 AND meta=$2', [chan.id, meta]);
+                await pool.query('DELETE FROM chatot.rmtchans WHERE channelid=$1 AND meta=$2', [chan.id, meta]);
 
                 // uncache this chan + meta
                 removeRMTCache(chan.id, meta);
             }
             else {
                 // delete all the rows using this channel from the db
-                await pool.query('DELETE FROM chatot.rmts WHERE channelid=$1', [chan.id]);
+                await pool.query('DELETE FROM chatot.rmtchans WHERE channelid=$1', [chan.id]);
 
                 // uncache this channel completly
                 removeAllRMTCache(chan.id);

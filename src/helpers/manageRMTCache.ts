@@ -16,7 +16,7 @@ export let rmtChannels: IRMTChans[];
  */
 export async function loadRMTChans() {
     // poll the db
-    rmtChannels = (await pool.query('SELECT channelid, meta FROM chatot.rmts')).rows as IRMTChans[];
+    rmtChannels = (await pool.query('SELECT channelid, meta FROM chatot.rmtchans')).rows as IRMTChans[];
 }
 
 export function addRMTCache(id: string, meta: string) {

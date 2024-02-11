@@ -1,6 +1,6 @@
 import { Client } from 'discord.js';
 import { pool } from './createPool.js';
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 import { errorHandler } from './errorHandler.js';
 
 /**
@@ -76,7 +76,7 @@ async function pruneDatabase(client: Client) {
     // queue raters no longer in the server
     // first, get the current member list of the main cord
     try {
-        const mainCord = config.MODE === 'dev' ? await client.guilds.fetch(config.GUILD_ID) : await client.guilds.fetch('192713314399289344');
+        const mainCord = botConfig.MODE === Modes.Dev ? await client.guilds.fetch(botConfig.GUILD_ID) : await client.guilds.fetch('192713314399289344');
         const mainCordMembers = await mainCord.members.fetch({ time: 15 * 1000 });
         if (mainCordMembers.size) {
             for (const oldRater of oldData.raters) {
@@ -98,7 +98,7 @@ async function pruneDatabase(client: Client) {
     // first get the fc command definition
     const fcDef = client.commands.filter(cdef => cdef.data.name === 'fc');
     // ... and the list of guilds the fc command is in
-    const fcGuilds = config.MODE === 'dev' ? [config.GUILD_ID] : fcDef.map(fcdef => fcdef.guilds).flat();
+    const fcGuilds = botConfig.MODE === Modes.Dev ? [botConfig.GUILD_ID] : fcDef.map(fcdef => fcdef.guilds).flat();
 
     // build an object so that we can track if the user is still in a guild with the fc command
     const isStillMember: { [key: string] : boolean } = {};

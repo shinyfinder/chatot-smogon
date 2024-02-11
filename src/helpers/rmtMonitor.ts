@@ -4,7 +4,7 @@ import { rmtChannels } from './manageRMTCache.js';
 import fetch from 'node-fetch';
 import { overwriteTier } from './overwriteTier.js';
 import { psFormats } from './loadDex.js';
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 
 // cooldown time in hours
 const cd = 6;
@@ -29,7 +29,7 @@ export async function rmtMonitor(msg: Message) {
 
     // check to make sure the person who made the message isn't a comp helper
     // if they are, return
-    const helperid = config.MODE === 'dev' ? '1046554598783062066' : '630430864634937354';
+    const helperid = botConfig.MODE === Modes.Dev ? '1046554598783062066' : '630430864634937354';
     const isHelper = msg.member?.roles.cache.some(role => role.id === helperid);
     if (isHelper) {
         return;

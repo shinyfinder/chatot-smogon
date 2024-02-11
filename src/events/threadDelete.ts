@@ -1,7 +1,7 @@
 import { ThreadChannel } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { pool } from '../helpers/createPool.js';
-import config from '../config.js';
+import { botConfig } from '../config.js';
 import { errorHandler } from '../helpers/errorHandler.js';
 
 /**
@@ -23,7 +23,7 @@ export const clientEvent: eventHandler = {
             // delete
             await pgClient.query('DELETE FROM chatot.cooldown WHERE channelid=$1', [thread.id]);
             // raters are only in the main discord
-            if (thread.guildId === config.GUILD_ID) {
+            if (thread.guildId === botConfig.GUILD_ID) {
                 await pgClient.query('DELETE FROM chatot.raters WHERE channelid=$1', [thread.id]);
             }
             await pgClient.query('DELETE FROM chatot.logchan WHERE channelid=$1', [thread.id]);

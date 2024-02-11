@@ -1,5 +1,5 @@
 import { Colors } from 'discord.js';
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 /**
  * This is a placeholder file to export various constants needed for mutiple files
  * If you need a place to import a variable from, it could go here rather than making a new file
@@ -50,7 +50,7 @@ const supportedMetas = [
 export const supportedMetaPairs = supportedMetas.map(meta => ({ name: meta, value: meta.toLowerCase() }));
 
 export let rmtChannels: string[] = [];
-if (config.MODE === 'dev') {
+if (botConfig.MODE === Modes.Dev) {
     rmtChannels = ['1060628096442708068'];
 }
 else {

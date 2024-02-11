@@ -3,7 +3,7 @@ import { eventHandler } from '../types/event-base.js';
 import { sleep } from '../helpers/sleep.js';
 import { pool } from '../helpers/createPool.js';
 import { buildEmbed, buildMsgDeleteEmbedParams, postLogEvent, loggedEventTypes } from '../helpers/logging.js';
-import config from '../config.js';
+import { botConfig } from '../config.js';
 import { rrMessages, removeRRMessage } from '../helpers/loadReactRoleMessages.js';
 
 /**
@@ -27,7 +27,7 @@ export const clientEvent: eventHandler = {
         // ignore DMs and uncached messages
         // also ignore bot self deletes if it doesn't have a message component (i.e. button)
         // we ultimately won't log the bot deletions, but we need to keep it around for a bit so we can clear up the tickets database
-        if (!message.guild || !message.author || (message.author.id === config.CLIENT_ID && !message.components)) {
+        if (!message.guild || !message.author || (message.author.id === botConfig.CLIENT_ID && !message.components)) {
             return;
         }
 
@@ -48,7 +48,7 @@ export const clientEvent: eventHandler = {
         // we don't log these, so if it's a Chatot message, just return
         if (message.components) {
             await pool.query('DELETE FROM chatot.tickets WHERE messageid=$1', [message.id]);
-            if (message.author.id === config.CLIENT_ID) {
+            if (message.author.id === botConfig.CLIENT_ID) {
                 return;
             }
         }

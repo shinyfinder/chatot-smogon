@@ -18,7 +18,7 @@ import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
 import { createCCTimer } from './helpers/ccWorkers.js';
 import { createCATimer } from './helpers/caWorkers.js';
 import { loadCCCooldowns } from './helpers/manageCCCooldownCache.js';
-import config from './config.js';
+import { Modes, botConfig } from './config.js';
 import { recreateReminders } from './helpers/reminderWorkers.js';
 import { ContextCommand } from './types/context-command-base';
 import { initGarbageCollection } from './helpers/garbage.js';
@@ -28,7 +28,7 @@ import { loadRMTChans } from './helpers/manageRMTCache.js';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
- * Env variables are saved in the ./.env file and accessed as config.VARIABLE_NAME
+ * Env variables are saved in the ./.env file and accessed as botConfig.VARIABLE_NAME
  */
 
 
@@ -179,7 +179,7 @@ await Promise.all([
 /**
  * Login to Discord with your client's token, or log any errors
  */
-await client.login(config.TOKEN);
+await client.login(botConfig.TOKEN);
 
 /**
  * Cache the monitored messages for role reactions
@@ -208,7 +208,7 @@ createDexCacheTimer();
  * Everything is done, so close fd 3 to signal ready.
  * Only do this in production so we can test in dev mode
  */
-if (config.MODE === 'production') {
+if (botConfig.MODE === Modes.Production) {
     // const server = new net.Server().listen({ fd: 3 });
     fs.close(3);
 }

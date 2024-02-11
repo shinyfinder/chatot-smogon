@@ -1,6 +1,6 @@
 import { pool } from './createPool.js';
 import { EmbedBuilder, ChannelType, Embed, Channel, User, Client } from 'discord.js';
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 import { latestGen } from './constants.js';
 import { psFormats } from './loadDex.js';
 
@@ -24,7 +24,7 @@ export async function updatePublicRatersList(client: Client, editMeta?: string) 
     // load the channel
     let raterListChannel: Channel | null;
     // dev mode gate
-    if (config.MODE === 'dev') {
+    if (botConfig.MODE === Modes.Dev) {
         raterListChannel = await client.channels.fetch('1065764634562416680');
     }
     else {
@@ -208,7 +208,7 @@ export async function updatePublicRatersList(client: Client, editMeta?: string) 
 
         for (const check of groupChecks) {
             // make sure each one has an embed
-            for (const [id, oldMsg] of botMsgs) {
+            for (const [, oldMsg] of botMsgs) {
                 if (!oldMsg.embeds.length) {
                     delFlag = true;
                 }
@@ -223,7 +223,7 @@ export async function updatePublicRatersList(client: Client, editMeta?: string) 
 
         // if something is off, delete the bot's messages so we can trigger a full refresh
         if (delFlag) {
-            for (const [id, msg] of botMsgs) {
+            for (const [, msg] of botMsgs) {
                 await msg.delete();
             }
             // put them in order of current, old, misc
@@ -233,7 +233,7 @@ export async function updatePublicRatersList(client: Client, editMeta?: string) 
         }
         else {
             // edit the message in the channel
-            for (const [id, oldMsg] of botMsgs) {
+            for (const [, oldMsg] of botMsgs) {
                 if (oldMsg.embeds[0].title?.includes('Current')) {
                     await oldMsg.edit({ embeds: currentEmbedHolder });
                 }

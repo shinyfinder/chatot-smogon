@@ -18,7 +18,7 @@ If you download the zip, extract the file into your desired directory.
 
 3. Make a copy of the file `.sample-env` and rename the copy to `.env`. Thie file contains the environment variables required for the bot to run. **Never give out the values in this file!** Please refer to the discord.js documentation for [setting up your bot application](https://discordjs.guide/preparations/setting-up-a-bot-application.html) and [adding the bot to your server(s)](https://discordjs.guide/preparations/adding-your-bot-to-servers.html) to obtain these values.
 
-Additions to the environment variables will need to be reflected in [config.ts](.blob/main/src/config.ts). These values are accessed within the bot as `config.VARIABLE_NAME`.
+Additions to the environment variables will need to be reflected in [config.ts](.blob/main/src/config.ts). These values are accessed within the bot as `botConfig.VARIABLE_NAME`.
 
 # Using the bot
 This bot uses slash commands (a subset of application commands). Deployment of these commands is handled during startup of the bot witihn the `/src/helpers/updateState.ts` file. This script detects any changes in your command definitions and (re)deploys them as appropriate. The deployment scope is defined within the command definitions themselves with the following flags:

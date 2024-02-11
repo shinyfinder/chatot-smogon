@@ -25,7 +25,7 @@ CREATE TABLE chatot.raterlists (
 );
 
 -- this is new
-CREATE TABLE chatot.rmts (
+CREATE TABLE chatot.rmtchans (
     channelid varchar(20),
     meta text,
     PRIMARY KEY (channelid, meta)
@@ -123,6 +123,7 @@ CREATE TABLE chatot.ccstatus (
 
 
 CREATE TYPE chatot.ccstagealert AS enum ('qc', 'done', 'all');
+-- added prefix col
 CREATE TABLE chatot.ccprefs (
     serverid varchar(20),
     channelid varchar(20),
@@ -131,6 +132,7 @@ CREATE TABLE chatot.ccprefs (
     gen text,
     stage chatot.ccstagealert,
     cooldown int,
+    prefix text,
     PRIMARY KEY (serverid, channelid, gen, stage)
 );
 

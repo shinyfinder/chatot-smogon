@@ -1,6 +1,6 @@
 import pkg from 'pg';
 const { Pool } = pkg;
-import config from '../config.js';
+import { botConfig } from '../config.js';
 import mysql from 'mysql2/promise';
 /**
  * Helper file to instantiate the connection to the postgres / mySQL pools
@@ -12,21 +12,21 @@ export let sqlPool: mysql.Pool;
 // connect to the databases
 export function createPool() {
     pool = new Pool({
-        user: config.PGUSER,
-        host: config.PGHOST,
-        database: config.PGDATABASE,
-        password: config.PGPASSWORD,
-        port: config.PGPORT,
+        user: botConfig.PGUSER,
+        host: botConfig.PGHOST,
+        database: botConfig.PGDATABASE,
+        password: botConfig.PGPASSWORD,
+        port: botConfig.PGPORT,
     });
 
     // wrap the sqlpool in a promise
     sqlPool = mysql.createPool({
-        host: config.SQLHOST,
-        user: config.SQLUSER,
-        password: config.SQLPASSWORD,
-        database: config.SQLDATABASE,
-        port: config.SQLPORT,
-        socketPath: config.SQLSOCKETPATH,
+        host: botConfig.SQLHOST,
+        user: botConfig.SQLUSER,
+        password: botConfig.SQLPASSWORD,
+        database: botConfig.SQLDATABASE,
+        port: botConfig.SQLPORT,
+        socketPath: botConfig.SQLSOCKETPATH,
     });
 
     return;
