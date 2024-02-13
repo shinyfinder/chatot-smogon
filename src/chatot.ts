@@ -24,6 +24,7 @@ import { ContextCommand } from './types/context-command-base';
 import { initGarbageCollection } from './helpers/garbage.js';
 import { createDexCacheTimer } from './helpers/updateCache.js';
 import { recreateLiveTours } from './helpers/livetourWorkers.js';
+import { startupFlags } from './helpers/constants.js';
 import { loadRMTChans } from './helpers/manageRMTCache.js';
 
 /**
@@ -211,6 +212,10 @@ createDexCacheTimer();
 if (botConfig.MODE === Modes.Production) {
     // const server = new net.Server().listen({ fd: 3 });
     fs.close(3);
+    startupFlags.success = true;
+}
+else {
+    startupFlags.success = true;
 }
 
 

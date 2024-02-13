@@ -569,6 +569,7 @@ const customColors = {
 
 export const myColors = { ...Colors, ...customColors };
 
+export const startupFlags: {success: boolean } = { success: false };
 /**
  * Interval to update the cached data from the db/PS
  */
