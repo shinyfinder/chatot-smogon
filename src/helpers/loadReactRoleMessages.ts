@@ -54,13 +54,17 @@ export async function loadRRMessages(client: Client) {
             await chan.messages.fetch(msg.messageid);
         }
         catch (err) {
-            // if they deleted the message and we still didn't catch it, delete it from the db
+            // if they deleted the message and we still didn't catch it, queue deletion from the db
             if (err instanceof DiscordAPIError && err.message.includes('Unknown Message')) {
                 deletedMessages.push(msg.messageid);
+                continue;
             }
-            // route it through our error handler to at least give it a shot of printing
-            errorHandler(err);
-            continue;
+            else {
+                // route it through our error handler to at least give it a shot of printing
+                errorHandler(err);
+                continue;
+            }
+            
         }        
     }
 
