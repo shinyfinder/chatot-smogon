@@ -25,9 +25,8 @@ export const clientEvent: eventHandler = {
     // execute the code for this event
     async execute(message: Message) {
         // ignore DMs and uncached messages
-        // also ignore bot self deletes if it doesn't have a message component (i.e. button)
-        // we ultimately won't log the bot deletions, but we need to keep it around for a bit so we can clear up the tickets database
-        if (!message.guild || !message.author || (message.author.id === config.CLIENT_ID && !message.components)) {
+        // we ultimately won't log the bot deletions, but we need to keep it around for a bit so we can clear up the tickets database (and potentially the react role db)
+        if (!message.guild || !message.author) {
             return;
         }
 
@@ -45,12 +44,13 @@ export const clientEvent: eventHandler = {
         // check if the message has a button component
         // if it does, they probably deleted the tickets post
         // this may duplicate a deletion query if they followed the proper procedure, but if they didn't at least we can catch it
-        // we don't log these, so if it's a Chatot message, just return
-        if (message.components) {
+        if (message.components.length) {
             await pool.query('DELETE FROM chatot.tickets WHERE messageid=$1', [message.id]);
-            if (message.author.id === config.CLIENT_ID) {
-                return;
-            }
+        }
+
+        // atp we've checked for react roles and tickets, so we're safe to ignore it if it's a bot's message
+        if (message.author.bot === true) {
+            return;
         }
 
         // determine if the channel is ignored from logging in the server by first querying the db
@@ -152,11 +152,6 @@ export const clientEvent: eventHandler = {
 
         // make sure executor isn't null to make TS happy. It shouldn't be
         if (!executor) {
-            return;
-        }
-
-        // if the author of this deleted message is a bot, don't log it
-        if (message.author.bot === true) {
             return;
         }
 

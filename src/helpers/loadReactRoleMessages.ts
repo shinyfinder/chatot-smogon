@@ -1,4 +1,4 @@
-import { Client } from 'discord.js';
+import { Client, DiscordAPIError } from 'discord.js';
 import { pool } from './createPool.js';
 import { errorHandler } from './errorHandler.js';
 
@@ -30,6 +30,7 @@ export async function loadRRMessages(client: Client) {
     const rrPostgres = await pool.query('SELECT serverid, channelid, messageid FROM chatot.reactroles WHERE roleid=$1 OR roleid=$2', ['bot', 'user']);
     const dbmatches: rrdb[] | [] = rrPostgres.rows;
 
+    const deletedMessages: string[] = [];
     // loop over the combinations to fetch the message and cache it
     for (const msg of dbmatches) {
         // get the server
@@ -53,11 +54,19 @@ export async function loadRRMessages(client: Client) {
             await chan.messages.fetch(msg.messageid);
         }
         catch (err) {
+            // if they deleted the message and we still didn't catch it, delete it from the db
+            if (err instanceof DiscordAPIError && err.message.includes('Unknown Message')) {
+                deletedMessages.push(msg.messageid);
+            }
             // route it through our error handler to at least give it a shot of printing
             errorHandler(err);
             continue;
-        }
-        
+        }        
+    }
+
+    // if there are any dead messages, delete them
+    if (deletedMessages.length) {
+        await pool.query('DELETE FROM chatot.reactroles WHERE messageid=ANY($1)', [deletedMessages]);
     }
 
     // save a cache of the message IDs so we can compare new reactions against it without having to poll the db
