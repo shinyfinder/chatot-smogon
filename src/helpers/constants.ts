@@ -1,5 +1,4 @@
 import { Colors } from 'discord.js';
-import { Modes, botConfig } from '../config.js';
 /**
  * This is a placeholder file to export various constants needed for mutiple files
  * If you need a place to import a variable from, it could go here rather than making a new file
@@ -49,56 +48,6 @@ const supportedMetas = [
 
 export const supportedMetaPairs = supportedMetas.map(meta => ({ name: meta, value: meta.toLowerCase() }));
 
-export let rmtChannels: string[] = [];
-if (botConfig.MODE === Modes.Dev) {
-    rmtChannels = ['1060628096442708068'];
-}
-else {
-    rmtChannels = [
-        // pu
-        '1061136198208344084',
-        // nu
-        '1061136091056439386',
-        // ru
-        '1061135917160607766',
-        // lc
-        '1061135027599048746',
-        // bss
-        '1060690402711183370',
-        // other
-        '1060682530094862477',
-        // ag
-        '1060682013453078711',
-        // old gen ou
-        '1060339824537641152',
-        // natdex non ou
-        '1060037469472555028',
-        // uber
-        '1059901370477576272',
-        // uu
-        '1059743348728004678',
-        // nat dex ou'
-        '1059714627384115290',
-        // cap
-        '1059708679814918154',
-        // vgc
-        '1059704283072831499',
-        // 1v1
-        '1089349311080439882',
-        // mono
-        '1059658237097545758',
-        // om
-        '1059657287293222912',
-        // dou
-        '1059655497587888158',
-        // ou
-        '1059653209678950460',
-        // rmt1 -- legacy system
-        '630478290729041920',
-        // rmt2 -- legacy system
-        '635257209416187925',
-    ];
-}
 
 /**
  * Time interval for checking for new C&C threads (sec)
@@ -270,54 +219,8 @@ export const lockout: { [key: string]: boolean } = {
 
 
 /**
- * Thread Prefixes
- */
-export const OMPrefix = ['NFE', 'AAA', '2v2', 'GG', 'AG', 'BH', 'M&M', 'STAB', 'ZU', 'PH', 'PiC', 'Inheritance', 'UUbers'];
-export const pastGenPrefix = ['Gen 1', 'Gen 2', 'Gen 3', 'Gen 4', 'Gen 5', 'Gen 6', 'Gen 7', 'Gen 8'];
-export const rbyOtherPrefix = ['NU', 'PU', 'Stadium OU', 'Tradebacks OU', 'UU', 'Ubers'];
-/**
  * Gens
  */
-
-// list of 2-letter gen abbreviaations
-// these should be ordered by gen (i.e. gen 1 is the first element, gen 2 is the second, etc)
-export const genAbbreviations = ['RB', 'GS', 'RS', 'DP', 'BW', 'XY', 'SM', 'SS', 'SV'];
-// create a list of name-values pairs of the abbreviations so we can use them in autocompletes/selections
-export const genChoicePairs = genAbbreviations.map(abbr => ({ name: abbr, value: abbr.toLowerCase() }));
-
-// create a map of gen numbers to abbreviations
-export const gens: {[key: string]: string} = {
-    'sv': '9',
-    '9': '9',
-    'swsh': '8',
-    'ss': '8',
-    '8': '8',
-    'usum': '7',
-    'usm': '7',
-    'sm': '7',
-    '7': '7',
-    'oras': '6',
-    'xy': '6',
-    '6': '6',
-    'b2w2': '5',
-    'bw2': '5',
-    'bw': '5',
-    '5': '5',
-    'hgss': '4',
-    'dpp': '4',
-    'dp': '4',
-    '4': '4',
-    'rse': '3',
-    'rs': '3',
-    'adv': '3',
-    '3': '3',
-    'gsc': '2',
-    'gs': '2',
-    '2': '2',
-    'rby': '1',
-    'rb': '1',
-    '1': '1',
-};
 
 // list of aliases for the gen abbreivations
 // we dont need the numbers because we can get those by indexing into the gen abbreviation array
@@ -333,17 +236,8 @@ export const genAliases = {
     'SS': ['SWSH'],
     'SV': [],
 };
-export const raterChoicePairs: { name: string, value: string }[] = [];
-Object.keys(genAliases).forEach(a => {
-    let str = a;
-    if (a === 'XY') {
-        str = 'ORAS';
-    }
-    raterChoicePairs.push({ name: str, value: a });
-});
 
-export const latestGen = genAbbreviations.length;
-
+export const latestGen = 9;
 /**
  * CUSTOM AVATAR SUBS
  * Array of subforum ids

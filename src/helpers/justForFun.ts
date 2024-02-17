@@ -44,9 +44,11 @@ export async function justForFun(msg: Message) {
     }
     
     // setup the regex to check for hello's
-    const greeting1 = new RegExp(`^hi,*\\s*(?:chatot|${msg.client.user.toString()})`, 'mi');
-    const greeting2 = new RegExp(`^(?:chatot|${msg.client.user.toString()})*,*\\s*say hi to (.*?)(?:,*\\s*chatot|${msg.client.user.toString()})*$`, 'mi');
-    const apologyReset = new RegExp(`^(?:chatot|${msg.client.user.toString()})*,*\\s*lily was being mean to you again(?:,*\\s*chatot|${msg.client.user.toString()})*$`, 'mi');
+    const greeting1 = new RegExp(`^hi,*\\s+(?:chatot|${msg.client.user.toString()})$`, 'mi');
+    const greeting2a = new RegExp(`^(?:chatot|${msg.client.user.toString()}),*\\s+say hi to (.*?)$`, 'mi');
+    const greeting2b = new RegExp(`^say hi to (.*?)(?:,*\\s+chatot|,*\\s+${msg.client.user.toString()})$`, 'mi');
+    const apologyReseta = new RegExp(`^(?:chatot|${msg.client.user.toString()}),*\\s+lily was being mean to you again$`, 'mi');
+    const apologyResetb = new RegExp(`^lily was being mean to you again(?:,*\\s+chatot|,*\\s+${msg.client.user.toString()})$`, 'mi');
     
     // first case: saying hi to chatot
     if (greeting1.test(msg.content)) {
@@ -77,8 +79,15 @@ export async function justForFun(msg: Message) {
         
     }
     // second case: asking the bot to say hi to someone
-    else if (greeting2.test(msg.content)) {
-        const matchArr = msg.content.match(greeting2);
+    else if (greeting2a.test(msg.content) || greeting2b.test(msg.content)) {
+        // try to match the first one
+        let matchArr = msg.content.match(greeting2a);
+
+        // if that fails, match the second
+        if (!matchArr) {
+            matchArr = msg.content.match(greeting2b);
+        }
+
         if (matchArr) {
             // get the username they mentioned
             const mentionedUser = matchArr[1];
@@ -156,7 +165,7 @@ export async function justForFun(msg: Message) {
         }
     }
 
-    else if (apologyReset.test(msg.content)) {
+    else if (apologyReseta.test(msg.content) || apologyResetb.test(msg.content)) {
         apologized = false;
         await msg.channel.send(':(');
     }

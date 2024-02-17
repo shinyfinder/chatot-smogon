@@ -1,9 +1,10 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { dexMondb, monNames } from '../helpers/loadDex.js';
+import { dexFormats, dexMondb, monNames, dexGens } from '../helpers/loadDex.js';
 import { pool } from '../helpers/createPool.js';
 import { IPokedexDB } from '../types/dex';
-import { genChoicePairs } from '../helpers/constants.js';
+import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
+import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
 /**
  * Posts a link in the chat to the specified Pokemon analysis
  * @param pokemon Name of the pokemon
@@ -25,36 +26,27 @@ export const command: SlashCommand = {
         .addStringOption(option =>
             option.setName('gen')
             .setDescription('Which gen the analysis is for. If blank, the latest available is used')
-            .addChoices(...genChoicePairs)
+            .setAutocomplete(true)
             .setRequired(false))
         .addStringOption(option =>
             option.setName('format')
             .setDescription('Optional format to fetch (ou, uu, monotype, etc)')
+            .setAutocomplete(true)
             .setRequired(false))
         .setDMPermission(false),
 
-    // prompt the user with autocomplete options since there are too many tiers to have a selectable list
+    // prompt the user with autocomplete options
     async autocomplete(interaction: AutocompleteInteraction) {
         const focusedOption = interaction.options.getFocused(true);
 
         if (focusedOption.name === 'pokemon') {
-            const enteredText = focusedOption.value.toLowerCase();
-            const filteredOut: {name: string, value: string }[] = [];
-            // filter the options shown to the user based on what they've typed in
-            // everything is cast to lower case to handle differences in case
-            for (const pair of monNames) {
-                const nameLower = pair.name.toLowerCase();
-                if (filteredOut.length < 25) {
-                    if (nameLower.includes(enteredText)) {
-                        filteredOut.push(pair);
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            await interaction.respond(filteredOut);
+            await filterAutocomplete(interaction, focusedOption, monNames);
+        }
+        else if (focusedOption.name === 'gen') {
+            await filterAutocomplete(interaction, focusedOption, dexGens);
+        }
+        else if (focusedOption.name === 'format') {
+            await filterAutocomplete(interaction, focusedOption, dexFormats);
         }
     },
     // execute our desired task
@@ -68,81 +60,82 @@ export const command: SlashCommand = {
 
         // get the inputs
         const mon = interaction.options.getString('pokemon', true).toLowerCase();
-        let gen = interaction.options.getString('gen');
-        let format = interaction.options.getString('format');
+        let gen = interaction.options.getString('gen')?.toLowerCase() ?? '';
+        let format = interaction.options.getString('format')?.toLowerCase() ?? '';
 
-        // make sure they entered proper text
-        // the value is the alias
-        const validName = monNames.some(n => n.value === mon);
-        if (!validName) {
-            await interaction.followUp('Invalid Pokemon name. Please choose one from the list');
-            return;
+        // since we're using autocomplete, we have to validate their imputs
+        if (!validateAutocomplete(mon, monNames)) {
+            await interaction.followUp('Unrecognized Pokemon; please choose one from the list');
+        }
+
+        if (format) {
+            if (!validateAutocomplete(format, dexFormats)) {
+                await interaction.followUp('Unrecognized format; please choose one from the list');
+                return;
+            }
+        }
+        if (gen) {
+            if (!validateAutocomplete(gen, dexGens)) {
+                await interaction.followUp('Unrecognized gen; please choose one from the list');
+                return;
+            }
         }
 
 
         // if either gen or format weren't provided, check the db to see if they specified a default
         let dbmatches: { format: string, gen: string }[] | [];
-        if (gen === null || format === null) {
+        if (!gen || !format) {
             // get the format from the table
             const defaultPG = await pool.query('SELECT format, gen FROM chatot.dexdefaults WHERE serverid=$1', [interaction.guildId]);
             dbmatches = defaultPG.rows;
 
             // check for format
-            if (format === null) {
+            if (!format) {
                 // there can only be at most 1 match
+                // if they didn't specify a format, try to get the server default from the db
+                // if it's still not in the db, then just leave it
                 if (dbmatches.length) {
-                    format = dbmatches[0].format;
-                }
-                else {
-                    format = '';
-                }
-                
-            }
-            else {
-                format = format.toLowerCase();
+                    format = dbmatches[0].format === '' ? format : dbmatches[0].format;
+                }   
             }
             // check for gen
-            // we use a default gen later on, so leave null if no default
-            if (gen === null) {
+            // we use a default gen later on, so leave it if no default
+            if (!gen) {
                 if (dbmatches.length) {
-                    gen = dbmatches[0].gen === '' ? null : dbmatches[0].gen;
+                    gen = dbmatches[0].gen === '' ? gen : dbmatches[0].gen;
                 }
             }
         }
-        else {
-            format = format.toLowerCase();
-        }
-       
 
         /**
          * If they didn't specify a gen and there's no default set, get the lastest one for the mon
          */
-        if (gen === null) {
+        if (!gen) {
             // filter the db to only the mon they specified
             const dbFilterMon = dexMondb.filter(poke => poke.alias === mon);
-            let dbFilterFormat: IPokedexDB[];
+            let dbFilteredByFormat: IPokedexDB[];
             // if they set the format to cap, get the latest cap entry
             if (format === 'cap') {
                 // get all of the entries related to cap
-                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard === 'CAP');
+                dbFilteredByFormat = dbFilterMon.filter(poke => poke.isnonstandard === 'CAP');
             }
             // if it's any of the natdex formats
             else if (format.includes('national-dex')) {
                 // get all of the entries related to natdex
-                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard === 'NatDex');
+                dbFilteredByFormat = dbFilterMon.filter(poke => poke.isnonstandard === 'NatDex');
             }
             // if they specified a format that's not cap or natdex
-            else if (format !== '') {
-                dbFilterFormat = dbFilterMon.filter(poke => poke.isnonstandard === 'Standard');
+            else if (format) {
+                dbFilteredByFormat = dbFilterMon.filter(poke => poke.isnonstandard === 'Standard');
             }
             // they didn't specify anything and didn't set a default, so just get the last one (which'd be the latest gen)
             else {
-                dbFilterFormat = dbFilterMon;
+                dbFilteredByFormat = dbFilterMon;
             }
 
             // pick the last one because we already sorted by oldest to newest listed in the query
-            const latestGen = dbFilterFormat.pop();
-            if (latestGen === undefined) {
+            const latestGen = dbFilteredByFormat.pop();
+            if (!latestGen) {
                 await interaction.followUp('No matches found for this format');
                 return;
             }

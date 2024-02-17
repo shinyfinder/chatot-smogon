@@ -1,8 +1,7 @@
 import { pool } from './createPool.js';
 import { EmbedBuilder, ChannelType, Embed, Channel, User, Client } from 'discord.js';
 import { Modes, botConfig } from '../config.js';
-import { latestGen } from './constants.js';
-import { psFormats } from './loadDex.js';
+import { psFormats, latestGen } from './loadDex.js';
 
 interface raterGroup {
     meta: string,

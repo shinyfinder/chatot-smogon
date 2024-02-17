@@ -214,62 +214,8 @@ export const command: SlashCommand = {
             await interaction.followUp(`Parsing messages from ${ startDateIn.toString() } to ${ endDateIn.toString() }...`);
 
             // loop through the different RMT channels to get all of the messages
-            // forums
-            let channelIDs: string[] = [];
-            if (botConfig.MODE === Modes.Dev) {
-                channelIDs = [
-                    '1060628096442708068',
-                ];
-            }
-            else {
-                channelIDs = [
-                    // pu
-                    '1061136198208344084',
-                    // nu
-                    '1061136091056439386',
-                    // ru
-                    '1061135917160607766',
-                    // lc
-                    '1061135027599048746',
-                    // bss
-                    '1060690402711183370',
-                    // other
-                    '1060682530094862477',
-                    // ag
-                    '1060682013453078711',
-                    // old gen ou
-                    '1060339824537641152',
-                    // natdex non ou
-                    '1060037469472555028',
-                    // uber
-                    '1059901370477576272',
-                    // uu
-                    '1059743348728004678',
-                    // nat dex ou'
-                    '1059714627384115290',
-                    // cap
-                    '1059708679814918154',
-                    // vgc
-                    '1059704283072831499',
-                    // 1v1 -- old
-                    '1059673638145622096',
-                    // 1v1 -- new
-                    '1089349311080439882',
-                    // mono
-                    '1059658237097545758',
-                    // om
-                    '1059657287293222912',
-                    // dou
-                    '1059655497587888158',
-                    // ou
-                    '1059653209678950460',
-                    // rmt1 -- legacy system
-                    '630478290729041920',
-                    // rmt2 -- legacy system
-                    '635257209416187925',
-                ];
-            }
-            
+            const rmtChans: { channelid: string }[] | [] = (await pool.query('SELECT channelid FROM chatot.rmtchans')).rows;
+            const channelIDs = rmtChans.map(c => c.channelid);
 
             // variable preallocation for getting the users who posted messages in the RMT channels
             const users: string[] = [], userIDs: string[] = [], charCount: number[] = [];

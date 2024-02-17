@@ -133,7 +133,7 @@ CREATE TABLE chatot.ccprefs (
     stage chatot.ccstagealert,
     cooldown int,
     prefix text,
-    PRIMARY KEY (serverid, channelid, gen, stage)
+    PRIMARY KEY (serverid, channelid, tier, gen, stage)
 );
 
 -- this is new

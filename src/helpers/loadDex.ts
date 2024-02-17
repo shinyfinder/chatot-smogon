@@ -5,20 +5,23 @@ import fetch from 'node-fetch';
 import { res2JSON } from './res2JSON.js';
 import { IDtNameDump, IDexNameDump, IPokedexDB } from '../types/dex';
 import { overwriteTier } from './overwriteTier.js';
+import { INVPair } from '../types/discord';
 
 
 export let dexMondb: IPokedexDB[] | [];
-export const monNames: { name: string, value: string }[] = [];
-export let spriteNames: { name: string, value: string}[];
-export let moveNames: {name: string, value: string}[];
+export const monNames: INVPair[] = [];
+export let spriteNames: INVPair[];
+export let moveNames: INVPair[];
 export let pokedex: IPSDex = {};
 export let items: IPSItems = {};
-export const allNames: { name: string, value: string}[] = [];
+export const allNames: INVPair[] = [];
 export let fullDexNameQuery: IDexNameDump;
 export let moves: IPSMoves = {};
-export let psFormats: { name: string, value: string }[];
-export let dexFormats: { name: string, value: string }[];
-export let dexGens: { name: string, value: string }[];
+export let psFormats: INVPair[];
+export let dexFormats: INVPair[];
+export let dexGens: INVPair[];
+export let latestGen: string = '';
+export let dexGenNumAbbrMap: { abbr: string, num: number }[];
 
 /**
  * Queries the info we need from the dex tables
@@ -97,7 +100,7 @@ export async function loadAllDexNames() {
         (SELECT dex.formats.shorthand, dex.formats.alias FROM dex.formats),
 
         gens AS
-        (SELECT dex.gens.shorthand, dex.gens.alias FROM dex.gens)
+        (SELECT dex.gens.shorthand, dex.gens.alias, dex.gens.order FROM dex.gens ORDER BY dex.gens.order)
 
         SELECT json_build_object(
             'pokemon', (SELECT COALESCE(JSON_AGG(pokemon.*), '[]') FROM pokemon),
@@ -134,8 +137,21 @@ export async function loadAllDexNames() {
             return { name: f.shorthand, value: f.alias };
         }
     });
-    // dexFormats = formats.map(f => ({ name: f.shorthand, value: f.alias }));
+    
+    // map the gens
     dexGens = gens.map(g => ({ name: g.shorthand, value: g.alias }));
+    dexGenNumAbbrMap = gens.map(g => ({ abbr: g.alias, num: g.order + 1 }));
+
+    if (gens.length) {
+        latestGen = gens[gens.length - 1].alias;
+    }
+    
+
+    // people may wany to use the gen numbers instead of the names, so add those as well
+    // the order = gen - 1
+    // just reuse the alias for the values
+    const dexGenNumbers = gens.map(g => ({ name: (g.order + 1).toString(), value: g.alias }));
+    dexGens = dexGens.concat(dexGenNumbers);
 
 
     // map the unique name alias pairs so we can use them for autocomplete

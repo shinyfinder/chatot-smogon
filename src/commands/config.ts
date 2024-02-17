@@ -17,6 +17,7 @@ import { getRandInt } from '../helpers/getRandInt.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
 import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
 import { dexFormats, dexGens } from '../helpers/loadDex.js';
+import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
 
 /**
  * Command for configuring multiple aspects of the bot
@@ -130,10 +131,12 @@ export const command: SlashCommand = {
             .addStringOption(option =>
                 option.setName('format')
                 .setDescription('Which format to automatically link to when using /dex. i.e. ou, uu, lc, doubles')
+                .setAutocomplete(true)
                 .setRequired(false))
             .addStringOption(option =>
                 option.setName('gen')
                 .setDescription('Which gen to automatically link to when using /dex. i.e. rb, ss, sv')
+                .setAutocomplete(true)
                 .setRequired(false)))
                 
         /**
@@ -239,45 +242,13 @@ export const command: SlashCommand = {
     async autocomplete(interaction: AutocompleteInteraction) {
         const focusedOption = interaction.options.getFocused(true);
 
-        if (focusedOption.name === 'tier') {
-            const enteredText = focusedOption.value.toLowerCase();
-
-            const filteredOut: {name: string, value: string }[] = [];
-            // filter the options shown to the user based on what they've typed in
-            // everything is cast to lower case to handle differences in case
-            for (const pair of dexFormats) {
-                if (filteredOut.length < 25) {
-                    if (pair.value.includes(enteredText)) {
-                        filteredOut.push(pair);
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            await interaction.respond(filteredOut);
+        if (focusedOption.name === 'tier' || focusedOption.name === 'format') {
+            await filterAutocomplete(interaction, focusedOption, dexFormats);
+        }
+        else if (focusedOption.name === 'gen') {
+            await filterAutocomplete(interaction, focusedOption, dexGens);
         }
 
-        if (focusedOption.name === 'gen') {
-            const enteredText = focusedOption.value.toLowerCase();
-
-            const filteredOut: {name: string, value: string }[] = [];
-            // filter the options shown to the user based on what they've typed in
-            // everything is cast to lower case to handle differences in case
-            for (const pair of dexGens) {
-                if (filteredOut.length < 25) {
-                    if (pair.value.includes(enteredText)) {
-                        filteredOut.push(pair);
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            await interaction.respond(filteredOut);
-        }
     },
     
     // execute our desired task
@@ -427,8 +398,25 @@ export const command: SlashCommand = {
 
         else if (interaction.options.getSubcommand() === 'dex') {
             // get the inputs
-            const format = interaction.options.getString('format') ?? '';
-            const gen = interaction.options.getString('gen') ?? '';
+            const format = interaction.options.getString('format')?.toLowerCase() ?? '';
+            const gen = interaction.options.getString('gen')?.toLowerCase() ?? '';
+
+            if (format) {
+                // validate the autocomplete entry
+                // if it's not valid, return and let them know
+                if (!validateAutocomplete(format, dexFormats)) {
+                    await interaction.followUp('I did not understand that meta; please choose one from the list');
+                    return;
+                }
+            }
+            if (gen) {
+                // validate the autocomplete entry
+                // if it's not valid, return and let them know
+                if (!validateAutocomplete(gen, dexGens)) {
+                    await interaction.followUp('I did not understand that gen; please choose one from the list');
+                    return;
+                }
+            }
 
             // upsert it into the table
             await pool.query('INSERT INTO chatot.dexdefaults (serverid, format, gen) VALUES ($1, $2, $3) ON CONFLICT (serverid) DO UPDATE SET format=EXCLUDED.format, gen=EXCLUDED.gen', [interaction.guildId, format.toLowerCase(), gen.toLowerCase()]);
@@ -442,6 +430,11 @@ export const command: SlashCommand = {
          */
         
         else if (interaction.options.getSubcommandGroup() === 'cc') {
+
+            /**
+             * ADD
+             */
+
             if (interaction.options.getSubcommand() === 'add') {
                 // get inputs
                 const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
@@ -534,6 +527,11 @@ export const command: SlashCommand = {
                 // let them know we're done
                 await interaction.followUp('Preferences updated');
             }
+
+            /**
+             * REMOVE
+             */
+
             else if (interaction.options.getSubcommand() === 'remove') {
                 // get inputs
                 const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
@@ -559,6 +557,10 @@ export const command: SlashCommand = {
                 // done
                 await interaction.followUp('Preferences updated');
             }
+
+            /**
+             * REMOVE ALL
+             */
 
             else if (interaction.options.getSubcommand() === 'removeall') {
                 // update the table

@@ -38,7 +38,7 @@ async function pruneDatabase(client: Client) {
         (SELECT messageid, tstamp FROM chatot.livetours),
 
         raters AS
-        (SELECT userid FROM chatot.raters),
+        (SELECT userid FROM chatot.raterlists),
 
         fcs AS
         (SELECT userid FROM chatot.fc)
@@ -180,7 +180,7 @@ async function pruneDatabase(client: Client) {
         await pool.query('DELETE FROM chatot.reminders WHERE timerid=ANY($1)', [reminderCan]);
     }
     if (raterCan.length) {
-        await pool.query('DELETE FROM chatot.raters WHERE userid=ANY($1)', [raterCan]);
+        await pool.query('DELETE FROM chatot.raterlists WHERE userid=ANY($1)', [raterCan]);
     }
     if (fcCan.length) {
         await pool.query('DELETE FROM chatot.fc WHERE userid=ANY($1)', [fcCan]);

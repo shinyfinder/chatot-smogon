@@ -41,9 +41,10 @@ interface IFormatsDB {
     alias: string,
 }
 
-interface IGensDB {
+export interface IGensDB {
     shorthand: string,
     alias: string,
+    order: number,
 }
 
 export interface IDexNameDump {

@@ -199,14 +199,14 @@ export const command: SlashCommand = {
 
         // query the db to get the info we need
         const dbQuery = await pool.query(`
-        WITH raters AS
+        WITH old_raters AS
         (SELECT channelid, meta, gen, userid, ping FROM chatot.raters),
 
         cc AS
         (SELECT serverid, channelid, tier, role, gen, stage, cooldown, prefix FROM chatot.ccprefs)
 
         SELECT json_build_object(
-            'raters', (SELECT COALESCE(JSON_AGG(raters.*), '[]') FROM raters),
+            'raters', (SELECT COALESCE(JSON_AGG(old_raters.*), '[]') FROM old_raters),
             'cc', (SELECT COALESCE(JSON_AGG(cc.*), '[]') FROM cc)
         ) AS data`);
     
@@ -308,7 +308,7 @@ export const command: SlashCommand = {
          */
 
         // combine the metas and channels into an array so that we can get the unique combos
-        const chanMetaPairs = rmtChannelsDB.map((id, idx) => ([id, rmtUsers[idx]]));
+        const chanMetaPairs = rmtChannelsDB.map((id, idx) => ([id, rmtMetas[idx]]));
 
         // I'm unsure if we still have the old RMT channels in there atp, so add them just in case
         // because we still may need to get line counts from the old rmt channels.
@@ -386,6 +386,9 @@ export const command: SlashCommand = {
             else if (row.tier === 'ph') {
                 tiers.push('pure-hackmons');
             }
+            else if (row.tier === 'stab') {
+                tiers.push('stabmons');
+            }
             else if (row.tier === 'pic') {
                 tiers.push('partners-in-crime');
             }
@@ -403,7 +406,7 @@ export const command: SlashCommand = {
             // some of these could be combined with the above for efficiency but...meh
             // at least now it's all in 1 place?
             // OMs
-            if (['nfe', 'aaa', '2v2', 'gg', 'ag', 'bh', 'm&m', 'stabmons', 'zu', 'ph', 'pic', 'inheritance', 'uubers'].includes(row.tier)) {
+            if (['nfe', 'aaa', '2v2', 'gg', 'ag', 'bh', 'm&m', 'stab', 'zu', 'ph', 'pic', 'inheritance', 'uubers'].includes(row.tier)) {
                 prefixes.push(row.tier);
             }
             // Old Gens
@@ -420,7 +423,7 @@ export const command: SlashCommand = {
                 prefixes.push(row.tier);
             }
             else {
-                prefixes.push('');
+                prefixes.push(row.prefix);
             }
 
             // map the gens
@@ -478,10 +481,10 @@ export const command: SlashCommand = {
             ON CONFLICT (channelid, meta)
             DO NOTHING`, [rmtChannelIDs, rmtChannelMetas]);
             // cc prefs
-            // we reuse the table, so we need to do it in two steps so we can avoid conflicts and dupes
+            // we reuse the table, so we need to do it in multiple steps so we can avoid conflicts and dupes
             await pgClient.query(`
-            UPDATE chatot.ccprefs as t
-            SET t.gen = gens.new_val
+            UPDATE chatot.ccprefs
+            SET gen = renames.new_gen
             FROM
                 (VALUES
                     ('1', 'rb'),
@@ -493,17 +496,44 @@ export const command: SlashCommand = {
                     ('7', 'sm'),
                     ('8', 'ss'),
                     ('9', 'sv')
-                ) as gens(old_val, new_val)
-            WHERE t.gen = gen.old_val`);
+                ) as renames(old_gen, new_gen)
+            WHERE gen = renames.old_gen`);
+            await pgClient.query(`
+            UPDATE chatot.ccprefs
+            SET tier = renames.new_tier
+            FROM
+                (VALUES
+                    ('ubers', 'uber'),
+                    ('dou', 'doubles'),
+                    ('mono', 'monotype'),
+                    ('natdex ou', 'national-dex'),
+                    ('natdex uu', 'national-dex-uu'),
+                    ('natdex ag', 'national-dex-ag'),
+                    ('natdex mono', 'national-dex-monotype'),
+                    ('2v2', '2v2-doubles'),
+                    ('m&m', 'mix-and-mega'),
+                    ('aaa', 'almost-any-ability'),
+                    ('gg', 'godly-gift'),
+                    ('ph', 'pure-hackmons'),
+                    ('stab', 'stabmons'),
+                    ('pic', 'partners-in-crime'),
+                    ('inheritance', 'inh'),
+                    ('uubers', 'ubers-uu'),
+                    ('lgpe ou', 'lgpe-ou'),
+                    ('bdsp-ou', 'bdsp-ou'),
+                    ('stadium ou', 'stadium-ou'),
+                    ('tradebacks ou', 'tradebacks-ou')
+                ) as renames(old_tier, new_tier)
+            WHERE tier = renames.old_tier`);
             await pgClient.query(`
             INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage, cooldown, prefix)
-            VALUES (UNNEST($1::text[]), UNNEST($2::text[]), UNNEST($3::text[]), UNNEST($4::text[]), UNNEST($5::text[]), UNNEST($6::text[]), UNNEST($7::int[]), UNNEST($8::text[]))
-            ON CONFLICT (serverid, channelid, gen, stage)
-            DO UPDATE SET tier=EXCLUDED.tier, gen=EXCLUDED.gen, prefix=EXCLUDED.prefix`, [servers, channels, tiers, roles, gens, stages, cooldowns, prefixes]);
+            VALUES (UNNEST($1::text[]), UNNEST($2::text[]), UNNEST($3::text[]), UNNEST($4::text[]), UNNEST($5::text[]), UNNEST($6::chatot.ccstagealert[]), UNNEST($7::int[]), UNNEST($8::text[]))
+            ON CONFLICT (serverid, channelid, tier, gen, stage)
+            DO UPDATE SET serverid=EXCLUDED.serverid, channelid=EXCLUDED.channelid, tier=EXCLUDED.tier, gen=EXCLUDED.gen, prefix=EXCLUDED.prefix`, [servers, channels, tiers, roles, gens, stages, cooldowns, prefixes]);
             // forum map
             await pgClient.query(`
             INSERT INTO chatot.ccforums (forumid, tier, gen)
-            VALUES (UNNEST($1::number[]), UNNEST($2::text[]), UNNEST($3::text[]))
+            VALUES (UNNEST($1::integer[]), UNNEST($2::text[]), UNNEST($3::text[]))
             ON CONFLICT (forumid, tier, gen)
             DO NOTHING`, [forumIDs, forumTiers, forumGens]);
             // end
@@ -524,7 +554,7 @@ export const command: SlashCommand = {
 };
 
 
-function genConversion(gen: string | number) {
+function genConversion(gen: string) {
     const gens = {
         'SV': '9',
         'SS': '8',
@@ -545,5 +575,6 @@ function genConversion(gen: string | number) {
             return k;
         }
     }
-    return '';
+    
+    return gen;
 }
