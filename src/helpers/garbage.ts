@@ -2,6 +2,7 @@ import { Client } from 'discord.js';
 import { pool } from './createPool.js';
 import { Modes, botConfig } from '../config.js';
 import { errorHandler } from './errorHandler.js';
+import { garbageInterval } from './constants.js';
 
 /**
  * Recursively creates a timer to collect and delete unneeded data from the databases
@@ -12,7 +13,7 @@ export function initGarbageCollection(client: Client) {
         void pruneDatabase(client)
             .catch(e => errorHandler(e))
             .finally(() => initGarbageCollection(client));
-    }, 2 * 24 * 60 * 60 * 1000);
+    }, garbageInterval);
     
 }
 

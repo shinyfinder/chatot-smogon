@@ -536,6 +536,9 @@ export const command: SlashCommand = {
             VALUES (UNNEST($1::integer[]), UNNEST($2::text[]), UNNEST($3::text[]))
             ON CONFLICT (forumid, tier, gen)
             DO NOTHING`, [forumIDs, forumTiers, forumGens]);
+            // cooldowns
+            // this is too much work to replace everything given every possible gen+meta combo, so we're just gonna truncate and people can get an extra ping. Sorry
+            await pgClient.query('TRUNCATE TABLE chatot.cooldown');
             // end
             await pgClient.query('COMMIT');
         }

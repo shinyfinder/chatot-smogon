@@ -1,8 +1,2 @@
-move gens from number to dex.gens syntax
-check config dex
-check dex
-
 still broken:
 ccqueries
-dt
-learn

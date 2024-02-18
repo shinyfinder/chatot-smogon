@@ -66,6 +66,7 @@ export const command: SlashCommand = {
         // since we're using autocomplete, we have to validate their imputs
         if (!validateAutocomplete(mon, monNames)) {
             await interaction.followUp('Unrecognized Pokemon; please choose one from the list');
+            return;
         }
 
         if (format) {

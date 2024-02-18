@@ -195,7 +195,7 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
                 }
 
                 // try to get the corresponding element in the alertCDs array
-                const identifier = `${newTierLower[0]}-${newData.gen[0]}`;
+                const identifier = `cc-${newData.gen[0]}${newTierLower[0]}`;
                 const matchingCD = ccCooldowns.find(cd => cd.channelid === chan.id && cd.identifier === identifier);
 
                 // if you got a match, get the last run timestamp
@@ -486,7 +486,7 @@ export function createCCTimer(client: Client) {
         void checkCCUpdates(client)
             .catch(e => (errorHandler(e), lockout.cc = false))
             .finally(() => createCCTimer(client));
-    }, ccTimeInterval * 1000);
+    }, ccTimeInterval);
     
 }
 

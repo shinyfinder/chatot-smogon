@@ -5,226 +5,23 @@ import { Colors } from 'discord.js';
  */
 
 
-const supportedMetas = [
-    'OU',
-    'Ubers',
-    'DOU',
-    'UU',
-    'LC',
-    'RU',
-    'NU',
-    'PU',
-    'Mono',
-    'NatDex OU',
-    'NatDex UU',
-    'NatDex AG',
-    'NatDex Mono',
-    '1v1',
-    'AG',
-    'CAP',
-    'LGPE OU',
-    'BDSP OU',
-    'General OM',
-    '2v2',
-    'BH',
-    'M&M',
-    'OM Mashup',
-    'STABmons',
-    'AAA',
-    'GG',
-    'NFE',
-    'VGC',
-    'BSS',
-    'PH',
-    'Stadium OU',
-    'Tradebacks OU',
-    'STAB',
-    'ZU',
-    'Draft',
-    'PiC',
-    'Inh',
-    'All',
-];
-
-export const supportedMetaPairs = supportedMetas.map(meta => ({ name: meta, value: meta.toLowerCase() }));
-
-
 /**
- * Time interval for checking for new C&C threads (sec)
- */
-export const ccTimeInterval = 15;
-
-/**
- * List of subforums containing analyses
+ * INTERVALS
+ * times should be in ms, up to a max value of 2,147,483,647 (~24.8 days)
  */
 
-export const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url: string } } = {
-    '758' : {
-        gens: ['9'],
-        tiers: ['ou'],
-        url: 'https://www.smogon.com/forums/forums/ou-analyses.758/',
-    },
-    '759' : {
-        gens: ['9'],
-        tiers: ['ubers'],
-        url: 'https://www.smogon.com/forums/forums/ubers-analyses.759/',
-    },
-    '539' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
-        tiers: ['ubers'],
-        url: 'https://www.smogon.com/forums/forums/past-generation-ubers-analyses.539/',
-    },
-    '772' : {
-        gens: ['9'],
-        tiers: ['uu'],
-        url: 'https://www.smogon.com/forums/forums/uu-analyses.772/',
-    },
-    '576' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
-        tiers: ['uu'],
-        url: 'https://www.smogon.com/forums/forums/past-generation-uu-analyses.576/',
-    },
-    '774' : {
-        gens: ['9'],
-        tiers: ['nu'],
-        url: 'https://www.smogon.com/forums/forums/nu-analyses.774/',
-    },
-    '587' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
-        tiers: ['nu'],
-        url: 'https://www.smogon.com/forums/forums/past-generation-nu-analyses.587/',
-    },
-    '775' : {
-        gens: ['9'],
-        tiers: ['pu'],
-        url: 'https://www.smogon.com/forums/forums/pu-analyses.775/',
-    },
-    '844' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
-        tiers: ['pu'],
-        url: 'https://www.smogon.com/forums/forums/past-generation-pu-analyses.844/',
-    },
-    '760' : {
-        gens: ['9'],
-        tiers: ['lc'],
-        url: 'https://www.smogon.com/forums/forums/lc-analyses.760/',
-    },
-    '540' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
-        tiers: ['lc'],
-        url: 'https://www.smogon.com/forums/forums/past-generation-lc-analyses.540/',
-    },
-    '761' : {
-        gens: ['9'],
-        tiers: ['dou'],
-        url: 'https://www.smogon.com/forums/forums/doubles-ou-analyses.761/',
-    },
-    '541' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
-        tiers: ['dou'],
-        url: 'https://www.smogon.com/forums/forums/past-gen-doubles-ou-analyses.541/',
-    },
-    '762' : {
-        gens: ['9'],
-        tiers: ['mono'],
-        url: 'https://www.smogon.com/forums/forums/monotype-analyses.762/',
-    },
-    '660' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
-        tiers: ['mono'],
-        url: 'https://www.smogon.com/forums/forums/past-generation-monotype-analyses.660/',
-    },
-    '763' : {
-        gens: ['9'],
-        tiers: ['nfe', 'aaa', '2v2', 'gg', 'ag', 'bh', 'm&m', 'stab', 'zu', 'pic', 'inheritance', 'uubers'],
-        url: 'https://www.smogon.com/forums/forums/om-analyses.763/',
-    },
-    '770' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
-        tiers: ['nfe', 'aaa', '2v2', 'gg', 'ag', 'bh', 'm&m', 'stab', 'zu', 'pic', 'inheritance', 'uubers'],
-        url: 'https://www.smogon.com/forums/forums/past-generation-om-analyses.770/',
-    },
-    '764' : {
-        gens: ['9'],
-        tiers: ['1v1'],
-        url: 'https://www.smogon.com/forums/forums/1v1-analyses.764/',
-    },
-    '476' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
-        tiers: ['1v1'],
-        url: 'https://www.smogon.com/forums/forums/past-generation-1v1-analyses.476/',
-    },
-    '765' : {
-        gens: ['9'],
-        tiers: ['natdex ou', 'natdex ag'],
-        url: 'https://www.smogon.com/forums/forums/national-dex-analyses.765/',
-    },
-    '828' : {
-        gens: ['9'],
-        tiers: ['natdex mono'],
-        url: 'https://www.smogon.com/forums/forums/natdex-mono-analyses.828/',
-    },
-    '839' : {
-        gens: ['9'],
-        tiers: ['natdex uu'],
-        url: 'https://www.smogon.com/forums/forums/natdex-uu-analyses.839/',
-    },
-    '768' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
-        tiers: ['cap'],
-        url: 'https://www.smogon.com/forums/forums/cap-analyses.768/',
-    },
-    '766' : {
-        gens: ['9'],
-        tiers: ['bss'],
-        url: 'https://www.smogon.com/forums/forums/battle-stadium-analyses.766/',
-    },
-    '767' : {
-        gens: ['9'],
-        tiers: ['vgc'],
-        url: 'https://www.smogon.com/forums/forums/vgc-analyses.767/',
-    },
-    '148' : {
-        gens: ['1', '2', '3', '4', '5', '6', '7', '8'],
-        tiers: ['ou'],
-        url: 'https://www.smogon.com/forums/forums/past-generation-analyses.148/',
-    },
-    '512' : {
-        gens: ['1'],
-        tiers: ['nu', 'pu', 'stadium ou', 'tradebacks ou', 'uu', 'ubers'],
-        url: 'https://www.smogon.com/forums/forums/rby-other-tier-analyses.512/',
-    },
-    '608' : {
-        gens: ['7'],
-        tiers: ['lgpe ou'],
-        url: 'https://www.smogon.com/forums/forums/pokemon-lets-go-analyses.608/',
-    },
-    '707' : {
-        gens: ['8'],
-        tiers: ['bdsp ou'],
-        url: 'https://www.smogon.com/forums/forums/bdsp-ou-analyses.707/',
-    },
-    '871' : {
-        gens: ['9'],
-        tiers: ['draft'],
-        url: 'https://www.smogon.com/forums/forums/draft-league-analyses.871/',
-    },
-};
-
-// lockout functions to prevent concurrency issues
-export const lockout: { [key: string]: boolean } = {
-    'cc': false,
-    'ca': false,
-};
-
+export const ccTimeInterval = 15 * 1000;
+export const cacheInterval = 30 * 60 * 1000;
+export const caTimeInterval = 15 * 1000;
+export const raterListInterval = 24 * 60 * 60 * 1000;
+export const garbageInterval = 2 * 24 * 60 * 60 * 1000;
 
 /**
  * Gens
  */
 
 // list of aliases for the gen abbreivations
-// we dont need the numbers because we can get those by indexing into the gen abbreviation array
-// LGPE and BDSP are there because they're special snowflakes
+// we dont need the numbers because we can get those from the db
 export const genAliases = {
     'RB': ['RBY'],
     'GS': ['GSC'],
@@ -237,7 +34,6 @@ export const genAliases = {
     'SV': [],
 };
 
-export const latestGen = 9;
 /**
  * CUSTOM AVATAR SUBS
  * Array of subforum ids
@@ -245,13 +41,7 @@ export const latestGen = 9;
 export const caSubs = [845];
 
 /**
- * Time interval for checking for new CA threads (sec)
- */
-export const caTimeInterval = 15;
-
-
-/**
- * Alcremie formes
+ * COSMETIC FORMES
  */
 export const alcremieFormes = [
     'alcremie-ruby-swirl-flower',
@@ -463,9 +253,16 @@ const customColors = {
 
 export const myColors = { ...Colors, ...customColors };
 
-export const startupFlags: {success: boolean } = { success: false };
+
 /**
- * Interval to update the cached data from the db/PS
+ * FLAGS
  */
 
-export const cacheInterval = 30 * 60 * 1000;
+// lockout functions to prevent concurrency issues
+export const lockout: { [key: string]: boolean } = {
+    'cc': false,
+    'ca': false,
+};
+// flag to signal successful startup
+export const startupFlags: {success: boolean } = { success: false };
+

@@ -68,6 +68,9 @@ export async function rmtMonitor(msg: Message) {
     // overwrite the vgc and bss formats
     const unifiedFormat = overwriteTier(rmtFormat[0]);
 
+    // form the cooldown identifier
+    const identifier = `rmt-${unifiedFormat}`;
+
     // if this channel isn't setup to track this meta, return
     if (!rmtChannels.some(chan => chan.channelid === msg.channelId && chan.meta === unifiedFormat)) {
         return;
@@ -75,7 +78,7 @@ export async function rmtMonitor(msg: Message) {
 
     // check cooldown
     let cooldown = 0;
-    const cooldowns: { date: Date }[] | [] = (await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, unifiedFormat])).rows;
+    const cooldowns: { date: Date }[] | [] = (await pool.query('SELECT date FROM chatot.cooldown WHERE channelID = $1 AND identifier = $2', [msg.channelId, identifier])).rows;
     
     if (cooldowns.length) {
         cooldown = new Date(cooldowns[0].date).valueOf();
@@ -166,7 +169,7 @@ export async function rmtMonitor(msg: Message) {
     // if the cooldown is 0, that means we didn't have this entry yet for the gen/channel combo. So we need to INSERT a new row into the db
     // if the cooldown is not 0, then the gen/channel combo did exist. So we need to UPDATE the row in the db
     // the table is setup so that it uses the time on the db server for the timestamp by default
-    await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2) ON CONFLICT (channelid, identifier) DO UPDATE SET date=default', [msg.channelId, unifiedFormat]);
+    await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2) ON CONFLICT (channelid, identifier) DO UPDATE SET date=default', [msg.channelId, identifier]);
 
     // ping them, but first get the name from the n-v pair used in autocomplete
     const metaName = psFormats.find(format => format.value === unifiedFormat)?.name ?? unifiedFormat;

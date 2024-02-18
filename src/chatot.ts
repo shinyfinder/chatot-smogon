@@ -22,9 +22,9 @@ import { Modes, botConfig } from './config.js';
 import { recreateReminders } from './helpers/reminderWorkers.js';
 import { ContextCommand } from './types/context-command-base';
 import { initGarbageCollection } from './helpers/garbage.js';
-import { createDexCacheTimer } from './helpers/updateCache.js';
+import { createCacheTimer } from './helpers/updateCache.js';
 import { recreateLiveTours } from './helpers/livetourWorkers.js';
-import { startupFlags } from './helpers/constants.js';
+import { raterListInterval, startupFlags } from './helpers/constants.js';
 import { loadRMTChans } from './helpers/manageRMTCache.js';
 
 /**
@@ -100,7 +100,7 @@ client.cmdCooldowns = new Collection();
  * Build the event handler
  * The different events we wish to act on are exposed to the client via separate files in the ./events directory
  * Each event gets its own file with the name as the event trigger
- * Reactions are loaded and parsed dynamically to eliminate repetivite client.on(...) blocks of code
+ * Events are loaded and parsed dynamically to eliminate repetivite client.on(...) blocks of code
  */
 
 // set the path to the events directory
@@ -173,11 +173,6 @@ await Promise.all([
 
 
 /**
- * Mutate the object containing the /dt autocomplete pairs
- */
-// createAutoPairs([pokedex, movesText, itemsText, items, abilitiesText, natures]);
-
-/**
  * Login to Discord with your client's token, or log any errors
  */
 await client.login(botConfig.TOKEN);
@@ -192,8 +187,9 @@ await loadRRMessages(client);
 /**
  * Schedule timers
  */
-// schedule a timer to post updates the public rater list every so often (in ms)
-setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)), 1000 * 60 * 60 * 24);
+
+// schedule a timer to post updates the public rater list every so often
+setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)), raterListInterval);
 
 // schedule checking for new/updated QC threads
 createCCTimer(client);
@@ -203,7 +199,7 @@ createCATimer(client);
 initGarbageCollection(client);
 
 // set a timer to update the cached data from the db/PS
-createDexCacheTimer();
+createCacheTimer(client);
 
 /**
  * Everything is done, so close fd 3 to signal ready.

@@ -148,7 +148,7 @@ export function createCATimer(client: Client) {
         void checkCAs(client)
             .catch(e => (errorHandler(e), lockout.ca = false))
             .finally(() => createCATimer(client));
-    }, (caTimeInterval + Math.random()) * 1000);
+    }, caTimeInterval + Math.random() * 1000);
     
 }
 

@@ -1,6 +1,6 @@
 import { pool, sqlPool } from './createPool.js';
 import { ICCCooldown, ICCData, ICCStatus, IXFParsedThreadData, IXFStatusQuery } from '../types/cc';
-import { ccSubObj } from './constants.js';
+
 
 /**
  * File containing db queries relating to C&C integration
@@ -72,8 +72,9 @@ export async function updateCCCache(data: IXFParsedThreadData[] | ICCStatus[], p
  * @returns Array of objects containing thread info (thread id, node id, title, prefix)
  */
 export async function pollCCForums() {
-    // extract the subforum ids
-    const nodeIds = Object.keys(ccSubObj);
+    // get the subforum ids
+    const forumsPG: { forumid: string }[] | [] = (await pool.query('SELECT forumid FROM chatot.ccforums')).rows;
+    const nodeIds = forumsPG.map(fid => fid.forumid);
     
     // if there are no subforums to monitor, just return
     // this should never be the case
