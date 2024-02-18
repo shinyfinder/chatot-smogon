@@ -115,7 +115,7 @@ CREATE TABLE chatot.ccprefs (
     gen text,
     stage chatot.ccstagealert,
     cooldown int,
-    PRIMARY KEY (serverid, channelid, gen, stage)
+    PRIMARY KEY (serverid, channelid, tier, gen, stage)
 );
 
 -- lastcheck currently unused
