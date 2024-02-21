@@ -48,6 +48,10 @@ interface ENV {
  * Should the entry exist, this is the type that it needs to be (will be the same as above, sans ' | undefined ')
  * Undefined is not allowed here beceause they need to be defined for the app to run
  */
+export enum Modes {
+    Dev = 'dev',
+    Production = 'production',
+}
 
 interface Config {
     TOKEN: string;
@@ -58,7 +62,7 @@ interface Config {
     PGHOST: string;
     PGPORT: number;
     PGDATABASE: string;
-    MODE: string;
+    MODE: Modes;
     SQLUSER: string;
     SQLPASSWORD: string;
     SQLHOST: string;
@@ -121,13 +125,13 @@ const getSanitzedConfig = (config: ENV): Config => {
 };
 
 // load the env variables from .env into our object config: ENV
-const config = getConfig();
+const envConfig = getConfig();
 
 // check for undefined entries
-const sanitizedConfig = getSanitzedConfig(config);
+export const botConfig = getSanitzedConfig(envConfig);
 
 // assign the run mode
-sanitizedConfig.MODE = sanitizedConfig.CLIENT_ID === '1040375769798557826' ? 'dev' : 'production';
+botConfig.MODE = botConfig.CLIENT_ID === '1040375769798557826' ? Modes.Dev : Modes.Production;
 
 // expose the typed object to the client
-export default sanitizedConfig;
+// export default sanitizedConfig;

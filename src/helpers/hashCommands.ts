@@ -1,7 +1,7 @@
 import type { IState } from '../types/state';
 import { Client } from 'discord.js';
 import { computeHash } from './computeHash.js';
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 
 // export const states: IState[] = [];
 
@@ -50,8 +50,8 @@ export function hashCommands(client: Client, dbmatches: IState[] | []) {
     let currentGuildIDs = currentGuildCommands.map(c => c.guilds).flat();
 
     // if we're in dev mode, overwrite the list of unique IDs and the command defs with the one for the dev server
-    if (config.MODE === 'dev') {
-        currentGuildIDs = [config.GUILD_ID];
+    if (botConfig.MODE === Modes.Dev) {
+        currentGuildIDs = [botConfig.GUILD_ID];
         currentGuildCommands.forEach(cmd => cmd.guilds = currentGuildIDs);
     }
 

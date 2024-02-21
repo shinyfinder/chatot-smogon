@@ -1,6 +1,6 @@
 import { ContextMenuCommandBuilder, ApplicationCommandType, MessageContextMenuCommandInteraction, ChannelType, User, Collection, PermissionFlagsBits } from 'discord.js';
 import { ContextCommand } from '../types/context-command-base';
-import config from '../config.js';
+import { botConfig } from '../config.js';
 
 /**
  * Context menu command to keep a message pinned to the top of the pins list in a channel
@@ -40,7 +40,7 @@ export const command: ContextCommand = {
         }
         
         // filter out the bot
-        const filteredUsers = allReactUsers.filter(user => user.id !== config.CLIENT_ID);
+        const filteredUsers = allReactUsers.filter(user => user.id !== botConfig.CLIENT_ID);
 
         // map the users to a list of names
         // we need to make sure the content isn't too long

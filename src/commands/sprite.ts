@@ -1,8 +1,9 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { dexMondb, spriteNames } from '../helpers/loadDex.js';
+import { dexGens, dexMondb, latestGen, spriteNames, dexGenNumAbbrMap } from '../helpers/loadDex.js';
 import fetch from 'node-fetch';
-
+import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
+import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
 /**
  * Posts an image in the chat of the specified Pokemon
  * @param pokemon Name of the pokemon
@@ -30,11 +31,10 @@ export const command: SlashCommand = {
             option.setName('home')
             .setDescription('Whether to use HOME sprites. Default false')
             .setRequired(false))
-        .addIntegerOption(option =>
+        .addStringOption(option =>
             option.setName('gen')
             .setDescription('Which gen to retrieve the sprite for. If blank, the latest available is used')
-            .setMinValue(1)
-            .setMaxValue(9)
+            .setAutocomplete(true)
             .setRequired(false))
         .setDMPermission(false),
 
@@ -43,23 +43,10 @@ export const command: SlashCommand = {
         const focusedOption = interaction.options.getFocused(true);
 
         if (focusedOption.name === 'pokemon') {
-            const enteredText = focusedOption.value.toLowerCase();
-            const filteredOut: {name: string, value: string }[] = [];
-            // filter the options shown to the user based on what they've typed in
-            // everything is cast to lower case to handle differences in case
-            for (const pair of spriteNames) {
-                if (filteredOut.length < 25) {
-                    const nameLower = pair.name.toLowerCase();
-                    if (nameLower.includes(enteredText)) {
-                        filteredOut.push(pair);
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            await interaction.respond(filteredOut);
+            await filterAutocomplete(interaction, focusedOption, spriteNames);
+        }
+        else if (focusedOption.name === 'gen') {
+            await filterAutocomplete(interaction, focusedOption, dexGens);
         }
     },
     // execute our desired task
@@ -74,17 +61,25 @@ export const command: SlashCommand = {
 
         // get the inputs
         const mon = interaction.options.getString('pokemon', true).toLowerCase();
-        const gen = interaction.options.getInteger('gen') ?? 9;
+        const gen = interaction.options.getString('gen') ?? latestGen;
         const shiny = interaction.options.getBoolean('shiny') ?? false;
         const home = interaction.options.getBoolean('home') ?? false;
         
-        // make sure they entered proper text
-        // the value is the alias
-        const validName = spriteNames.some(n => n.value === mon);
-        if (!validName) {
-            await interaction.followUp('Invalid Pokemon name. Please choose one from the list');
+        // since we're using autocomplete, we have to validate their imputs
+        if (!validateAutocomplete(mon, spriteNames)) {
+            await interaction.followUp('Unrecognized Pokemon; please choose one from the list');
             return;
         }
+        
+        if (!validateAutocomplete(gen, dexGens)) {
+            await interaction.followUp('Unrecognized gen; please choose one from the list');
+            return;
+        }
+        
+
+        // get the gen number for the supplied gen
+        // null check if it can't find it, but that will never happen because we already validated the input above
+        const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)?.num ?? -1;
 
         let folderName = '';
         let ext = 'gif';
@@ -127,37 +122,32 @@ export const command: SlashCommand = {
         }
 
         // validate that the selected mon is available in the selected gen
-        if (gen) {
-            // map the gen number to the gen alias
-            const genAliases = ['rb', 'gs', 'rs', 'dp', 'bw', 'xy', 'sm', 'ss', 'sv'];
-            const genAlias = genAliases[gen - 1];
+        // try to find a row available for the mon
+        // we don't really care if it's standard or not because we just want the sprite
+        let dbFilterMon = dexMondb.filter(poke => poke.alias === mon && poke.gen_id === gen);
 
-            // try to find a row available for the mon
-            // we don't really care if it's standard or not because we just want the sprite
-            let dbFilterMon = dexMondb.filter(poke => poke.alias === mon && poke.gen_id === genAlias);
+        // if you didn't find a match, it's possible it's a cosmetic forme
+        // so split on - and take the first word, which should be the mon
+        if (!dbFilterMon.length) {
+            dbFilterMon = dexMondb.filter(poke => poke.alias.includes(mon.split('-')[0]) && poke.gen_id === gen);
 
-            // if you didn't find a match, it's possible it's a cosmetic forme
-            // so split on - and take the first word, which should be the mon
+            // if still no match, return
             if (!dbFilterMon.length) {
-                dbFilterMon = dexMondb.filter(poke => poke.alias.includes(mon.split('-')[0]) && poke.gen_id === genAlias);
-
-                // if still no match, return
-                if (!dbFilterMon.length) {
-                    await interaction.followUp(`${mon} is unavailable in gen ${gen}`);
-                    return;
-                }
-                
+                await interaction.followUp(`${mon} is unavailable in gen ${genNum}`);
+                return;
             }
+            
         }
         
+        
         // first gens don't have shinies
-        if (gen === 1 && shiny) {
+        if (genNum === 1 && shiny) {
             await interaction.followUp('Shiny sprites are unavailable in gen 1');
             return;
         }
         // if gen < 5, no animated sprites exist
-        else if (gen <= 5) {
-            folderName = shiny ? `gen${gen}-shiny` : `gen${gen}`;
+        else if (genNum <= 5) {
+            folderName = shiny ? `gen${genNum}-shiny` : `gen${genNum}`;
             ext = 'png';
         }
         else {
@@ -194,9 +184,14 @@ export const command: SlashCommand = {
             else if (resRetry.status !== 200) {
                 // map the gen alias to the gen number
                 // sprites are stored under the alias
-                // repeating xy isn't a typo, because the newer gens pull frmo the xy folder
-                const spriteGenAliases = ['rb', 'c', 'rs', 'dp', 'bw', 'xy', 'xy', 'xy', 'xy'];
-                folderName = spriteGenAliases[gen - 1];
+                const spriteGenAliases = ['rb', 'c', 'rs', 'dp', 'bw', 'xy'];
+                if (genNum <= 5) {
+                    folderName = spriteGenAliases[genNum - 1];
+                }
+                else {
+                    folderName = spriteGenAliases[spriteGenAliases.length - 1];
+                }
+                
 
                 // the dex uses different file extensions depending on the gen
                 ext = ['gs', 'bw', 'xy'].includes(folderName) ? 'gif' : 'png';

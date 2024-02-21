@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
-import config from '../config.js';
+import { botConfig } from '../config.js';
 import { errorHandler } from '../helpers/errorHandler.js';
 
 interface IModlogPG {
@@ -60,7 +60,7 @@ export const command: SlashCommand = {
         }
 
         // get the modlog entry for this user across all of the servers
-        const modlogPG = await pool.query('SELECT serverid, date, reason FROM chatot.modlog WHERE executor=$1 AND action=$2 AND target=$3 ORDER BY date DESC', [config.CLIENT_ID, 'Ban', user.id]);
+        const modlogPG = await pool.query('SELECT serverid, date, reason FROM chatot.modlog WHERE executor=$1 AND action=$2 AND target=$3 ORDER BY date DESC', [botConfig.CLIENT_ID, 'Ban', user.id]);
         const modlogRows: IModlogPG[] | [] = modlogPG.rows;
 
         // at this point the PG query will return all bans associated with each user.

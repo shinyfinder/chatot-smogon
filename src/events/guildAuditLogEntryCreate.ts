@@ -1,7 +1,7 @@
 import { AuditLogEvent, Guild, GuildAuditLogsEntry } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { pool } from '../helpers/createPool.js';
-import config from '../config.js';
+import { botConfig } from '../config.js';
 import { buildEmbed, postLogEvent, echoPunishment, embedField, loggedEventTypes } from '../helpers/logging.js';
 
 /**
@@ -17,7 +17,7 @@ export const clientEvent: eventHandler = {
     // execute the code for this event
     async execute(auditLog: GuildAuditLogsEntry, guild: Guild) {
         // ignore DMs and return if the bot is the one getting modded
-        if (!guild || auditLog.targetId === config.CLIENT_ID) {
+        if (!guild || auditLog.targetId === botConfig.CLIENT_ID) {
             return;
         }
 

@@ -1,7 +1,7 @@
 import { pool } from './createPool.js';
 import type { IState } from '../types/state.js';
 import { Client, REST, Routes } from 'discord.js';
-import config from '../config.js';
+import { botConfig } from '../config.js';
 import { hashCommands } from './hashCommands.js';
 
 /**
@@ -65,7 +65,7 @@ export async function updateState(client: Client) {
  * @returns Promise<void>
  */
 async function deployCommands(client: Client, target: string) {
-    const rest = new REST({ version: '10' }).setToken(config.TOKEN);
+    const rest = new REST({ version: '10' }).setToken(botConfig.TOKEN);
 
     // global
     if (target === 'global') {
@@ -76,7 +76,7 @@ async function deployCommands(client: Client, target: string) {
         const cmdBody = globals.map(cmd => cmd.data.toJSON());
 
         // call the api
-        await rest.put(Routes.applicationCommands(config.CLIENT_ID), { body: cmdBody });
+        await rest.put(Routes.applicationCommands(botConfig.CLIENT_ID), { body: cmdBody });
     }
 
     // guild
@@ -88,7 +88,7 @@ async function deployCommands(client: Client, target: string) {
         const cmdBody = guilds.map(cmd => cmd.data.toJSON());
 
         // call the api
-        await rest.put(Routes.applicationGuildCommands(config.CLIENT_ID, target), { body: cmdBody });
+        await rest.put(Routes.applicationGuildCommands(botConfig.CLIENT_ID, target), { body: cmdBody });
     }
     return; 
 }

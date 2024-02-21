@@ -1,13 +1,15 @@
 /**
  * Functions related to C&C integration
  */
-import { ccSubObj, OMPrefix, pastGenPrefix, rbyOtherPrefix, gens } from './constants.js';
+import { genAliases } from './constants.js';
 import { ChannelType, Client } from 'discord.js';
-import { loadCCData, pollCCForums, updateCCAlertCooldowns, updateCCCache } from './ccQueries.js';
+import { getFromForumMap, getGenAlias, loadCCData, pollCCForums, updateCCAlertCooldowns, updateCCCache } from './ccQueries.js';
 import { IXFParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
 import { lockout, ccTimeInterval } from './constants.js';
 import { errorHandler } from './errorHandler.js';
 import { ccCooldowns, updateCCCooldownMem } from './manageCCCooldownCache.js';
+import { dexGens } from './loadDex.js';
+
 
 /**
  * Finds new and updated C&C threads posted to the relevent subforums.
@@ -42,7 +44,7 @@ export async function checkCCUpdates(client: Client) {
     }
 
     // parse the fetched thread info
-    const parsedThreadData = parseCCStage(threadData);
+    const parsedThreadData = await parseCCStage(threadData);
 
     // filter out the threads from the most recent xf poll that are updated so we can update their values in the db
     // we want to get the threads where the thread ID matches the old, but the stage or the progress is different
@@ -99,15 +101,25 @@ export async function uncacheRemovedThreads(currentData: IXFStatusQuery[], cache
 async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData, client: Client) {
     for (const newData of newDataArr) {
         // to be safe, cast each element in the tier array to lower case
-        const newTierLower = newData.tier.map(tier => tier.toLowerCase());
+        let newTierLower = newData.tier.map(tier => tier.toLowerCase());
 
-        // if the tier or gen length is greater than 1, we couldn't figure out exactly which tier/gen it is, so don't alert
-        if (newTierLower.length > 1 || newData.gen.length > 1) {
+        // if there are multiple possible tiers, just assume the prefix is the tier
+        if (newData.phrase_text && newTierLower.length !== 1) {
+            newTierLower = [newData.phrase_text.toLowerCase()];
+        }
+        // if there are multiple possible and they didn't use the prefix, then we don't know what it could be
+        // so skip it
+        else if (newTierLower.length !== 1) {
             continue;
         }
 
+        // if there is more than 1 possible gen, skip it
+        if (newData.gen.length !== 1) {
+            continue;
+        }
+        
         // check if there are any channels setup to receive alerts for this thread
-        const alertChans = oldData.alertchans.filter(chanData => newTierLower.includes(chanData.tier) && newData.gen.includes(chanData.gen));
+        const alertChans = oldData.alertchans.filter(chanData => (newTierLower.includes(chanData.tier) || newTierLower.includes(chanData.prefix ?? '')) && newData.gen.includes(chanData.gen));
         
         // if there are no channels setup to receive this update, skip
         if (!alertChans.length) {
@@ -183,7 +195,7 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
                 }
 
                 // try to get the corresponding element in the alertCDs array
-                const identifier = `${newTierLower[0]}-${newData.gen[0]}`;
+                const identifier = `cc-${newData.gen[0]}${newTierLower[0]}`;
                 const matchingCD = ccCooldowns.find(cd => cd.channelid === chan.id && cd.identifier === identifier);
 
                 // if you got a match, get the last run timestamp
@@ -227,9 +239,10 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
  * @param threadData Array of objects containing the thread information retrieved from the db query
  * @returns Parsed data array of objects for each thread indiciating the C&C stage and progress
  */
-export function parseCCStage(threadData: IXFStatusQuery[]) {
+export async function parseCCStage(threadData: IXFStatusQuery[]) {
     const parsedThreadData: IXFParsedThreadData[] = [];
-    
+    const genRE = new RegExp('(?<=Gen )\\d+');
+
     // loop over the list of provided threads to figure out the state of each
     for (const thread of threadData) {
         // first, try to parse the prefix text, because that will work for most cases
@@ -238,6 +251,7 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
         let progress = '';
         let gen: string[] = [];
         let tier: string[] = [];
+        let genNum = '';
 
         if (thread.phrase_text === 'WIP') {
             stage = 'WIP';
@@ -259,20 +273,25 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
             continue;
         }
         // OM / pastgen OM
+        /*
         else if (thread.phrase_text && OMPrefix.includes(thread.phrase_text)) {
             tier = [thread.phrase_text];
         }
+        */
         // past gens
-        else if (thread.phrase_text && pastGenPrefix.includes(thread.phrase_text)) {
-            const genRE = thread.phrase_text.match(/(?<=Gen )\d/);
-            if (genRE) {
-                gen = [genRE[0]];
+        else if (thread.phrase_text && genRE.test(thread.phrase_text)) {
+            // this will match the number in the prefix
+            const genMatchArr = thread.phrase_text.match(genRE);
+            if (genMatchArr) {
+                genNum = genMatchArr[0];
             }
         }
         // rby other
+        /*
         else if (thread.phrase_text && rbyOtherPrefix.includes(thread.phrase_text)) {
             tier = [thread.phrase_text];
         }
+        */
         
         // determine the stage if we haven't already
         if (stage === '') {
@@ -395,31 +414,53 @@ export function parseCCStage(threadData: IXFStatusQuery[]) {
         // past gen OMs are special in that we also have to get the gen from the title
         // everywhere else(?) is determined by either the thread location or prefix
         if (!gen.length) {
-            // old gen OMs and CAP
-            if (thread.node_id === 770 || thread.node_id === 768) {
+            // if the thread prefix has the gen number, map it to the gen alias
+            if (genNum) {
+                const genAlias = await getGenAlias(genNum);
+                gen = genAlias.map(a => a.alias);
+            }
+            else {
                 // try to find the gen from the title
-                const genRegex = /\b((Gen|G|Generation)\s*([1-9])|(SV|SWSH|SS|USUM|USM|SM|ORAS|XY|B2W2|BW2|BW|HGSS|DPP|DP|RSE|RS|ADV|GSC|GS|RBY|RB))*\b/i;
+                // ideally we wouldn't want to update this every time, so extend the pg query to get the gens with whatever aliases we have saved in constants
+                // at least that way part of it will always be updated, and it may be totally sufficient if people don't use other random acronyms
+                // we match with the 'i' flag, so it doesn't really matter if we use the shorthand or alias
+                // but we use the alias because we also allow them to use the gen number as a gen choice. 
+                // this creates issues with extendedGenAliases because it inserts "|[1-9]" into the regex
+                const extendedGenAliases = [...new Set(dexGens.map(g => g.value))].concat(...Object.values(genAliases));
+                const genRegex = new RegExp(`\\b(?:Gen|G|Generation)\\s*([0-9]+)\\b|\\b(${extendedGenAliases.join('|')})\\b`, 'i');
                 const matchArr = thread.title.match(genRegex);
 
                 // if there was a match from the regex test...
-                if (matchArr !== null && matchArr[0] !== '') {
-                    const genDesr = (matchArr[3] || matchArr[4]).toLowerCase();
-                    gen = [gens[genDesr]];
+                if (matchArr) {
+                    // match results in ["Gen X | abbr", "gen number" | undef, "abbr" | undef]
+                    if (matchArr[1]) {
+                        const genAlias = await getGenAlias(matchArr[1]);
+                        gen = genAlias.map(a => a.alias);
+                    }
+                    else if (matchArr[2]) {
+                        gen = [matchArr[2].toLowerCase()];
+                    }
                 }
-                // else, no gen was specified, give up
+                // else, try to get it from the thread map
                 else {
-                    continue;
+                    const gensInForum = await getFromForumMap('gen', thread.node_id.toString()) as { gen: string }[] | [];
+                    gen = gensInForum.map(g => g.gen);
                 }
-            }
-            // otherwise get the gen from the thread map
-            else {
-                gen = ccSubObj[thread.node_id.toString()].gens;
             }
         }
 
-        // get the tier from the thread map, if we haven't already
+        // get the tier from the thread map or the prefix, if we haven't already
         if (!tier.length) {
-            tier = ccSubObj[thread.node_id.toString()].tiers;
+            const tiersInForum = await getFromForumMap('tier', thread.node_id.toString()) as { tier: string }[] | [];
+            tier = tiersInForum.map(t => t.tier);
+
+            // if the list of possible tiers includes the thread prefix, filter out everything but the prefix
+            // otherwise, return the original list of all possible tiers
+            const filteredTier = tier.filter(t => t === thread.phrase_text);
+
+            if (filteredTier.length) {
+                tier = filteredTier;
+            }
         }
        
         // push the data to the holding array
@@ -447,7 +488,7 @@ export function createCCTimer(client: Client) {
         void checkCCUpdates(client)
             .catch(e => (errorHandler(e), lockout.cc = false))
             .finally(() => createCCTimer(client));
-    }, ccTimeInterval * 1000);
+    }, ccTimeInterval);
     
 }
 

@@ -1,10 +1,10 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, EmbedBuilder, APIEmbedField } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { pokedex, allNames, fullDexNameQuery, items, moves } from '../helpers/loadDex.js';
-import { latestGen, myColors } from '../helpers/constants.js';
+import { pokedex, allNames, fullDexNameQuery, items, moves, dexGens, latestGen, dexGenNumAbbrMap } from '../helpers/loadDex.js';
+import { myColors } from '../helpers/constants.js';
 import { pool } from '../helpers/createPool.js';
-import { genConversion } from '../helpers/genConversion.js';
-
+import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
+import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
 /**
  * Posts detailed information about the provided query
  * @param name Name of the pokemon/item/nature/etc
@@ -23,11 +23,10 @@ export const command: SlashCommand = {
             .setDescription('Name of the object to search')
             .setRequired(true)
             .setAutocomplete(true))
-        .addIntegerOption(option =>
+        .addStringOption(option =>
             option.setName('gen')
-            .setDescription('Which gen number to search. If blank, the latest is used')
-            .setMinValue(1)
-            .setMaxValue(latestGen)
+            .setDescription('Which gen to search. If blank, the latest is used')
+            .setAutocomplete(true)
             .setRequired(false))
         .setDMPermission(false),
 
@@ -36,24 +35,10 @@ export const command: SlashCommand = {
         const focusedOption = interaction.options.getFocused(true);
 
         if (focusedOption.name === 'name') {
-            const enteredText = focusedOption.value.toLowerCase();
-            const filteredOut: {name: string, value: string }[] = [];
-            // filter the options shown to the user based on what they've typed in
-            // everything is cast to lower case to handle differences in case
-            for (const pair of allNames) {
-                if (filteredOut.length < 25) {
-                    const nameLower = pair.name.toLowerCase();
-                    // return the pairs
-                    if (nameLower.includes(enteredText)) {
-                        filteredOut.push(pair);
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            await interaction.respond(filteredOut);
+            await filterAutocomplete(interaction, focusedOption, allNames);
+        }
+        else if (focusedOption.name === 'gen') {
+            await filterAutocomplete(interaction, focusedOption, dexGens);
         }
     },
     // execute our desired task
@@ -67,11 +52,22 @@ export const command: SlashCommand = {
 
         // get the inputs
         const queryStr = interaction.options.getString('name', true).toLowerCase();
-        const gen = interaction.options.getInteger('gen') ?? latestGen;
+        const gen = interaction.options.getString('gen') ?? latestGen;
 
-        // gen_ids in the dex db are stored as the lowercase abbreciations
-        // so we need to convert the number to the letters
-        const genAbbr = genConversion(gen).toLowerCase();
+        // validate autos
+        if (!validateAutocomplete(queryStr, allNames)) {
+            await interaction.followUp('I did not understand that name; please choose one from the list');
+            return;
+        }
+
+        if (!validateAutocomplete(gen, dexGens)) {
+            await interaction.followUp('I did not understand that gen; please choose one from the list');
+            return;
+        }
+
+        // get the gen number for the supplied gen
+        // null check if it can't find it, but that will never happen because we already validated the input above
+        const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)?.num ?? -1;
 
         /**
          * POKEDEX
@@ -84,7 +80,7 @@ export const command: SlashCommand = {
             INNER JOIN dex.types USING (type_id)
             INNER JOIN dex.pokemon_abilities USING (pokemon_id)
             INNER JOIN dex.abilities USING (ability_id)
-            WHERE dex.pokemon.alias=$1 AND dex.pokemon.gen_id=$2 ORDER BY dex.pokemon_types.order, dex.pokemon_abilities.order`, [queryStr, genAbbr]);
+            WHERE dex.pokemon.alias=$1 AND dex.pokemon.gen_id=$2 ORDER BY dex.pokemon_types.order, dex.pokemon_abilities.order`, [queryStr, gen]);
 
             interface IDBData {
                 name: string,
@@ -194,7 +190,7 @@ export const command: SlashCommand = {
 
             // build the embed
             const embed = new EmbedBuilder()
-                .setTitle(`${firstRow.name} (Gen ${gen})`)
+                .setTitle(`${firstRow.name} (Gen ${genNum})`)
                 .addFields(
                     { name: 'Typing', value: typesArr.join(' / ') },
                     { name: 'Abilities', value: abilityList.join(' | ') },
@@ -203,7 +199,8 @@ export const command: SlashCommand = {
                     { name: 'Gender Rate', value: genderOut, inline: true },
                 )
                 .setColor(embedColor)
-                .setThumbnail(`https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/home-sprites/normal/${spriteName}.png`);
+                .setThumbnail(`https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/home-sprites/normal/${spriteName}.png`)
+                .setURL(`https://www.smogon.com/dex/${gen}/pokemon/${queryStr}/`);
 
             if (queryStr === 'koffing') {
                 embed.setDescription('Official mascot of Smogon University. Check out our [Discord](https://discord.gg/smogon)!');
@@ -232,7 +229,7 @@ export const command: SlashCommand = {
             const dtQuery = await pool.query(`
             SELECT name, description
             FROM dex.items
-            WHERE dex.items.alias=$1 AND dex.items.gen_id=$2`, [queryStr, genAbbr]);
+            WHERE dex.items.alias=$1 AND dex.items.gen_id=$2`, [queryStr, gen]);
 
             interface IDBData {
                 name: string,
@@ -253,20 +250,20 @@ export const command: SlashCommand = {
 
             // build the embed
             const embed = new EmbedBuilder()
-            .setTitle(`${dbData[0].name} (Gen ${gen})`)
+            .setTitle(`${dbData[0].name} (Gen ${genNum})`)
             .setDescription(dbData[0].description)
-            .setThumbnail(`https://play.pokemonshowdown.com/sprites/itemicons/${queryStr}.png`);
-
-            if (gen >= 4) {
+            .setThumbnail(`https://play.pokemonshowdown.com/sprites/itemicons/${queryStr}.png`)
+            .setURL(`https://www.smogon.com/dex/${gen}/items/${queryStr}/`);
+            
+            if (genNum >= 4) {
                 if (psData.naturalGift) {
-                    // const flingStr = `${psData.fling.basePower} BP` + (psData.fling.status ? ` + ${psData.fling.status}` : '') + (psData.fling.volatileStatus ? ` + ${psData.fling.volatileStatus}` : '');
-                    if (gen === 4 || gen === 5) {
+                    if (genNum === 4 || genNum === 5) {
                         embed.addFields(
                             { name: 'Fling', value: '10 BP', inline: true },
                             { name: 'Natural Gift', value: `${psData.naturalGift.basePower - 20} BP (${psData.naturalGift.type})`, inline: true },
                         );
                     }
-                    else if (gen === 6) {
+                    else if (genNum === 6) {
                         embed.addFields(
                             { name: 'Fling', value: '10 BP', inline: true },
                             { name: 'Natural Gift', value: `${psData.naturalGift.basePower} BP (${psData.naturalGift.type})`, inline: true },
@@ -279,7 +276,7 @@ export const command: SlashCommand = {
                     }
                 }
                 else if (psData.fling) {
-                    const bp = queryStr === 'big-nugget' && gen < 8 ? '30' : psData.fling.basePower;
+                    const bp = queryStr === 'big-nugget' && genNum < 8 ? '30' : psData.fling.basePower;
                     const flingStr = `${bp} BP` + (psData.fling.status ? ` + ${psData.fling.status}` : '') + (psData.fling.volatileStatus ? ` + ${psData.fling.volatileStatus}` : '');
                     embed.addFields(
                         { name: 'Fling', value: flingStr },
@@ -298,7 +295,7 @@ export const command: SlashCommand = {
             const dtQuery = await pool.query(`
             SELECT name, description
             FROM dex.abilities
-            WHERE dex.abilities.alias=$1 AND dex.abilities.gen_id=$2`, [queryStr, genAbbr]);
+            WHERE dex.abilities.alias=$1 AND dex.abilities.gen_id=$2`, [queryStr, gen]);
 
             interface IDBData {
                 name: string,
@@ -314,9 +311,10 @@ export const command: SlashCommand = {
 
             // build the embed
             const embed = new EmbedBuilder()
-            .setTitle(`${dbData[0].name} (Gen ${gen})`)
+            .setTitle(`${dbData[0].name} (Gen ${genNum})`)
             .setDescription(dbData[0].description)
-            .setThumbnail('https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/images/abilities.png');
+            .setThumbnail('https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/images/abilities.png')
+            .setURL(`https://www.smogon.com/dex/${gen}/abilities/${queryStr}/`);
 
             await interaction.followUp({ embeds: [embed] });
         }
@@ -330,7 +328,7 @@ export const command: SlashCommand = {
             SELECT dex.moves.name, power, accuracy, priority, target, category, pp, dex.moves.description, dex.types.name AS type
             FROM dex.moves
             INNER JOIN dex.types USING (type_id)
-            WHERE dex.moves.alias=$1 AND dex.moves.gen_id=$2`, [queryStr, genAbbr]);
+            WHERE dex.moves.alias=$1 AND dex.moves.gen_id=$2`, [queryStr, gen]);
 
             interface IDBData {
                 name: string,
@@ -495,7 +493,7 @@ export const command: SlashCommand = {
 
             // build the embed
             const embed = new EmbedBuilder()
-            .setTitle(`${firstRow.name} (Gen ${gen})`)
+            .setTitle(`${firstRow.name} (Gen ${genNum})`)
             .setDescription(firstRow.description)
             .addFields(
                 { name: 'Type', value: firstRow.type, inline: true },
@@ -508,7 +506,8 @@ export const command: SlashCommand = {
                 { name: 'Flags', value: flagArr.join('\n') || 'None' },
             )
             .setColor(embedColor)
-            .setThumbnail('https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/images/moves.png');
+            .setThumbnail('https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/images/moves.png')
+            .setURL(`https://www.smogon.com/dex/${gen}/moves/${queryStr}/`);
             
             
             await interaction.followUp({ embeds: [embed] });
@@ -522,7 +521,7 @@ export const command: SlashCommand = {
             const dtQuery = await pool.query(`
             SELECT name, summary
             FROM dex.natures
-            WHERE dex.natures.alias=$1 AND dex.natures.gen_id=$2`, [queryStr, genAbbr]);
+            WHERE dex.natures.alias=$1 AND dex.natures.gen_id=$2`, [queryStr, gen]);
 
             interface IDBData {
                 name: string,
@@ -538,7 +537,7 @@ export const command: SlashCommand = {
 
             // build the embed
             const embed = new EmbedBuilder()
-            .setTitle(`${dbData[0].name} (Gen ${gen})`)
+            .setTitle(`${dbData[0].name} (Gen ${genNum})`)
             .setDescription(dbData[0].summary)
             .setThumbnail('https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/images/natures.png');
 
@@ -565,7 +564,7 @@ export const command: SlashCommand = {
                     WHERE te.type_id_defending = types.type_id)
             ) as json
             FROM dex.types
-            WHERE dex.types.alias=$1 AND dex.types.gen_id=$2`, [queryStr, genAbbr]);
+            WHERE dex.types.alias=$1 AND dex.types.gen_id=$2`, [queryStr, gen]);
 
             interface IDBJson {
                 name: string,
@@ -634,7 +633,7 @@ export const command: SlashCommand = {
 
             // build the embed
             const embed = new EmbedBuilder()
-            .setTitle(`${dbData[0].json.name} (Gen ${gen})`)
+            .setTitle(`${dbData[0].json.name} (Gen ${genNum})`)
             .setDescription(dbData[0].description || 'No notable interactions')
             .setColor(embedColor)
             .addFields(
@@ -648,7 +647,8 @@ export const command: SlashCommand = {
                 { name: 'Resists (0.5x)', value: defStrong.join(', ') || '-', inline: true },
                 { name: 'Immune to (0x)', value: defImmune.join(', ') || '-', inline: true },
             )
-            .setThumbnail('https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/images/types.png');
+            .setThumbnail('https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/images/types.png')
+            .setURL(`https://www.smogon.com/dex/${gen}/types/${queryStr}/`);
 
             await interaction.followUp({ embeds: [embed] });
         }

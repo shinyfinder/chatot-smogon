@@ -59,7 +59,7 @@ export const command: SlashCommand = {
             const threadData = await pollCCForums();
 
             // parse the retrieved threads to determine their status
-            const parsedThreadData = parseCCStage(threadData);
+            const parsedThreadData = await parseCCStage(threadData);
 
             // update the cache
             await updateCCCache(parsedThreadData);

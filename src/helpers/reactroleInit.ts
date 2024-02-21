@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, EmbedBuilder, ChannelType, Message } from 'discord.js';
 import { addRRMessage } from './loadReactRoleMessages.js';
 import { pool } from './createPool.js';
-import config from '../config.js';
+import { botConfig } from '../config.js';
 import { errorHandler } from './errorHandler.js';
 
 /**
@@ -79,7 +79,7 @@ export async function rrInit(msgID: string | null, interaction: ChatInputCommand
         // see if the message owner is the bot
         // discord doesn't seem to let us edit in an embed if there wasn't one originally
         // so if they're trying to reuse an old bot message and the embed was deleted, return
-        if (rrMsg.author.id === config.CLIENT_ID) {
+        if (rrMsg.author.id === botConfig.CLIENT_ID) {
             if (rrMsg.embeds.length === 0) {
                 await interaction.followUp('I cannot reuse one of my old messages that had its embeds deleted.');
                 return;

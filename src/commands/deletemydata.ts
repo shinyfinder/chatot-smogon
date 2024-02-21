@@ -69,7 +69,7 @@ Are you sure?
                         // start
                         await pgClient.query('BEGIN');
                         // delete
-                        await pgClient.query('DELETE FROM chatot.raters WHERE userid=$1', [interaction.user.id]);
+                        await pgClient.query('DELETE FROM chatot.raterlists WHERE userid=$1', [interaction.user.id]);
                         await pgClient.query('DELETE FROM chatot.identities WHERE discordid=$1', [interaction.user.id]);
                         await resetVerificationRoles(interaction.user.id, interaction.client);
                         await pgClient.query('DELETE FROM chatot.fc WHERE userid=$1', [interaction.user.id]);

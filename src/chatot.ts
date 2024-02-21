@@ -11,23 +11,25 @@ import fs from 'fs';
 import { createPool } from './helpers/createPool.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
-import { loadItems, loadMoves, loadSpriteDex, loadAllDexNames } from './helpers/loadDex.js';
+import { loadItems, loadMoves, loadSpriteDex, loadAllDexNames, loadPSFormats } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
 import { createCCTimer } from './helpers/ccWorkers.js';
 import { createCATimer } from './helpers/caWorkers.js';
 import { loadCCCooldowns } from './helpers/manageCCCooldownCache.js';
-import config from './config.js';
+import { Modes, botConfig } from './config.js';
 import { recreateReminders } from './helpers/reminderWorkers.js';
 import { ContextCommand } from './types/context-command-base';
 import { initGarbageCollection } from './helpers/garbage.js';
+import { createCacheTimer } from './helpers/updateCache.js';
 import { recreateLiveTours } from './helpers/livetourWorkers.js';
-import { startupFlags } from './helpers/constants.js';
+import { raterListInterval, startupFlags } from './helpers/constants.js';
+import { loadRMTChans } from './helpers/manageRMTCache.js';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
- * Env variables are saved in the ./.env file and accessed as config.VARIABLE_NAME
+ * Env variables are saved in the ./.env file and accessed as botConfig.VARIABLE_NAME
  */
 
 
@@ -98,7 +100,7 @@ client.cmdCooldowns = new Collection();
  * Build the event handler
  * The different events we wish to act on are exposed to the client via separate files in the ./events directory
  * Each event gets its own file with the name as the event trigger
- * Reactions are loaded and parsed dynamically to eliminate repetivite client.on(...) blocks of code
+ * Events are loaded and parsed dynamically to eliminate repetivite client.on(...) blocks of code
  */
 
 // set the path to the events directory
@@ -164,19 +166,16 @@ await Promise.all([
     loadAllDexNames(),
     loadMoves(),
     loadItems(),
+    loadPSFormats(),
     recreateLiveTours(client),
+    loadRMTChans(),
 ]);
 
 
 /**
- * Mutate the object containing the /dt autocomplete pairs
- */
-// createAutoPairs([pokedex, movesText, itemsText, items, abilitiesText, natures]);
-
-/**
  * Login to Discord with your client's token, or log any errors
  */
-await client.login(config.TOKEN);
+await client.login(botConfig.TOKEN);
 
 /**
  * Cache the monitored messages for role reactions
@@ -188,8 +187,9 @@ await loadRRMessages(client);
 /**
  * Schedule timers
  */
-// schedule a timer to post updates the public rater list every so often (in ms)
-setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)), 1000 * 60 * 60 * 24);
+
+// schedule a timer to post updates the public rater list every so often
+setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)), raterListInterval);
 
 // schedule checking for new/updated QC threads
 createCCTimer(client);
@@ -198,11 +198,14 @@ createCATimer(client);
 // garbage day
 initGarbageCollection(client);
 
+// set a timer to update the cached data from the db/PS
+createCacheTimer(client);
+
 /**
  * Everything is done, so close fd 3 to signal ready.
  * Only do this in production so we can test in dev mode
  */
-if (config.MODE === 'production') {
+if (botConfig.MODE === Modes.Production) {
     // const server = new net.Server().listen({ fd: 3 });
     fs.close(3);
     startupFlags.success = true;

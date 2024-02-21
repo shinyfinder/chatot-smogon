@@ -3,18 +3,25 @@ import { alcremieFormes, genderDiffs } from './constants.js';
 import { pool } from './createPool.js';
 import fetch from 'node-fetch';
 import { res2JSON } from './res2JSON.js';
-import { IDexNameDump, IPokedexDB } from '../types/dex';
+import { IDtNameDump, IDexNameDump, IPokedexDB } from '../types/dex';
+import { overwriteTier } from './overwriteTier.js';
+import { INVPair } from '../types/discord';
 
 
 export let dexMondb: IPokedexDB[] | [];
-export const monNames: { name: string, value: string }[] = [];
-export let spriteNames: { name: string, value: string}[];
-export let moveNames: {name: string, value: string}[];
+export const monNames: INVPair[] = [];
+export let spriteNames: INVPair[];
+export let moveNames: INVPair[];
 export let pokedex: IPSDex = {};
 export let items: IPSItems = {};
-export const allNames: { name: string, value: string}[] = [];
+export const allNames: INVPair[] = [];
 export let fullDexNameQuery: IDexNameDump;
 export let moves: IPSMoves = {};
+export let psFormats: INVPair[];
+export let dexFormats: INVPair[];
+export let dexGens: INVPair[];
+export let latestGen: string = '';
+export let dexGenNumAbbrMap: { abbr: string, num: number }[];
 
 /**
  * Queries the info we need from the dex tables
@@ -87,7 +94,13 @@ export async function loadAllDexNames() {
         (SELECT dex.natures.name, dex.natures.alias FROM dex.natures),
 
         types AS
-        (SELECT dex.types.name, dex.types.alias, dex.types.description FROM dex.types)
+        (SELECT dex.types.name, dex.types.alias, dex.types.description FROM dex.types),
+
+        formats AS
+        (SELECT dex.formats.shorthand, dex.formats.alias FROM dex.formats),
+
+        gens AS
+        (SELECT dex.gens.shorthand, dex.gens.alias, dex.gens.order FROM dex.gens ORDER BY dex.gens.order)
 
         SELECT json_build_object(
             'pokemon', (SELECT COALESCE(JSON_AGG(pokemon.*), '[]') FROM pokemon),
@@ -95,17 +108,55 @@ export async function loadAllDexNames() {
             'abilities', (SELECT COALESCE(JSON_AGG(abilities.*), '[]') FROM abilities),
             'moves', (SELECT COALESCE(JSON_AGG(moves.*), '[]') FROM moves),
             'natures', (SELECT COALESCE(JSON_AGG(natures.*), '[]') FROM natures),
-            'types', (SELECT COALESCE(JSON_AGG(types.*), '[]') FROM types)
+            'types', (SELECT COALESCE(JSON_AGG(types.*), '[]') FROM types),
+            'formats', (SELECT COALESCE(JSON_AGG(formats.*), '[]') FROM formats),
+            'gens', (SELECT COALESCE(JSON_AGG(gens.*), '[]') FROM gens)
         ) AS data`);
     
     // unpack and update cache
     fullDexNameQuery = dexNameDump.rows.map((row: { data: IDexNameDump }) => row.data)[0];
 
+    // create another obj array for just the pokemon so we can reference just those
     dexMondb = fullDexNameQuery.pokemon;
+
+    // extract the formats and gens because we don't need those for /dt
+    const { formats, gens, ...dtNames } = fullDexNameQuery;
+
+    // formulate their auto pairs
+    // BSS and VGC are weird in that they have a bunch of different names for the same meta
+    // for the purposes of C&C (and raters), the names don't change to whom/where it applies
+    // so map the different names to have the same value
+    dexFormats = formats.map(f => {
+        if (/^(?:Battle |BSS)/m.test(f.shorthand)) {
+            return { name: f.shorthand, value: 'bss' };
+        }
+        else if (/^VGC/m.test(f.shorthand)) {
+            return { name: f.shorthand, value: 'vgc' };
+        }
+        else {
+            return { name: f.shorthand, value: f.alias };
+        }
+    });
+    
+    // map the gens
+    dexGens = gens.map(g => ({ name: g.shorthand, value: g.alias }));
+    dexGenNumAbbrMap = gens.map(g => ({ abbr: g.alias, num: g.order + 1 }));
+
+    if (gens.length) {
+        latestGen = gens[gens.length - 1].alias;
+    }
+    
+
+    // people may wany to use the gen numbers instead of the names, so add those as well
+    // the order = gen - 1
+    // just reuse the alias for the values
+    const dexGenNumbers = gens.map(g => ({ name: (g.order + 1).toString(), value: g.alias }));
+    dexGens = dexGens.concat(dexGenNumbers);
+
 
     // map the unique name alias pairs so we can use them for autocomplete
     // loop over the entire array of objects from the query
-    fullDexNameQuery.pokemon.forEach(obj => {
+    dexMondb.forEach(obj => {
         // try to find an obj in the unique array where the name and alias are the same as the row in the query
         const i = monNames.findIndex(uniqObj => uniqObj.name === obj.name && uniqObj.value === obj.alias);
         // if no matches are found, add the entry to the unique array
@@ -114,9 +165,9 @@ export async function loadAllDexNames() {
         }
     });
 
-    // similarly, create a name/alias map for everything so we can autocompletee /dt
-    for (const table in fullDexNameQuery) {
-        const tableData = fullDexNameQuery[table as keyof IDexNameDump];
+    // similarly, create a name/alias map for everything so we can autocomplete /dt
+    for (const table in dtNames) {
+        const tableData = dtNames[table as keyof IDtNameDump];
         tableData.forEach(obj => {
             const i = allNames.findIndex(uniqObj => uniqObj.name === obj.name && uniqObj.value === obj.alias);
             if (i === -1) {
@@ -158,4 +209,33 @@ export async function loadItems() {
 
     // convert to JSON
     items = res2JSON(itemsRes) as IPSItems;
+}
+
+/**
+ * Loads the list of perma format names from PS
+ */
+export async function loadPSFormats() {
+    // fetch the json from the PS API
+    const res = await fetch('https://raw.githubusercontent.com/smogon/pokemon-showdown/master/config/formats.ts');
+    const formatsRes = await res.text();
+
+    // extract all of the names
+    const matchArr = formatsRes.match(/(?<=^\s*name:\s*["']).*(?=['"],$)/gm);
+
+    if (!matchArr) {
+        throw 'Unable to load formats from PS!';
+    }
+
+    // combine stuff like vgc and bss into 1 category per gen
+    const storedTiers: string[] = [];
+    for (const tier of matchArr) {
+        const fixedTier = overwriteTier(tier);
+        storedTiers.push(fixedTier);
+
+    }
+
+    // remove any repeats from the match array
+    const uniqMatchArr = [...new Set(storedTiers)];
+
+    psFormats = uniqMatchArr.map(format => ({ name: format, value: format.replace(/[^a-z0-9]/gi, '').toLowerCase() }));
 }

@@ -12,3 +12,8 @@ declare module 'discord.js' {
         cmdCooldowns: Collection<string, Collection<string, number>>
     }
 }
+
+export interface INVPair {
+    name: string,
+    value: string,
+}

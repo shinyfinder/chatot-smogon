@@ -36,7 +36,29 @@ interface ITypesDB {
     description: string,
 }
 
+interface IFormatsDB {
+    shorthand: string,
+    alias: string,
+}
+
+export interface IGensDB {
+    shorthand: string,
+    alias: string,
+    order: number,
+}
+
 export interface IDexNameDump {
+    pokemon: IPokedexDB[],
+    items: IItemsDB[],
+    abilities: IAbilitiesDB[],
+    moves: IMovesDB[],
+    natures: INaturesDB[],
+    types: ITypesDB[],
+    formats: IFormatsDB[],
+    gens: IGensDB[],
+}
+
+export interface IDtNameDump {
     pokemon: IPokedexDB[],
     items: IItemsDB[],
     abilities: IAbilitiesDB[],

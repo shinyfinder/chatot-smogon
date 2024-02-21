@@ -1,10 +1,13 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { monNames, moveNames, pokedex, spriteNames } from '../helpers/loadDex.js';
+import { dexGens, monNames, moveNames, pokedex, spriteNames, latestGen, dexGenNumAbbrMap } from '../helpers/loadDex.js';
 import fetch from 'node-fetch';
 import { IPSLearnsets } from '../types/ps';
-import { latestGen, myColors } from '../helpers/constants.js';
+import { myColors } from '../helpers/constants.js';
 import { res2JSON } from '../helpers/res2JSON.js';
+import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
+import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
+
 /**
  * Determines whether and how a Pokemon learns a move in the specified generation
  */
@@ -25,11 +28,10 @@ export const command: SlashCommand = {
             .setDescription('Name of the move to search')
             .setRequired(true)
             .setAutocomplete(true))
-        .addIntegerOption(option =>
+        .addStringOption(option =>
             option.setName('gen')
-            .setDescription('Which gen number to search. If blank, the latest is used')
-            .setMinValue(1)
-            .setMaxValue(latestGen)
+            .setDescription('Which gen to search. If blank, the latest is used')
+            .setAutocomplete(true)
             .setRequired(false))
         .setDMPermission(false),
 
@@ -38,43 +40,13 @@ export const command: SlashCommand = {
         const focusedOption = interaction.options.getFocused(true);
 
         if (focusedOption.name === 'pokemon') {
-            const enteredText = focusedOption.value.toLowerCase();
-            const filteredOut: {name: string, value: string }[] = [];
-            // filter the options shown to the user based on what they've typed in
-            // everything is cast to lower case to handle differences in case
-            for (const pair of monNames) {
-                if (filteredOut.length < 25) {
-                    const nameLower = pair.name.toLowerCase();
-                    // return the pairs, excluding any -Mega and -Gmax formes because those don't have keys in the PS learnset json
-                    if (nameLower.includes(enteredText) && !pair.name.includes('-Mega') && !pair.name.includes('-Gmax')) {
-                        filteredOut.push(pair);
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            await interaction.respond(filteredOut);
+            await filterAutocomplete(interaction, focusedOption, monNames);
         }
         else if (focusedOption.name === 'move') {
-            const enteredText = focusedOption.value.toLowerCase();
-            const filteredOut: {name: string, value: string }[] = [];
-            // filter the options shown to the user based on what they've typed in
-            // everything is cast to lower case to handle differences in case
-            for (const pair of moveNames) {
-                if (filteredOut.length < 25) {
-                    const nameLower = pair.name.toLowerCase();
-                    if (nameLower.includes(enteredText)) {
-                        filteredOut.push(pair);
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            await interaction.respond(filteredOut);
+            await filterAutocomplete(interaction, focusedOption, moveNames);
+        }
+        else if (focusedOption.name === 'gen') {
+            await filterAutocomplete(interaction, focusedOption, dexGens);
         }
     },
     // execute our desired task
@@ -88,29 +60,35 @@ export const command: SlashCommand = {
 
         // get the inputs
         const monIn = interaction.options.getString('pokemon', true).toLowerCase();
-        const gen = interaction.options.getInteger('gen') ?? latestGen;
+        const gen = interaction.options.getString('gen') ?? latestGen;
         const move = interaction.options.getString('move', true).toLowerCase();
 
-        // make sure they entered proper text
-        // the value is the alias
-        const validMonName = monNames.some(n => n.value === monIn);
-        const validMoveName = moveNames.some(n => n.value === move);
-        if (!validMonName) {
-            await interaction.followUp('Invalid Pokemon name. Please choose one from the list');
+        // validate autos
+        if (!validateAutocomplete(monIn, monNames)) {
+            await interaction.followUp('I did not understand that Pokemon; please choose one from the list');
             return;
         }
 
-        if (!validMoveName) {
-            await interaction.followUp('Invalid move name. Please choose one from the list');
+        if (!validateAutocomplete(gen, dexGens)) {
+            await interaction.followUp('I did not understand that gen; please choose one from the list');
             return;
         }
+
+        if (!validateAutocomplete(move, moveNames)) {
+            await interaction.followUp('I did not understand that move; please choose one from the list');
+            return;
+        }
+
+        // get the gen number for the supplied gen
+        // null check if it can't find it, but that will never happen because we already validated the input above
+        const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)?.num ?? -1;
 
         // fetch the learnsets from the PS API
         const res = await fetch('https://play.pokemonshowdown.com/data/learnsets.json');
         const learnJson = await res.json() as IPSLearnsets;
 
         // also get the modded learnsets for that gen
-        const moddedLearnsets = await fetchModdedLearnsets(gen) as IPSLearnsets;
+        const moddedLearnsets = await fetchModdedLearnsets(genNum) as IPSLearnsets;
 
         // get the base specie of the mon, if required
         // the response from the PS api doesn't include dash in the keys, so remove any
@@ -147,7 +125,7 @@ export const command: SlashCommand = {
         const modLearnMethods = monModLearnset?.learnset[move];
         if (modLearnMethods) {
             for (const mod of modLearnMethods) {
-                if (!learnMethods.includes(mod) && (gen === 7 || gen === 8)) {
+                if (!learnMethods.includes(mod) && (genNum === 7 || genNum === 8)) {
                     const modStr = '*' + mod;
                     learnMethods.push(modStr);
                 }
@@ -170,10 +148,10 @@ export const command: SlashCommand = {
                 const learnableGen = method.match(/\d+/)?.shift();
                 
                 let header = '';
-                if (gen === 7 && method.startsWith('*')) {
+                if (genNum === 7 && method.startsWith('*')) {
                     header = 'LGPE Exclusive';
                 }
-                else if (gen === 8 && method.startsWith('*')) {
+                else if (genNum === 8 && method.startsWith('*')) {
                     header = 'BDSP Exclusive';
                 }
                 else {
@@ -182,7 +160,7 @@ export const command: SlashCommand = {
 
                 // if they specified a gen, see if it matches
                 // if they specified and it doesn't, see if it's a transfer
-                if (gen === Number(learnableGen)) {
+                if (genNum === Number(learnableGen)) {
                     if (!genArr.includes(header)) {
                         genArr.push(header);
                         if (tempMethodArr.length) {
@@ -228,7 +206,7 @@ export const command: SlashCommand = {
                         continue;
                     }
                 }
-                else if (Number(learnableGen) < gen) {
+                else if (Number(learnableGen) < genNum) {
                     // add an entry to the gen array for transfers if needed
                     if (!genArr.includes('Transfer from gen(s)')) {
                         genArr.push('Transfer from gen(s)');
@@ -288,7 +266,7 @@ export const command: SlashCommand = {
                     // get the gen number for each entry
                     const prevoLearnGen = method.match(/\d+/)?.shift();
                     // if the gen number matches, push to the arrays because the mon can learn the move via a prevo
-                    if (!gen || Number(prevoLearnGen) <= gen) {
+                    if (!gen || Number(prevoLearnGen) <= genNum) {
                         if (!genArr.includes('Prevolution')) {
                             genArr.push('Prevolution');
                         }
@@ -317,7 +295,7 @@ export const command: SlashCommand = {
         }
 
         // build the embed
-        const embed = new EmbedBuilder().setTitle(`${titleCaseMon} @ ${titleCaseMove} (Gen ${gen})`);
+        const embed = new EmbedBuilder().setTitle(`${titleCaseMon} @ ${titleCaseMove} (Gen ${genNum})`);
         if (!genArr.length) {
             embed.setDescription(`${titleCaseMon} does not learn ${titleCaseMove}.`);
         }

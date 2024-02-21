@@ -13,10 +13,11 @@ import {
  } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
-import { ccMetaObj } from '../helpers/constants.js';
-import { validateCCTier } from '../helpers/validateCCTier.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
+import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
+import { dexFormats, dexGens } from '../helpers/loadDex.js';
+import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
 
 /**
  * Command for configuring multiple aspects of the bot
@@ -130,61 +131,83 @@ export const command: SlashCommand = {
             .addStringOption(option =>
                 option.setName('format')
                 .setDescription('Which format to automatically link to when using /dex. i.e. ou, uu, lc, doubles')
+                .setAutocomplete(true)
                 .setRequired(false))
             .addStringOption(option =>
                 option.setName('gen')
                 .setDescription('Which gen to automatically link to when using /dex. i.e. rb, ss, sv')
+                .setAutocomplete(true)
                 .setRequired(false)))
                 
         /**
          * C&C
          */
-        .addSubcommand(new SlashCommandSubcommandBuilder()
-            .setName('cc')
-            .setDescription('Configures where to log C&C thread status updates')
-            .addChannelOption(option =>
-                option.setName('channel')
-                .setDescription('The channel to which C&C thread status updates are posted')
-                .setRequired(true)
-                .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread))
-            .addStringOption(option =>
-                option.setName('tier')
-                .setDescription('The tier to monitor C&C thread status updates for')
-                .setAutocomplete(true)
-                .setRequired(true))
-            .addIntegerOption(option =>
-                option.setName('gen')
-                .setDescription('The generation associated with the tier to monitor. Enter the number.')
-                .setMinValue(1)
-                .setMaxValue(9)
-                .setRequired(true))
-            .addRoleOption(option =>
-                option.setName('role')
-                .setDescription('The role to ping')
-                .setRequired(false))
-            .addStringOption(option =>
-                option.setName('stage')
-                .setDescription('The stage in the C&C progress the role pings for. Default: All')
-                .setChoices(
-                    { name: 'All', value: 'all' },
-                    { name: 'QC Ready/Progress', value: 'qc' },
-                    { name: 'Done', value: 'done' },
-                )
-                .setRequired(false))
-            .addIntegerOption(option =>
-                option.setName('cooldown')
-                .setDescription('The minimum number of hours between QC progress alerts. Default: 0; max: 12')
-                .setMinValue(0)
-                .setMaxValue(12)
-                .setRequired(false))
-            .addBooleanOption(option =>
-                option.setName('remove')
-                .setDescription('Removes tracking of the provided info from the specified channel')
-                .setRequired(false))
-            .addBooleanOption(option =>
-                option.setName('removeall')
-                .setDescription('Removes all C&C tracking from the server')
-                .setRequired(false)))
+        .addSubcommandGroup(new SlashCommandSubcommandGroupBuilder()
+                .setName('cc')
+                .setDescription('Configures where to log C&C thread status updates')
+                .addSubcommand(new SlashCommandSubcommandBuilder()
+                    .setName('add')
+                    .setDescription('Sets up a channel to receive C&C thread status updates')
+                    .addChannelOption(option =>
+                        option.setName('channel')
+                        .setDescription('The channel to which C&C thread status updates are posted')
+                        .setRequired(true)
+                        .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread))
+                    .addStringOption(option =>
+                        option.setName('tier')
+                        .setDescription('The tier to monitor C&C thread status updates for')
+                        .setAutocomplete(true)
+                        .setRequired(true))
+                    .addStringOption(option =>
+                        option.setName('gen')
+                        .setDescription('The gen to monitor C&C thread status updates for')
+                        .setAutocomplete(true)
+                        .setRequired(true))
+                    .addRoleOption(option =>
+                        option.setName('role')
+                        .setDescription('The role to ping')
+                        .setRequired(false))
+                    .addStringOption(option =>
+                        option.setName('stage')
+                        .setDescription('The stage in the C&C progress the role pings for. Default: All')
+                        .setChoices(
+                            { name: 'All', value: 'all' },
+                            { name: 'QC Ready/Progress', value: 'qc' },
+                            { name: 'Done', value: 'done' },
+                        )
+                        .setRequired(false))
+                    .addIntegerOption(option =>
+                        option.setName('cooldown')
+                        .setDescription('The minimum number of hours between QC progress alerts. Default: 0; max: 12')
+                        .setMinValue(0)
+                        .setMaxValue(12)
+                        .setRequired(false))
+                    .addStringOption(option =>
+                        option.setName('tierprefix')
+                        .setDescription('Non-stage thread prefix used by your monitored tier (i.e. in OMs, Old Gens, RBY Other)')
+                        .setRequired(false)))
+                .addSubcommand(new SlashCommandSubcommandBuilder()
+                    .setName('remove')
+                    .setDescription('Stops tracking the provided tier from the specified channel')
+                    .addChannelOption(option =>
+                        option.setName('channel')
+                        .setDescription('The channel you want to modify tracking alerts for')
+                        .setRequired(true)
+                        .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread))
+                    .addStringOption(option =>
+                        option.setName('tier')
+                        .setDescription('The tier to stop monitoring C&C thread status updates for')
+                        .setAutocomplete(true)
+                        .setRequired(true))
+                    .addStringOption(option =>
+                        option.setName('gen')
+                        .setDescription('The gen to monitor C&C thread status updates for')
+                        .setAutocomplete(true)
+                        .setRequired(true)))
+                .addSubcommand(new SlashCommandSubcommandBuilder()
+                    .setName('removeall')
+                    .setDescription('Removes all C&C tracking from the server')))
+        
                 
         /**
          * TICKETS
@@ -219,25 +242,13 @@ export const command: SlashCommand = {
     async autocomplete(interaction: AutocompleteInteraction) {
         const focusedOption = interaction.options.getFocused(true);
 
-        if (focusedOption.name === 'tier') {
-            const enteredText = focusedOption.value.toLowerCase();
-
-            const filteredOut: {name: string, value: string }[] = [];
-            // filter the options shown to the user based on what they've typed in
-            // everything is cast to lower case to handle differences in case
-            for (const pair of ccMetaObj) {
-                if (filteredOut.length < 25) {
-                    if (pair.value.includes(enteredText)) {
-                        filteredOut.push(pair);
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            await interaction.respond(filteredOut);
+        if (focusedOption.name === 'tier' || focusedOption.name === 'format') {
+            await filterAutocomplete(interaction, focusedOption, dexFormats);
         }
+        else if (focusedOption.name === 'gen') {
+            await filterAutocomplete(interaction, focusedOption, dexGens);
+        }
+
     },
     
     // execute our desired task
@@ -387,8 +398,25 @@ export const command: SlashCommand = {
 
         else if (interaction.options.getSubcommand() === 'dex') {
             // get the inputs
-            const format = interaction.options.getString('format') ?? '';
-            const gen = interaction.options.getString('gen') ?? '';
+            const format = interaction.options.getString('format')?.toLowerCase() ?? '';
+            const gen = interaction.options.getString('gen')?.toLowerCase() ?? '';
+
+            if (format) {
+                // validate the autocomplete entry
+                // if it's not valid, return and let them know
+                if (!validateAutocomplete(format, dexFormats)) {
+                    await interaction.followUp('I did not understand that meta; please choose one from the list');
+                    return;
+                }
+            }
+            if (gen) {
+                // validate the autocomplete entry
+                // if it's not valid, return and let them know
+                if (!validateAutocomplete(gen, dexGens)) {
+                    await interaction.followUp('I did not understand that gen; please choose one from the list');
+                    return;
+                }
+            }
 
             // upsert it into the table
             await pool.query('INSERT INTO chatot.dexdefaults (serverid, format, gen) VALUES ($1, $2, $3) ON CONFLICT (serverid) DO UPDATE SET format=EXCLUDED.format, gen=EXCLUDED.gen', [interaction.guildId, format.toLowerCase(), gen.toLowerCase()]);
@@ -401,85 +429,147 @@ export const command: SlashCommand = {
          * C&C INTEGRATION
          */
         
-        else if (interaction.options.getSubcommand() === 'cc') {
-            // get inputs
-            const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
-            const tier = interaction.options.getString('tier', true).toLowerCase();
-            const role = interaction.options.getRole('role');
-            const stage = interaction.options.getString('stage') ?? 'all';
-            const gen = interaction.options.getInteger('gen', true).toString();
-            const cooldown = interaction.options.getInteger('cooldown');
-            const removeRow = interaction.options.getBoolean('remove');
-            const removeAllRows = interaction.options.getBoolean('removeall');
+        else if (interaction.options.getSubcommandGroup() === 'cc') {
 
-            // validate the autocomplete entry
-            const valid = validateCCTier(tier);
-            
-            // if it's not valid, return and let them know
-            if (!valid) {
-                await interaction.followUp('I did not understand that meta or I am not setup to track it. Please choose one from the list');
-                return;
+            /**
+             * ADD
+             */
+
+            if (interaction.options.getSubcommand() === 'add') {
+                // get inputs
+                const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
+                const tier = interaction.options.getString('tier', true).toLowerCase();
+                const role = interaction.options.getRole('role');
+                const gen = interaction.options.getString('gen', true).toLowerCase();
+                const stage = interaction.options.getString('stage') ?? 'all';
+                const cooldown = interaction.options.getInteger('cooldown');
+                const prefix = interaction.options.getString('tierprefix')?.toLowerCase();
+
+                const standardPrefixes = [
+                    'wip',
+                    'resource',
+                    'announcement',
+                    'quality control',
+                    'copyediting',
+                    'done',
+                    'project',
+                ];
+
+                // make sure they followed directions
+                if (prefix && standardPrefixes.includes(prefix)) {
+                    await interaction.followUp('The tierprefix field is used for prefixes that are used to determine which tier (or gen) you are referring to (like in OMs or Old Gens). You entered a C&C stage prefix. If your threads do not use prefixes other than those to track C&C progress, please leave this field blank.');
+                    return;
+                }
+
+                // validate the autocomplete entry
+                // if it's not valid, return and let them know
+                if (!validateAutocomplete(tier, dexFormats)) {
+                    await interaction.followUp('I did not understand that meta or I am not setup to track it. Please choose one from the list');
+                    return;
+                }
+
+                if (!validateAutocomplete(gen, dexGens)) {
+                    await interaction.followUp('I did not understand that gen. Please choose one from the list');
+                    return;
+                }
+
+                // insert into the table
+                if (stage === 'all') {
+                    // query the pool with a transaction
+                    const pgClient = await pool.connect();
+                    try {
+                        // start
+                        await pgClient.query('BEGIN');
+                        // delete -- delete everything because 'all' is incompat with the rest
+                        await pgClient.query('DELETE FROM chatot.ccprefs WHERE serverid=$1 AND channelid=$2 AND tier=$3 AND gen=$4', [interaction.guildId, channel.id, tier, gen]);
+                        // insert
+                        await pgClient.query('INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage, cooldown, prefix) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', [interaction.guildId, channel.id, tier, role?.id, gen, stage, cooldown, prefix]);
+                        // end
+                        await pgClient.query('COMMIT');
+                    }
+                    catch (e) {
+                        await pgClient.query('ROLLBACK');
+                        // if this errors we have bigger problems, so log it
+                        throw e;
+                    }
+                    finally {
+                        pgClient.release();
+                    }
+                    
+                }
+                else {
+                    // query the pool with a transaction
+                    const pgClient = await pool.connect();
+                    try {
+                        // start
+                        await pgClient.query('BEGIN');
+                        // delete -- delete the corresponding 'all' row
+                        await pgClient.query('DELETE FROM chatot.ccprefs WHERE serverid=$1 AND channelid=$2 AND tier=$3 AND gen=$4 AND stage=$5', [interaction.guildId, channel.id, tier, gen, 'all']);
+                        // upsert
+                        await pgClient.query(`INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage, cooldown, prefix)
+                            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                            ON CONFLICT (serverid, channelid, tier, gen, stage) DO UPDATE
+                            SET serverid=EXCLUDED.serverid, channelid=EXCLUDED.channelid, tier=EXCLUDED.tier, role=EXCLUDED.role, gen=EXCLUDED.gen, stage=EXCLUDED.stage, cooldown=EXCLUDED.cooldown, prefix=EXCLUDED.prefix`,
+                            [interaction.guildId, channel.id, tier, role?.id, gen, stage, cooldown, prefix]);
+                        // end
+                        await pgClient.query('COMMIT');
+                    }
+                    catch (e) {
+                        await pgClient.query('ROLLBACK');
+                        // if this errors we have bigger problems, so log it
+                        throw e;
+                    }
+                    finally {
+                        pgClient.release();
+                    }
+                }
+
+                // let them know we're done
+                await interaction.followUp('Preferences updated');
             }
 
-            // insert into the table
-            if (removeAllRows) {
-                await pool.query('DELETE FROM chatot.ccprefs WHERE serverid=$1', [interaction.guildId]);
-            }
-            else if (removeRow) {
+            /**
+             * REMOVE
+             */
+
+            else if (interaction.options.getSubcommand() === 'remove') {
+                // get inputs
+                const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
+                const tier = interaction.options.getString('tier', true).toLowerCase();
+                const gen = interaction.options.getString('gen', true).toLowerCase();
+
+                // validate the autocomplete entry
+                // if it's not valid, return and let them know
+                if (!validateAutocomplete(tier, dexFormats)) {
+                    await interaction.followUp('I did not understand that meta or I am not setup to track it. Please choose one from the list');
+                    return;
+                }
+
+                if (!validateAutocomplete(gen, dexGens)) {
+                    await interaction.followUp('I did not understand that gen; please choose one from the list');
+                    return;
+                }
+
+
+                // update the table
                 await pool.query('DELETE FROM chatot.ccprefs WHERE serverid=$1 AND channelid=$2 AND tier=$3 AND gen=$4', [interaction.guildId, channel.id, tier, gen]);
-            }
-            else if (stage === 'all') {
-                // query the pool with a transaction
-                const pgClient = await pool.connect();
-                try {
-                    // start
-                    await pgClient.query('BEGIN');
-                    // delete -- delete everything because 'all' is incompat with the rest
-                    await pgClient.query('DELETE FROM chatot.ccprefs WHERE serverid=$1 AND channelid=$2 AND tier=$3 AND gen=$4', [interaction.guildId, channel.id, tier, gen]);
-                    // insert
-                    await pgClient.query('INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage, cooldown) VALUES ($1, $2, $3, $4, $5, $6, $7)', [interaction.guildId, channel.id, tier, role?.id, gen, stage, cooldown]);
-                    // end
-                    await pgClient.query('COMMIT');
-                }
-                catch (e) {
-                    await pgClient.query('ROLLBACK');
-                    // if this errors we have bigger problems, so log it
-                    throw e;
-                }
-                finally {
-                    pgClient.release();
-                }
-                
-            }
-            else {
-                // query the pool with a transaction
-                const pgClient = await pool.connect();
-                try {
-                    // start
-                    await pgClient.query('BEGIN');
-                    // delete -- delete the corresponding 'all' row
-                    await pgClient.query('DELETE FROM chatot.ccprefs WHERE serverid=$1 AND channelid=$2 AND tier=$3 AND gen=$4 AND stage=$5', [interaction.guildId, channel.id, tier, gen, 'all']);
-                    // upsert
-                    await pgClient.query(`INSERT INTO chatot.ccprefs (serverid, channelid, tier, role, gen, stage, cooldown)
-                        VALUES ($1, $2, $3, $4, $5, $6, $7)
-                        ON CONFLICT (serverid, channelid, tier, gen, stage) DO UPDATE
-                        SET serverid=EXCLUDED.serverid, channelid=EXCLUDED.channelid, tier=EXCLUDED.tier, role=EXCLUDED.role, gen=EXCLUDED.gen, stage=EXCLUDED.stage, cooldown=EXCLUDED.cooldown`,
-                        [interaction.guildId, channel.id, tier, role?.id, gen, stage, cooldown]);
-                    // end
-                    await pgClient.query('COMMIT');
-                }
-                catch (e) {
-                    await pgClient.query('ROLLBACK');
-                    // if this errors we have bigger problems, so log it
-                    throw e;
-                }
-                finally {
-                    pgClient.release();
-                }
+
+                // done
+                await interaction.followUp('Preferences updated');
             }
 
-            // let them know we're done
-            await interaction.followUp('Preferences updated');
+            /**
+             * REMOVE ALL
+             */
+
+            else if (interaction.options.getSubcommand() === 'removeall') {
+                // update the table
+                await pool.query('DELETE FROM chatot.ccprefs WHERE serverid=$1', [interaction.guildId]);
+
+                // done
+                await interaction.followUp('Preferences updated');
+            }
+            
         }
 
 

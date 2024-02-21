@@ -1,6 +1,6 @@
 import { GuildMember } from 'discord.js';
 import { eventHandler } from '../types/event-base';
-import config from '../config.js';
+import { botConfig } from '../config.js';
 import { checkVerified } from '../helpers/checkVerified.js';
 
 /**
@@ -15,7 +15,7 @@ export const clientEvent: eventHandler = {
     // execute the code for this event
     async execute(member: GuildMember) {
         // ignore DMs and events pertaining to the bot
-        if (!member.guild || member.user.id === config.CLIENT_ID) {
+        if (!member.guild || member.user.id === botConfig.CLIENT_ID) {
             return;
         }
         // check if the user is pending (needs to accept the rule screening)

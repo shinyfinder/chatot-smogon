@@ -1,7 +1,8 @@
 import { Client } from 'discord.js';
 import { pool } from './createPool.js';
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 import { errorHandler } from './errorHandler.js';
+import { garbageInterval } from './constants.js';
 
 /**
  * Recursively creates a timer to collect and delete unneeded data from the databases
@@ -12,7 +13,7 @@ export function initGarbageCollection(client: Client) {
         void pruneDatabase(client)
             .catch(e => errorHandler(e))
             .finally(() => initGarbageCollection(client));
-    }, 2 * 24 * 60 * 60 * 1000);
+    }, garbageInterval);
     
 }
 
@@ -38,7 +39,7 @@ async function pruneDatabase(client: Client) {
         (SELECT messageid, tstamp FROM chatot.livetours),
 
         raters AS
-        (SELECT userid FROM chatot.raters),
+        (SELECT userid FROM chatot.raterlists),
 
         fcs AS
         (SELECT userid FROM chatot.fc)
@@ -76,7 +77,7 @@ async function pruneDatabase(client: Client) {
     // queue raters no longer in the server
     // first, get the current member list of the main cord
     try {
-        const mainCord = config.MODE === 'dev' ? await client.guilds.fetch(config.GUILD_ID) : await client.guilds.fetch('192713314399289344');
+        const mainCord = botConfig.MODE === Modes.Dev ? await client.guilds.fetch(botConfig.GUILD_ID) : await client.guilds.fetch('192713314399289344');
         const mainCordMembers = await mainCord.members.fetch({ time: 15 * 1000 });
         if (mainCordMembers.size) {
             for (const oldRater of oldData.raters) {
@@ -98,7 +99,7 @@ async function pruneDatabase(client: Client) {
     // first get the fc command definition
     const fcDef = client.commands.filter(cdef => cdef.data.name === 'fc');
     // ... and the list of guilds the fc command is in
-    const fcGuilds = config.MODE === 'dev' ? [config.GUILD_ID] : fcDef.map(fcdef => fcdef.guilds).flat();
+    const fcGuilds = botConfig.MODE === Modes.Dev ? [botConfig.GUILD_ID] : fcDef.map(fcdef => fcdef.guilds).flat();
 
     // build an object so that we can track if the user is still in a guild with the fc command
     const isStillMember: { [key: string] : boolean } = {};
@@ -180,7 +181,7 @@ async function pruneDatabase(client: Client) {
         await pool.query('DELETE FROM chatot.reminders WHERE timerid=ANY($1)', [reminderCan]);
     }
     if (raterCan.length) {
-        await pool.query('DELETE FROM chatot.raters WHERE userid=ANY($1)', [raterCan]);
+        await pool.query('DELETE FROM chatot.raterlists WHERE userid=ANY($1)', [raterCan]);
     }
     if (fcCan.length) {
         await pool.query('DELETE FROM chatot.fc WHERE userid=ANY($1)', [fcCan]);

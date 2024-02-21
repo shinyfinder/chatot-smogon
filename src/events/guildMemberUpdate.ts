@@ -1,6 +1,6 @@
 import { GuildMember } from 'discord.js';
 import { eventHandler } from '../types/event-base';
-import config from '../config.js';
+import { botConfig } from '../config.js';
 import { checkVerified } from '../helpers/checkVerified.js';
 import { buildEmbed, postLogEvent, loggedEventTypes } from '../helpers/logging.js';
 
@@ -17,7 +17,7 @@ export const clientEvent: eventHandler = {
     // execute the code for this event
     async execute(oldMember: GuildMember, newMember: GuildMember) {
         // ignore DMs and events pertaining to the bot
-        if (!newMember.guild || newMember.user.id === config.CLIENT_ID) {
+        if (!newMember.guild || newMember.user.id === botConfig.CLIENT_ID) {
             return;
         }
         

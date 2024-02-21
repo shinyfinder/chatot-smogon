@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, ChannelType, EmbedBuilder, SlashCommandSubcommandBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
 import { getLTPlayers } from '../helpers/livetourWorkers.js';
 import { errorHandler } from '../helpers/errorHandler.js';
@@ -87,7 +87,7 @@ export const command: SlashCommand = {
         const interChan = interaction.channel;
 
         // make sure we have the necessary perms to post in the proper channels
-        const announcementChanID = config.MODE === 'dev' ? '1159564166655389856' : '1143857624333439007';
+        const announcementChanID = botConfig.MODE === Modes.Dev ? '1159564166655389856' : '1143857624333439007';
         const announcementChan = interaction.client.channels.cache.get(announcementChanID);
 
         // if the fetch failed, return

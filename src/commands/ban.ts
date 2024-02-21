@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import config from '../config.js';
+import { Modes, botConfig } from '../config.js';
 import { removeRaterAll } from '../helpers/removerater.js';
 
 /**
@@ -109,7 +109,7 @@ export const command: SlashCommand = {
         
         // remove them from the list of raters
         // only do this for the main cord
-        if ((config.MODE === 'dev' && interaction.guildId === config.GUILD_ID) || (config.MODE === 'production' && interaction.guildId === '192713314399289344')) {
+        if ((botConfig.MODE === Modes.Dev && interaction.guildId === botConfig.GUILD_ID) || (botConfig.MODE === Modes.Production && interaction.guildId === '192713314399289344')) {
             await removeRaterAll(interaction, [user.id]);
         }
     },

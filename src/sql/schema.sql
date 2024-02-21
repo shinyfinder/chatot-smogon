@@ -7,6 +7,7 @@ CREATE TABLE chatot.cooldown (
     PRIMARY KEY (channelid, identifier)
 );
 
+-- no longer used
 CREATE TABLE chatot.raters (
     channelid varchar(20),
     meta text,
@@ -15,6 +16,22 @@ CREATE TABLE chatot.raters (
     ping text NOT NULL DEFAULT 'All',
     PRIMARY KEY (channelid, meta, gen, userid)
 );
+
+
+CREATE TABLE chatot.raterlists (
+    meta text,
+    userid varchar(20),
+    ping text NOT NULL DEFAULT 'All',
+    PRIMARY KEY (meta, userid)
+);
+
+
+CREATE TABLE chatot.rmtchans (
+    channelid varchar(20),
+    meta text,
+    PRIMARY KEY (channelid, meta)
+);
+
 
 CREATE TABLE chatot.customs (
     serverid varchar(20),
@@ -115,7 +132,20 @@ CREATE TABLE chatot.ccprefs (
     gen text,
     stage chatot.ccstagealert,
     cooldown int,
+    prefix text,
     PRIMARY KEY (serverid, channelid, tier, gen, stage)
+);
+
+-- this is new
+CREATE TABLE chatot.ccalertprefs (
+    serverid varchar(20),
+    channelid varchar(20),
+    tier text,
+    roleid varchar(20),
+    stage chatot.ccstagealert,
+    cooldown int,
+    prefix text,
+    PRIMARY KEY (serverid, channelid, tier, stage)
 );
 
 -- lastcheck currently unused
@@ -188,6 +218,12 @@ CREATE TABLE chatot.livetours (
     PRIMARY KEY (messageid)
 );
 
+CREATE TABLE chatot.ccforums (
+    forumid integer,
+    tier text,
+    gen text,
+    PRIMARY KEY (forumid, tier, gen)
+);
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------

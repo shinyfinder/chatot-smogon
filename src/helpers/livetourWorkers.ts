@@ -1,5 +1,5 @@
 import { Client } from 'discord.js';
-import config from '../config.js';
+import { botConfig } from '../config.js';
 import { pool } from './createPool.js';
 import { errorHandler } from './errorHandler.js';
 
@@ -30,7 +30,7 @@ export async function getLTPlayers(hostID: string, title: string, messageID: str
         await intChan.send(`No one signed up for ${title} <@${hostID}>`);
         return;
     }
-    const filteredEntrants = (await entrants.users.fetch()).filter(entrant => entrant.id !== config.CLIENT_ID);
+    const filteredEntrants = (await entrants.users.fetch()).filter(entrant => entrant.id !== botConfig.CLIENT_ID);
 
     // if we were the only people to react, return;
     if (!filteredEntrants.size) {

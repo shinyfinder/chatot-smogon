@@ -1,6 +1,6 @@
 import { pool, sqlPool } from './createPool.js';
 import { ICCCooldown, ICCData, ICCStatus, IXFParsedThreadData, IXFStatusQuery } from '../types/cc';
-import { ccSubObj } from './constants.js';
+
 
 /**
  * File containing db queries relating to C&C integration
@@ -18,7 +18,7 @@ export async function loadCCData() {
         (SELECT thread_id, stage, progress FROM chatot.ccstatus),
 
         alert_chans AS
-        (SELECT serverid, channelid, tier, role, gen, stage, cooldown FROM chatot.ccprefs)
+        (SELECT serverid, channelid, tier, role, gen, stage, cooldown, prefix FROM chatot.ccprefs)
 
         SELECT json_build_object(
             'threads', (SELECT COALESCE(JSON_AGG(cc_status.*), '[]') FROM cc_status),
@@ -72,8 +72,9 @@ export async function updateCCCache(data: IXFParsedThreadData[] | ICCStatus[], p
  * @returns Array of objects containing thread info (thread id, node id, title, prefix)
  */
 export async function pollCCForums() {
-    // extract the subforum ids
-    const nodeIds = Object.keys(ccSubObj);
+    // get the subforum ids
+    const forumsPG: { forumid: string }[] | [] = (await pool.query('SELECT forumid FROM chatot.ccforums')).rows;
+    const nodeIds = forumsPG.map(fid => fid.forumid);
     
     // if there are no subforums to monitor, just return
     // this should never be the case
@@ -107,6 +108,16 @@ export async function getCCAlertCooldowns() {
 
 
 export async function updateCCAlertCooldowns(chanid: string, id: string) {
-    await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2) ON CONFLICT (channelid, identifier) DO UPDATE SET channelid=EXCLUDED.channelid, identifier=EXCLUDED.identifier', [chanid, id]);
+    await pool.query('INSERT INTO chatot.cooldown (channelid, identifier) VALUES ($1, $2) ON CONFLICT (channelid, identifier) DO UPDATE SET date=default', [chanid, id]);
     return;
+}
+
+export async function getGenAlias(num: string) {
+    const genAlias: { alias: string }[] | [] = (await pool.query('SELECT alias FROM dex.gens WHERE "order"=$1-1 LIMIT 1', [num])).rows;
+    return genAlias;
+}
+
+export async function getFromForumMap(col: string, threadID: string) {
+    const rows: { [key: string]: string }[] | [] = (await pool.query(`SELECT DISTINCT ${col} FROM chatot.ccforums WHERE forumid=$1`, [threadID])).rows;
+    return rows;
 }

@@ -5,9 +5,7 @@ import { SlashCommand } from '../types/slash-command-base';
 /**
  * Command to change a users subscription to the RMT ping system
  * @param data SlashCommandBuilder() instance from discord.js
- * @returns Replies Pong! in the chat
  *
- * Can be used as a template for future commands
  */
 export const command: SlashCommand = {
     global: false,

@@ -29,7 +29,7 @@ export const clientEvent: eventHandler = {
             // raters are only in the main discord
             // we hardcode this because we don't want to accidentally do it
             if (guild.id === '192713314399289344') {
-                await pgClient.query('TRUNCATE TABLE chatot.raters');
+                await pgClient.query('TRUNCATE TABLE chatot.raterlists');
             }
             await pgClient.query('DELETE FROM chatot.customs WHERE serverid=$1', [guild.id]);
             await pgClient.query('DELETE FROM chatot.logchan WHERE serverid=$1', [guild.id]);
@@ -45,6 +45,7 @@ export const clientEvent: eventHandler = {
             await pgClient.query('DELETE FROM chatot.tickets WHERE serverid=$1', [guild.id]);
             await pgClient.query('DELETE FROM chatot.gbanignores WHERE serverid=$1', [guild.id]);
             await pgClient.query('DELETE FROM chatot.livetours WHERE NOT interactionchanid=ANY($1) OR NOT announcechanid=ANY($1)', [chanIDs]);
+            await pgClient.query('DELETE FROM chatot.rmtchans WHERE NOT channelid=ANY($1)', [chanIDs]);
             // end
             await pgClient.query('COMMIT');
         }
