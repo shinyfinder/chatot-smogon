@@ -97,7 +97,7 @@ export async function loadAllDexNames() {
         (SELECT dex.types.name, dex.types.alias, dex.types.description FROM dex.types),
 
         formats AS
-        (SELECT dex.formats.shorthand, dex.formats.alias FROM dex.formats),
+        (SELECT DISTINCT dex.formats.shorthand, dex.formats.alias FROM dex.formats),
 
         gens AS
         (SELECT dex.gens.shorthand, dex.gens.alias, dex.gens.order FROM dex.gens ORDER BY dex.gens.order)
