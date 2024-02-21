@@ -1,4 +1,4 @@
-import { Message } from 'discord.js';
+import { Collection, Message } from 'discord.js';
 import { pool } from './createPool.js';
 import { rmtChannels } from './manageRMTCache.js';
 import fetch from 'node-fetch';
@@ -111,7 +111,7 @@ export async function rmtMonitor(msg: Message) {
          * Let's use the id
          */
         // if member does not exist, we didn't fetch the member, probably because they aren't in the guild
-        if (!member) {
+        if (!member || member instanceof Collection && !member.size) {
             continue;
         }
 

@@ -28,7 +28,7 @@ export const command: SlashCommand = {
             .setDescription('Name of the move to search')
             .setRequired(true)
             .setAutocomplete(true))
-        .addIntegerOption(option =>
+        .addStringOption(option =>
             option.setName('gen')
             .setDescription('Which gen to search. If blank, the latest is used')
             .setAutocomplete(true)

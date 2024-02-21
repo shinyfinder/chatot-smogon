@@ -1,7 +1,7 @@
 import { pool } from './createPool.js';
 import { EmbedBuilder, ChannelType, Embed, Channel, User, Client } from 'discord.js';
 import { Modes, botConfig } from '../config.js';
-import { psFormats, latestGen } from './loadDex.js';
+import { psFormats, latestGen, dexGenNumAbbrMap } from './loadDex.js';
 
 interface raterGroup {
     meta: string,
@@ -116,15 +116,24 @@ export async function updatePublicRatersList(client: Client, editMeta?: string) 
         'lc',
         'monotype',
     ];
+    
+    // get the gen number for the latest gen
+    const curGenNum = dexGenNumAbbrMap.find(g => g.abbr === latestGen)?.num ?? -1;
 
+    const officialRegex = new RegExp(`gen(?:\\d+)(?:${officialTiers.join('|')})$`, 'im');
     for (const raterGroups of raterList) {
         if (raterGroups.alias.includes('nationaldex') || raterGroups.alias.includes('letsgo') || raterGroups.alias.includes('bdsp')) {
             misc.push(raterGroups);
         }
-        else if (officialTiers.some(str => raterGroups.alias.includes(str)) && raterGroups.alias.includes(`gen${latestGen}`)) {
+        /*
+        else if (officialTiers.some(str => raterGroups.alias.includes(str)) && raterGroups.alias.includes(`gen${genNum}`)) {
             currentOfficial.push(raterGroups);
         }
-        else if (officialTiers.some(str => raterGroups.alias.includes(str))) {
+        */
+        else if (officialTiers.some(str => raterGroups.alias === `gen${curGenNum}${str}`)) {
+            currentOfficial.push(raterGroups);
+        }
+        else if (officialRegex.test(raterGroups.alias)) {
             oldOfficial.push(raterGroups);
         }
         else {
@@ -150,11 +159,11 @@ export async function updatePublicRatersList(client: Client, editMeta?: string) 
      * Credit: https://stackoverflow.com/questions/34851713/sort-javascript-array-based-on-a-substring-in-the-array-element
      */
 
-    currentOfficial.sort(function(a, b) {
+    currentOfficial.sort((a, b) => {
         function getNumber(s: raterGroup) {
             let index = -1;
-            officialTiers.some(function(c, i) {
-                if (~s.alias.indexOf(c)) {
+            officialTiers.some((ot, i) => {
+                if (~s.alias.indexOf(`gen${curGenNum}${ot}`)) {
                     index = i;
                     return true;
                 }
@@ -167,7 +176,7 @@ export async function updatePublicRatersList(client: Client, editMeta?: string) 
     // all of the tiers start with genX, so as a first attempt just sort alphabetically (newest first)
     oldOfficial.sort((a, b) => ((a.alias < b.alias) ? 1 : ((a.alias == b.alias) ? 0 : -1)));
     // alphabetical sort
-    misc.sort((a, b) => ((a.alias < b.alias) ? -1 : ((a.alias == b.alias) ? 0 : 1)));
+    misc.sort((a, b) => ((a.alias < b.alias) ? 1 : ((a.alias == b.alias) ? 0 : -1)));
 
     /**
      * build the embeds

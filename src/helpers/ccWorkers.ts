@@ -424,7 +424,9 @@ export async function parseCCStage(threadData: IXFStatusQuery[]) {
                 // ideally we wouldn't want to update this every time, so extend the pg query to get the gens with whatever aliases we have saved in constants
                 // at least that way part of it will always be updated, and it may be totally sufficient if people don't use other random acronyms
                 // we match with the 'i' flag, so it doesn't really matter if we use the shorthand or alias
-                const extendedGenAliases = dexGens.map(g => g.name).concat(...Object.values(genAliases));
+                // but we use the alias because we also allow them to use the gen number as a gen choice. 
+                // this creates issues with extendedGenAliases because it inserts "|[1-9]" into the regex
+                const extendedGenAliases = [...new Set(dexGens.map(g => g.value))].concat(...Object.values(genAliases));
                 const genRegex = new RegExp(`\\b(?:Gen|G|Generation)\\s*([0-9]+)\\b|\\b(${extendedGenAliases.join('|')})\\b`, 'i');
                 const matchArr = thread.title.match(genRegex);
 

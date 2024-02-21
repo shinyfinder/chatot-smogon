@@ -184,7 +184,7 @@ export const command: SlashCommand = {
                         .setRequired(false))
                     .addStringOption(option =>
                         option.setName('tierprefix')
-                        .setDescription('Non-stage thread prefix used by your monitored tier (i.e. OMs, Old Gens, RBY Other)')
+                        .setDescription('Non-stage thread prefix used by your monitored tier (i.e. in OMs, Old Gens, RBY Other)')
                         .setRequired(false)))
                 .addSubcommand(new SlashCommandSubcommandBuilder()
                     .setName('remove')

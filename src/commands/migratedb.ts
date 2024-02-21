@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base.js';
 import { pool } from '../helpers/createPool.js';
-import { botConfig, Modes } from '../config.js';
+
 
 interface IRaterDump {
     channelid: string,
@@ -181,7 +181,8 @@ const ccSubObj: { [key: string] : { gens : string[], tiers: string[], url: strin
 };
 /**
  * Populates the database of rater information
- * This is currently a dev-only command
+ * This is currently a dev-only command.
+ * It can also only be run once so...don't run it twice. Yes, it's jank.
  */
 export const command: SlashCommand = {
     global: false,
@@ -242,10 +243,10 @@ export const command: SlashCommand = {
             let meta = '';
             // overwrite the db with the new meta values we need
             // ps uses a format of genXmeta
-            if (dbMeta === 'lgpe ou') {
+            if (dbMeta === 'ou' && row.gen === 'LGPE') {
                 meta = 'letsgoou';
             }
-            else if (dbMeta === 'bdsp ou') {
+            else if (dbMeta === 'ou' && row.gen === 'BDSP') {
                 meta = 'bdspou';
             }
             else if (dbMeta === 'dou') {
@@ -290,23 +291,35 @@ export const command: SlashCommand = {
             else if (dbMeta === 'om mashup' || dbMeta === 'general om') {
                 continue;
             }
+            else if (dbMeta === 'ag') {
+                meta = 'anythinggoes';
+            }
             else {
                 meta = dbMeta;
             }
             // form the meta name using PS syntax
-            const psMeta = `gen${genNum}${meta}`;
+            // we need to bump PH from Gen6 -> 7, so overwrite that one manually
+            if (dbMeta === 'ph' && genNum === '6') {
+                const psMeta = `gen7${meta}`;
+                rmtMetas.push(psMeta);
+            }
+            else {
+                const psMeta = `gen${genNum}${meta}`;
+                rmtMetas.push(psMeta);
+            }
+            
 
             // push to the arrays
             rmtUsers.push(row.userid);
             rmtPings.push(row.ping);
-            rmtMetas.push(psMeta);
+            
             rmtChannelsDB.push(row.channelid);
         }
 
         /**
          * RMT CHANNELS
          */
-
+        /*
         // combine the metas and channels into an array so that we can get the unique combos
         const chanMetaPairs = rmtChannelsDB.map((id, idx) => ([id, rmtMetas[idx]]));
 
@@ -333,6 +346,82 @@ export const command: SlashCommand = {
         }
 
         // uncombine the unique pairs so we can insert them
+        const rmtChannelIDs = uniqueChanMetaPairs.map(p => p[0]);
+        const rmtChannelMetas = uniqueChanMetaPairs.map(p => p[1]);
+        */
+        const uniqueChanMetaPairs: [string, string][] = [];
+        // not every meta has a rater rn, so just pulling from the rater list will require staff to set it up manually for a lot of channels
+        // so, let's just hardcode what goes where
+        
+        uniqueChanMetaPairs.push(
+            // pu
+            ['1061136198208344084', 'gen9pu'],
+            // nu
+            ['1061136091056439386', 'gen9nu'],
+            // ru
+            ['1061135917160607766', 'gen9ru'],
+            // lc
+            ['1061135027599048746', 'gen9lc'],
+            // bss
+            ['1060690402711183370', 'gen9bss'],
+            // ag
+            ['1060682013453078711', 'gen9anythinggoes'],
+            // old gen ou
+            ['1060339824537641152', 'gen8ou'],
+            ['1060339824537641152', 'gen5ou'],
+            ['1060339824537641152', 'gen1ou'],
+            ['1060339824537641152', 'gen2ou'],
+            ['1060339824537641152', 'gen3ou'],
+            ['1060339824537641152', 'gen6ou'],
+            ['1060339824537641152', 'gen7letsgoou'],
+            ['1060339824537641152', 'gen8bdspou'],
+            ['1060339824537641152', 'gen7ou'],
+            ['1060339824537641152', 'gen4ou'],
+            // natdex non ou
+            ['1060037469472555028', 'gen9nationaldexuu'],
+            ['1060037469472555028', 'gen9nationaldexmonotype'],
+            ['1060037469472555028', 'gen9nationaldexag'],
+            // uber
+            ['1059901370477576272', 'gen9ubers'],
+            // uu
+            ['1059743348728004678', 'gen9uu'],
+            // nat dex ou'
+            ['1059714627384115290', 'gen9nationaldex'],
+            // cap
+            ['1059708679814918154', 'gen9cap'],
+            // vgc
+            ['1059704283072831499', 'gen9vgc'],
+            // 1v1 -- old
+            ['1059673638145622096', 'gen91v1'],
+            // 1v1 -- new
+            ['1089349311080439882', 'gen91v1'],
+            // mono
+            ['1059658237097545758', 'gen9monotype'],
+            // om
+            ['1059657287293222912', 'gen9balancedhackmons'],
+            ['1059657287293222912', 'gen9almostanyability'],
+            ['1059657287293222912', 'gen9godlygift'],
+            ['1059657287293222912', 'gen7purehackmons'],
+            ['1059657287293222912', 'gen9mixandmega'],
+            ['1059657287293222912', 'gen9inheritance'],
+            ['1059657287293222912', 'gen9partnersincrime'],
+            ['1059657287293222912', 'gen9stabmons'],
+            // um
+            ['1208795569649356820', 'gen9ubersuu'],
+            ['1208795569649356820', 'gen9anythinggoes'],
+            ['1208795569649356820', 'gen9zu'],
+            ['1208795569649356820', 'gen92v2doubles'],
+            ['1208795569649356820', 'gen9nfe'],
+            // dou
+            ['1059655497587888158', 'gen9doublesou'],
+            // ou
+            ['1059653209678950460', 'gen9ou'],
+            // rmt1 -- legacy system
+            ['630478290729041920', 'gen9ou'],
+            // rmt2 -- legacy system
+            ['635257209416187925', 'gen9ou'],
+        );
+        
         const rmtChannelIDs = uniqueChanMetaPairs.map(p => p[0]);
         const rmtChannelMetas = uniqueChanMetaPairs.map(p => p[1]);
 
@@ -398,8 +487,11 @@ export const command: SlashCommand = {
             else if (row.tier === 'uubers') {
                 tiers.push('ubers-uu');
             }
+            else if (row.tier === 'Ubers') {
+                continue;
+            }
             else {
-                tiers.push(row.tier.replace(/ /g, '-'));
+                tiers.push(row.tier.replace(/ /g, '-').toLowerCase());
             }
 
             // map the prefixes
@@ -410,7 +502,7 @@ export const command: SlashCommand = {
                 prefixes.push(row.tier);
             }
             // Old Gens
-            else if (row.tier === 'ou') {
+            else if (row.tier === 'ou' || row.tier === 'PU' || row.tier === 'pu' || row.tier === 'uu') {
                 if (Number(row.gen) < 9) {
                     prefixes.push(`gen ${row.gen}`);
                 }
@@ -449,7 +541,7 @@ export const command: SlashCommand = {
 
         for (const [k, v] of Object.entries(ccSubObj)) {
             for (const gen of v.gens) {
-                const genAbbr = genConversion(gen);
+                const genAbbr = genConversion(gen).toLowerCase();
 
                 for (const tier of v.tiers) {
                     forumIDs.push(Number(k));
@@ -482,6 +574,7 @@ export const command: SlashCommand = {
             DO NOTHING`, [rmtChannelIDs, rmtChannelMetas]);
             // cc prefs
             // we reuse the table, so we need to do it in multiple steps so we can avoid conflicts and dupes
+            await pgClient.query('DELETE FROM chatot.ccprefs WHERE tier=\'Ubers\'');
             await pgClient.query(`
             UPDATE chatot.ccprefs
             SET gen = renames.new_gen
@@ -522,7 +615,8 @@ export const command: SlashCommand = {
                     ('lgpe ou', 'lgpe-ou'),
                     ('bdsp-ou', 'bdsp-ou'),
                     ('stadium ou', 'stadium-ou'),
-                    ('tradebacks ou', 'tradebacks-ou')
+                    ('tradebacks ou', 'tradebacks-ou'),
+                    ('PU', 'pu')
                 ) as renames(old_tier, new_tier)
             WHERE tier = renames.old_tier`);
             await pgClient.query(`
@@ -537,7 +631,6 @@ export const command: SlashCommand = {
             ON CONFLICT (forumid, tier, gen)
             DO NOTHING`, [forumIDs, forumTiers, forumGens]);
             // cooldowns
-            // this is too much work to replace everything given every possible gen+meta combo, so we're just gonna truncate and people can get an extra ping. Sorry
             await pgClient.query('TRUNCATE TABLE chatot.cooldown');
             // end
             await pgClient.query('COMMIT');

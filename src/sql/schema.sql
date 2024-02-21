@@ -7,6 +7,7 @@ CREATE TABLE chatot.cooldown (
     PRIMARY KEY (channelid, identifier)
 );
 
+-- no longer used
 CREATE TABLE chatot.raters (
     channelid varchar(20),
     meta text,
@@ -16,7 +17,7 @@ CREATE TABLE chatot.raters (
     PRIMARY KEY (channelid, meta, gen, userid)
 );
 
--- this is new
+
 CREATE TABLE chatot.raterlists (
     meta text,
     userid varchar(20),
@@ -24,7 +25,7 @@ CREATE TABLE chatot.raterlists (
     PRIMARY KEY (meta, userid)
 );
 
--- this is new
+
 CREATE TABLE chatot.rmtchans (
     channelid varchar(20),
     meta text,
@@ -123,7 +124,6 @@ CREATE TABLE chatot.ccstatus (
 
 
 CREATE TYPE chatot.ccstagealert AS enum ('qc', 'done', 'all');
--- added prefix col
 CREATE TABLE chatot.ccprefs (
     serverid varchar(20),
     channelid varchar(20),
@@ -218,7 +218,6 @@ CREATE TABLE chatot.livetours (
     PRIMARY KEY (messageid)
 );
 
--- this is new
 CREATE TABLE chatot.ccforums (
     forumid integer,
     tier text,
