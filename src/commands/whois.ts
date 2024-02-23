@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool, sqlPool } from '../helpers/createPool.js';
 /**
@@ -13,10 +13,20 @@ export const command: SlashCommand = {
     data: new SlashCommandBuilder()
         .setName('whois')
         .setDescription('Looks up a user\'s discord-forum connection')
-        .addStringOption(option =>
-            option.setName('user')
-            .setDescription('Discord user ID or forum profile URL/username')
-            .setRequired(true))
+        .addSubcommand(new SlashCommandSubcommandBuilder()
+            .setName('discord')
+            .setDescription('Gets a user\'s forum profile given their Discord')
+            .addUserOption(option =>
+                option.setName('user')
+                .setDescription('Discord user profile (must be in this server) or user ID (global lookup)')
+                .setRequired(true)))
+        .addSubcommand(new SlashCommandSubcommandBuilder()
+            .setName('forum')
+            .setDescription('Gets a user\'s Discord given their Smogon profile')
+            .addStringOption(option =>
+                option.setName('user')
+                .setDescription('Forum profile URL or exact (case sensitive) username')
+                .setRequired(true)))
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
@@ -28,49 +38,52 @@ export const command: SlashCommand = {
             return;
         }
         await interaction.deferReply({ ephemeral: true });
-        // get the inputs
-        const user = interaction.options.getString('user', true);
 
-        // if the string contains non-numeric characters, treat it as a URL
-        // extract their profile id from the provided url
-        const isNumeric = (/^\d+$/).test(user);
+        /**
+         * FORUM LOOKUP USING DISCORD
+         */
+        if (interaction.options.getSubcommand() === 'discord') {
+            // get their input
+            const cordUser = interaction.options.getUser('user', true);
 
-        // numeric = discordid
-        if (isNumeric) {
             // query the db for the provided input
-            const pgQuery = await pool.query('SELECT forumid FROM chatot.identities WHERE discordid=$1', [user]);
-            const dbmatches: { forumid: string }[] | [] = pgQuery.rows;
+            const dbmatches: { forumid: string }[] | [] = (await pool.query('SELECT forumid FROM chatot.identities WHERE discordid=$1', [cordUser.id])).rows;
 
             // give them the results
             if (dbmatches.length) {
                 // fetch their discord profile
-                // const profile = await interaction.client.users.fetch(user);
                 await interaction.followUp(`Here's a link to their forum profile https://www.smogon.com/forums/members/${dbmatches[0].forumid}`);
             }
             else {
                 await interaction.followUp('No connection found.');
             }
+
         }
-        // nonnumeric = url or username
-        else {
+
+        /**
+         * DISCORD LOOKUP USING FORUM
+         */
+        else if (interaction.options.getSubcommand() === 'forum') {
+            // get their input
+            const forumUser = interaction.options.getString('user', true);
             // extract their profile id from the provided url
-            let forumid: string | number | undefined = user.match(/^(?:https?:\/\/)?(?:www\.)?smogon\.com\/forums\/members\/(?:(.*?)\.)?(\d+)\/?$/)?.pop();
+            let forumid = forumUser.match(/^(?:https?:\/\/)?(?:www\.)?smogon\.com\/forums\/members\/(?:(.*?)\.)?(\d+)\/?$/)?.pop();
 
             // if forumid is undefined, assume they entered a username
             if (forumid === undefined) {
                 // query the xf tables to get their id
                 // we don't store usernames because of namechanges
-                const [sqlMatch] = await sqlPool.execute('SELECT user_id FROM xenforo.xf_user WHERE username = ?', [user]);
+                const [sqlMatch] = await sqlPool.execute('SELECT user_id FROM xenforo.xf_user WHERE username = ?', [forumUser]);
 
                 // cast to meaningful array
                 const idArr = sqlMatch as { user_id: number }[] | [];
 
                 // if we didn't get a match, let them know
                 if (idArr.length) {
-                    forumid = idArr[0].user_id;
+                    forumid = idArr[0].user_id.toString();
                 }
                 else {
-                    await interaction.followUp('Profile not found. Please provide the URL or exact username of their forum profile.');
+                    await interaction.followUp('Profile not found. Please provide the URL or exact (case sensitive) username of their forum profile.');
                     return;
                 }
                 
@@ -82,9 +95,6 @@ export const command: SlashCommand = {
 
             // give them the results
             if (dbmatches.length) {
-                // fetch their discord profile
-                // const profile = await interaction.client.users.fetch(user);
-
                 // loop over all of the discords with this forum profile to build an output string
                 // this almost should never happen more than once but it's technically possible
                 const strOutArr: string[] = [];
@@ -98,7 +108,8 @@ export const command: SlashCommand = {
             else {
                 await interaction.followUp('No connection found.');
             }
-        }
 
+
+        }
     },
 };

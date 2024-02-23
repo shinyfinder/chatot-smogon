@@ -34,14 +34,14 @@ export async function checkCCUpdates(client: Client) {
     const threadData = await pollCCForums();
     
     // if you didn't get a match, there's nothing in the forums
-    // so empty the cache because nothing is there
-    // this should never be the case
+    // don't empty the cache tho, because you'll end up pinging all of QC like 100 times when the forums are repopulated
+    // true story
     if (!threadData.length) {
-        await uncacheRemovedThreads(threadData, oldData);
         // release the lock
         lockout.cc = false;
         return;
     }
+    
 
     // parse the fetched thread info
     const parsedThreadData = await parseCCStage(threadData);
@@ -99,7 +99,39 @@ export async function uncacheRemovedThreads(currentData: IXFStatusQuery[], cache
  * @param client Discord js client object
  */
 async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData, client: Client) {
+    // if there are too many updates at once, update the database but don't ping anyone
+    // this may be because of a db reset
+    let totalPingFlag = true;
+    let metaPingFlag = true;
+
+    // chcek for the total number of updated threads
+    // if there are too many, don't ping
+    if (newDataArr.length > 10) {
+        totalPingFlag = false;
+    }
+
+    // talley the number of times a node id appears in the updated list of threads
+    // usually, this will equal the number of times someone could be pinged
+    // if this is a new ID, intiate the entry with a count of 1
+    // otherwise, add 1 to the previous number
+    const nodeIds = newDataArr.map(d => d.node_id.toString());
+    const counts: { [key: string]: number; } = {};
+    nodeIds.forEach(id => {
+        counts[id] = (counts[id] || 0) + 1;
+    });
+
+    const metaPingFlagNodeIds: number[] = [];
+
     for (const newData of newDataArr) {
+        // if there are too many updates for this tier, set the flag to not ping
+        if (counts[newData.node_id.toString()] > 5) {
+            metaPingFlag = false;
+            metaPingFlagNodeIds.push(newData.node_id);
+        }
+        else {
+            metaPingFlag = true;
+        }
+
         // to be safe, cast each element in the tier array to lower case
         let newTierLower = newData.tier.map(tier => tier.toLowerCase());
 
@@ -202,13 +234,16 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
                 const nextAllowedValue = matchingCD ? matchingCD.date.valueOf() + (cooldown * 1000 * 60 * 60) : 0;
 
                 // if cooldown is defined (they want one) and it's currently later than the cooldown, alert
-                // otherwise, just alert
+                // otherwise, alert if there aren't too many updates
                 // the cooldown only applies to QC status
                 if (Date.now().valueOf() < nextAllowedValue && newData.stage === 'QC') {
                     continue;
                 }
-                else {
+                else if (totalPingFlag && metaPingFlag) {
                     await chan.send(alertmsg);
+                }
+                else {
+                    continue;
                 }
                 
 
@@ -228,6 +263,9 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
                 errorHandler(e);
             }
         }
+    }
+    if (!totalPingFlag || metaPingFlagNodeIds.length) {
+        console.error(`Too many C&C updates to ping. Total: ${newDataArr.length} | Nodes: ${[...new Set(metaPingFlagNodeIds)].join(', ')}`);
     }
     
 }

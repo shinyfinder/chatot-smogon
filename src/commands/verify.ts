@@ -15,7 +15,7 @@ export const command: SlashCommand = {
         .setDescription('Links your discord and forum accounts')
         .addStringOption(option => 
             option.setName('profile')
-            .setDescription('URL or username of your forum profile. Enter your tag into forum Account Details > Identities first')
+            .setDescription('URL or case-sensitive username of your forum profile')
             .setRequired(false))
         .setDMPermission(false),
 
@@ -41,7 +41,7 @@ export const command: SlashCommand = {
                 forumid = idMatches[0].forumid;
             }
             else {
-                await interaction.followUp('No linked profile found. Please provide a forum URL in the appropriate field when invoking the command.');
+                await interaction.followUp('No linked profile found. Please provide either the URL to your forum profile or your exact (case sensitive) forum username in the appropriate field when invoking the command.');
                 return;
             }
         }
@@ -77,7 +77,7 @@ export const command: SlashCommand = {
 
             // if we didn't get a match, they didn't provide a valid profile url or username, so let them know
             if (!userData.length) {
-                await interaction.followUp('Profile not found. Please provide either your forum profile URL or your exact forum username.');
+                await interaction.followUp('Profile not found. Please provide either your forum profile URL or your exact (case sensitive) forum username.');
                 return;
             }
 
@@ -93,8 +93,8 @@ export const command: SlashCommand = {
             }
             */
 
-            if (discordFieldUsername !== interaction.user.tag) {
-                await interaction.followUp('Your forum account does not have your Discord tag in your Identities. Did you enter your username correctly on your profile in the appropriate field? <https://www.smogon.com/forums/account/account-details>');
+            if (discordFieldUsername.toLowerCase() !== interaction.user.tag) {
+                await interaction.followUp(`The name in the Discord field of your forum Identities does not match your Discord username. Please note your username (\`${interaction.user.tag}\`) is the unique, all-lowercase name you chose for your Discord account. Please enter your username correctly on your profile in the appropriate field <https://www.smogon.com/forums/account/account-details>`);
                 return;
             }
 
@@ -175,7 +175,7 @@ export const command: SlashCommand = {
         }
 
         // let them know success
-        await interaction.followUp('Discord and forum profiles linked!');
+        await interaction.followUp('Discord and forum profiles linked! If you wish, you may remove your username from your forum profile.');
         return;
 
     },

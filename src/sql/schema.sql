@@ -136,18 +136,6 @@ CREATE TABLE chatot.ccprefs (
     PRIMARY KEY (serverid, channelid, tier, gen, stage)
 );
 
--- this is new
-CREATE TABLE chatot.ccalertprefs (
-    serverid varchar(20),
-    channelid varchar(20),
-    tier text,
-    roleid varchar(20),
-    stage chatot.ccstagealert,
-    cooldown int,
-    prefix text,
-    PRIMARY KEY (serverid, channelid, tier, stage)
-);
-
 -- lastcheck currently unused
 CREATE TABLE chatot.lastcheck (
     topic text,
