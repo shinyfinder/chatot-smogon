@@ -122,8 +122,10 @@ export const command: SlashCommand = {
             }
             // if it's any of the natdex formats
             else if (format.includes('national-dex')) {
-                // get all of the entries related to natdex
-                dbFilteredByFormat = dbFilterMon.filter(poke => poke.isnonstandard === 'NatDex');
+                // the latest available natdex will always be the latest gen
+                // so just take the last (latest) one
+                // we can't filter by natdex because current gens mons won't have a NatDex row
+                dbFilteredByFormat = dbFilterMon;
             }
             // if they specified a format that's not cap or natdex
             else if (format) {

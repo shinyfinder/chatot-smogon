@@ -16,7 +16,7 @@ import { pool } from '../helpers/createPool.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
 import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
-import { dexFormats, dexGens } from '../helpers/loadDex.js';
+import { modifiedDexFormats, dexGens } from '../helpers/loadDex.js';
 import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
 
 /**
@@ -243,7 +243,7 @@ export const command: SlashCommand = {
         const focusedOption = interaction.options.getFocused(true);
 
         if (focusedOption.name === 'tier' || focusedOption.name === 'format') {
-            await filterAutocomplete(interaction, focusedOption, dexFormats);
+            await filterAutocomplete(interaction, focusedOption, modifiedDexFormats);
         }
         else if (focusedOption.name === 'gen') {
             await filterAutocomplete(interaction, focusedOption, dexGens);
@@ -404,7 +404,7 @@ export const command: SlashCommand = {
             if (format) {
                 // validate the autocomplete entry
                 // if it's not valid, return and let them know
-                if (!validateAutocomplete(format, dexFormats)) {
+                if (!validateAutocomplete(format, modifiedDexFormats)) {
                     await interaction.followUp('I did not understand that meta; please choose one from the list');
                     return;
                 }
@@ -463,7 +463,7 @@ export const command: SlashCommand = {
 
                 // validate the autocomplete entry
                 // if it's not valid, return and let them know
-                if (!validateAutocomplete(tier, dexFormats)) {
+                if (!validateAutocomplete(tier, modifiedDexFormats)) {
                     await interaction.followUp('I did not understand that meta or I am not setup to track it. Please choose one from the list');
                     return;
                 }
@@ -540,7 +540,7 @@ export const command: SlashCommand = {
 
                 // validate the autocomplete entry
                 // if it's not valid, return and let them know
-                if (!validateAutocomplete(tier, dexFormats)) {
+                if (!validateAutocomplete(tier, modifiedDexFormats)) {
                     await interaction.followUp('I did not understand that meta or I am not setup to track it. Please choose one from the list');
                     return;
                 }

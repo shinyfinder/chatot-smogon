@@ -110,6 +110,10 @@ export const command: SlashCommand = {
     // execute the code
 	async execute(interaction: ChatInputCommandInteraction) {
         
+        /**
+         * LINECOUNTS
+         */
+
         if (interaction.options.getSubcommand() === 'linecount') {
             await interaction.deferReply();
             // check to make sure it's actually in a guild and used in the main server
@@ -214,7 +218,7 @@ export const command: SlashCommand = {
             await interaction.followUp(`Parsing messages from ${ startDateIn.toString() } to ${ endDateIn.toString() }...`);
 
             // loop through the different RMT channels to get all of the messages
-            const rmtChans: { channelid: string }[] | [] = (await pool.query('SELECT channelid FROM chatot.rmtchans')).rows;
+            const rmtChans: { channelid: string }[] | [] = (await pool.query('SELECT DISTINCT channelid FROM chatot.rmtchans')).rows;
             const channelIDs = rmtChans.map(c => c.channelid);
 
             // variable preallocation for getting the users who posted messages in the RMT channels
@@ -405,6 +409,12 @@ export const command: SlashCommand = {
                 { attachment: buf, name: `${startFilename}-${endFilename}_linecount.csv` },
             ] });
         }
+
+
+        /**
+         * CHANNEL ADD
+         */
+
         else if (interaction.options.getSubcommand() === 'add') {
             await interaction.deferReply({ ephemeral: true });
 
@@ -440,6 +450,12 @@ export const command: SlashCommand = {
             await interaction.followUp('Channel tracking updated');
 
         }
+
+
+        /**
+         * CHANNEL REMOVE
+         */
+
         else if (interaction.options.getSubcommand() === 'remove') {
             await interaction.deferReply({ ephemeral: true });
             

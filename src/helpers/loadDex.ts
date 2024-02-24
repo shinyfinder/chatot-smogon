@@ -18,6 +18,7 @@ export const allNames: INVPair[] = [];
 export let fullDexNameQuery: IDexNameDump;
 export let moves: IPSMoves = {};
 export let psFormats: INVPair[];
+export let modifiedDexFormats: INVPair[];
 export let dexFormats: INVPair[];
 export let dexGens: INVPair[];
 export let latestGen: string = '';
@@ -123,10 +124,12 @@ export async function loadAllDexNames() {
     const { formats, gens, ...dtNames } = fullDexNameQuery;
 
     // formulate their auto pairs
+    dexFormats = formats.map(f => ({ name: f.shorthand, value: f.alias }));
+
     // BSS and VGC are weird in that they have a bunch of different names for the same meta
     // for the purposes of C&C (and raters), the names don't change to whom/where it applies
     // so map the different names to have the same value
-    dexFormats = formats.map(f => {
+    modifiedDexFormats = formats.map(f => {
         if (/^(?:Battle |BSS)/m.test(f.shorthand)) {
             return { name: f.shorthand, value: 'bss' };
         }
