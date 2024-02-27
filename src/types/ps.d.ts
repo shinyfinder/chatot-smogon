@@ -26,14 +26,6 @@ export interface IPSMoves {
     }
 }
 
-export interface IPSMoveText {
-    [key: string]: {
-        name: string,
-        desc: string,
-        [key: string]: unknown,
-    }
-}
-
 export interface IPSLearnsets {
     [key: string]: {
         learnset: {
@@ -50,30 +42,5 @@ export interface IPSItems {
         fling?: { basePower: number, status?: string, volatileStatus?: string; },
         naturalGift?: { basePower: number, type: string },
         [key: string]: unknown,
-    }
-}
-
-export interface IPSItemText {
-    [key: string]: {
-        name: string,
-        desc: string,
-        [key: string]: unknown,
-    }
-}
-
-export interface IPSAbilityText {
-    [key: string]: {
-        name: string,
-        desc?: string,
-        shortDesc?: string,
-        [key: string]: unknown,
-    }
-}
-
-export interface IPSNatures {
-    [key: string]: {
-        name: string,
-        plus?: string,
-        minus?: string,
     }
 }

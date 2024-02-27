@@ -11,7 +11,7 @@ import fs from 'fs';
 import { createPool } from './helpers/createPool.js';
 import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
-import { loadItems, loadMoves, loadSpriteDex, loadAllDexNames, loadPSFormats } from './helpers/loadDex.js';
+import { loadItems, loadMoves, loadSpriteDex, loadAllDexNames, loadPSFormats, getImageCommitHash } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
 import { errorHandler } from './helpers/errorHandler.js';
 import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
@@ -169,6 +169,7 @@ await Promise.all([
     loadPSFormats(),
     recreateLiveTours(client),
     loadRMTChans(),
+    getImageCommitHash(),
 ]);
 
 

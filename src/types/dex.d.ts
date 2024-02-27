@@ -65,4 +65,11 @@ export interface IDtNameDump {
     moves: IMovesDB[],
     natures: INaturesDB[],
     types: ITypesDB[],
+    formats: IFormatsDB[],
+}
+
+export interface IChatotAssetHash {
+    commit: {
+        sha: string,
+    }
 }

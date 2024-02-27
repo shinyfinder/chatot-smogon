@@ -1,4 +1,4 @@
-import { loadSpriteDex, loadAllDexNames, loadMoves, loadItems } from './loadDex.js';
+import { loadSpriteDex, loadAllDexNames, loadMoves, loadItems, getImageCommitHash } from './loadDex.js';
 import { errorHandler } from './errorHandler.js';
 import { cacheInterval } from './constants.js';
 import { loadRRMessages } from './loadReactRoleMessages.js';
@@ -25,5 +25,6 @@ async function updateDexCache(client: Client) {
         loadMoves(),
         loadItems(),
         loadRRMessages(client),
+        getImageCommitHash(),
     ]);
 }

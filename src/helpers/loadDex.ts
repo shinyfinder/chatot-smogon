@@ -3,7 +3,7 @@ import { alcremieFormes, genderDiffs } from './constants.js';
 import { pool } from './createPool.js';
 import fetch from 'node-fetch';
 import { res2JSON } from './res2JSON.js';
-import { IDtNameDump, IDexNameDump, IPokedexDB } from '../types/dex';
+import { IDtNameDump, IDexNameDump, IPokedexDB, IChatotAssetHash } from '../types/dex';
 import { overwriteTier } from './overwriteTier.js';
 import { INVPair } from '../types/discord';
 
@@ -23,6 +23,7 @@ export let dexFormats: INVPair[];
 export let dexGens: INVPair[];
 export let latestGen: string = '';
 export let dexGenNumAbbrMap: { abbr: string, num: number }[];
+export let commitHash = '';
 
 /**
  * Queries the info we need from the dex tables
@@ -120,16 +121,16 @@ export async function loadAllDexNames() {
     // create another obj array for just the pokemon so we can reference just those
     dexMondb = fullDexNameQuery.pokemon;
 
-    // extract the formats and gens because we don't need those for /dt
-    const { formats, gens, ...dtNames } = fullDexNameQuery;
+    // extract the gens because we don't need those for /dt
+    const { gens, ...dtNames } = fullDexNameQuery;
 
     // formulate their auto pairs
-    dexFormats = formats.map(f => ({ name: f.shorthand, value: f.alias }));
+    dexFormats = dtNames.formats.map(f => ({ name: f.shorthand, value: f.alias }));
 
     // BSS and VGC are weird in that they have a bunch of different names for the same meta
     // for the purposes of C&C (and raters), the names don't change to whom/where it applies
     // so map the different names to have the same value
-    modifiedDexFormats = formats.map(f => {
+    modifiedDexFormats = dtNames.formats.map(f => {
         if (/^(?:Battle |BSS)/m.test(f.shorthand)) {
             return { name: f.shorthand, value: 'bss' };
         }
@@ -157,7 +158,7 @@ export async function loadAllDexNames() {
     dexGens = dexGens.concat(dexGenNumbers);
 
 
-    // map the unique name alias pairs so we can use them for autocomplete
+    // map the unique name alias pairs so we can use them for autocomplete separately
     // loop over the entire array of objects from the query
     dexMondb.forEach(obj => {
         // try to find an obj in the unique array where the name and alias are the same as the row in the query
@@ -172,10 +173,19 @@ export async function loadAllDexNames() {
     for (const table in dtNames) {
         const tableData = dtNames[table as keyof IDtNameDump];
         tableData.forEach(obj => {
-            const i = allNames.findIndex(uniqObj => uniqObj.name === obj.name && uniqObj.value === obj.alias);
-            if (i === -1) {
-                allNames.push({ name: obj.name, value: obj.alias });
+            if ('name' in obj) {
+                const i = allNames.findIndex(uniqObj => uniqObj.name === obj.name && uniqObj.value === obj.alias);
+                if (i === -1) {
+                    allNames.push({ name: obj.name, value: obj.alias });
+                }
             }
+            else if ('shorthand' in obj) {
+                const i = allNames.findIndex(uniqObj => uniqObj.name === obj.shorthand && uniqObj.value === obj.alias);
+                if (i === -1) {
+                    allNames.push({ name: obj.shorthand, value: obj.alias });
+                }
+            }
+            
         });
     }
 }
@@ -241,4 +251,11 @@ export async function loadPSFormats() {
     const uniqMatchArr = [...new Set(storedTiers)];
 
     psFormats = uniqMatchArr.map(format => ({ name: format, value: format.replace(/[^a-z0-9]/gi, '').toLowerCase() }));
+}
+
+
+export async function getImageCommitHash() {
+    const res = await fetch('https://api.github.com/repos/shinyfinder/chatot-assets/branches/main');
+    const json = await res.json() as IChatotAssetHash;
+    commitHash = json.commit.sha;
 }

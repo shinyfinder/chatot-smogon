@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, EmbedBuilder, APIEmbedField } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { pokedex, allNames, fullDexNameQuery, items, moves, dexGens, latestGen, dexGenNumAbbrMap } from '../helpers/loadDex.js';
+import { pokedex, allNames, fullDexNameQuery, items, moves, dexGens, latestGen, dexGenNumAbbrMap, commitHash } from '../helpers/loadDex.js';
 import { myColors } from '../helpers/constants.js';
 import { pool } from '../helpers/createPool.js';
 import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
@@ -68,6 +68,8 @@ export const command: SlashCommand = {
         // get the gen number for the supplied gen
         // null check if it can't find it, but that will never happen because we already validated the input above
         const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)?.num ?? -1;
+
+        let embedColor = 0x6363b0;
 
         /**
          * POKEDEX
@@ -160,7 +162,6 @@ export const command: SlashCommand = {
 
 
             // set the embed color
-            let embedColor = 0;
             for (const [color, value] of Object.entries(myColors)) {
                 if (color.toLowerCase() === psData.color.toLowerCase()) {
                     embedColor = value;
@@ -199,7 +200,7 @@ export const command: SlashCommand = {
                     { name: 'Gender Rate', value: genderOut, inline: true },
                 )
                 .setColor(embedColor)
-                .setThumbnail(`https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/home-sprites/normal/${spriteName}.png`)
+                .setThumbnail(`https://raw.githubusercontent.com/shinyfinder/chatot-assets/${commitHash}/home-sprites/normal/${spriteName}.png`)
                 .setURL(`https://www.smogon.com/dex/${gen}/pokemon/${queryStr}/`);
 
             if (queryStr === 'koffing') {
@@ -253,6 +254,7 @@ export const command: SlashCommand = {
             .setTitle(`${dbData[0].name} (Gen ${genNum})`)
             .setDescription(dbData[0].description)
             .setThumbnail(`https://play.pokemonshowdown.com/sprites/itemicons/${queryStr}.png`)
+            .setColor(embedColor)
             .setURL(`https://www.smogon.com/dex/${gen}/items/${queryStr}/`);
             
             if (genNum >= 4) {
@@ -313,7 +315,8 @@ export const command: SlashCommand = {
             const embed = new EmbedBuilder()
             .setTitle(`${dbData[0].name} (Gen ${genNum})`)
             .setDescription(dbData[0].description)
-            .setThumbnail('https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/images/abilities.png')
+            .setThumbnail(`https://raw.githubusercontent.com/shinyfinder/chatot-assets/${commitHash}/images/abilities.png`)
+            .setColor(embedColor)
             .setURL(`https://www.smogon.com/dex/${gen}/abilities/${queryStr}/`);
 
             await interaction.followUp({ embeds: [embed] });
@@ -484,7 +487,6 @@ export const command: SlashCommand = {
             }
 
             // set the embed color
-            let embedColor = 0;
             for (const [color, value] of Object.entries(myColors)) {
                 if (color.toLowerCase() === firstRow.type.toLowerCase()) {
                     embedColor = value;
@@ -506,7 +508,7 @@ export const command: SlashCommand = {
                 { name: 'Flags', value: flagArr.join('\n') || 'None' },
             )
             .setColor(embedColor)
-            .setThumbnail('https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/images/moves.png')
+            .setThumbnail(`https://raw.githubusercontent.com/shinyfinder/chatot-assets/${commitHash}/images/moves.png`)
             .setURL(`https://www.smogon.com/dex/${gen}/moves/${queryStr}/`);
             
             
@@ -539,7 +541,8 @@ export const command: SlashCommand = {
             const embed = new EmbedBuilder()
             .setTitle(`${dbData[0].name} (Gen ${genNum})`)
             .setDescription(dbData[0].summary)
-            .setThumbnail('https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/images/natures.png');
+            .setColor(embedColor)
+            .setThumbnail(`https://raw.githubusercontent.com/shinyfinder/chatot-assets/${commitHash}/images/natures.png`);
 
             await interaction.followUp({ embeds: [embed] });
         }
@@ -582,7 +585,6 @@ export const command: SlashCommand = {
             }
 
             // set the embed color
-            let embedColor = 0;
             for (const [color, value] of Object.entries(myColors)) {
                 if (color.toLowerCase() === dbData[0].json.name.toLowerCase()) {
                     embedColor = value;
@@ -647,8 +649,46 @@ export const command: SlashCommand = {
                 { name: 'Resists (0.5x)', value: defStrong.join(', ') || '-', inline: true },
                 { name: 'Immune to (0x)', value: defImmune.join(', ') || '-', inline: true },
             )
-            .setThumbnail('https://raw.githubusercontent.com/shinyfinder/chatot-assets/main/images/types.png')
+            .setThumbnail(`https://raw.githubusercontent.com/shinyfinder/chatot-assets/${commitHash}/images/types.png`)
             .setURL(`https://www.smogon.com/dex/${gen}/types/${queryStr}/`);
+
+            await interaction.followUp({ embeds: [embed] });
+        }
+
+        /**
+         * FORMATS
+         */
+        else if (fullDexNameQuery.formats.some(f => f.alias === queryStr)) {
+            // query the db to get the info we want
+            const dtQuery = await pool.query(`
+            SELECT resource_name, url FROM dex.format_resources
+            JOIN dex.formats USING (format_id)
+            WHERE dex.formats.alias=$1 AND dex.formats.gen_id=$2`, [queryStr, gen]);
+
+            interface IDBData {
+                resource_name: string,
+                url: string,
+            }
+
+            const dbData: IDBData[] | [] = dtQuery.rows;
+
+            // extract the name-url pairs so we can join them into a bulleted list
+            const maskedURLs = dbData.map(row => (`* [${row.resource_name}](${row.url})`));
+            
+            // get the name of the format they entered
+            // we can't just get it from the database, because some formats may not have resources (yet)
+            // so get it from the autocomplete
+            const formatName = allNames.find(format => format.value === queryStr)?.name ?? queryStr;
+
+            // build the embed
+            const embed = new EmbedBuilder()
+            .setTitle(`${formatName} (Gen ${genNum})`)
+            .setDescription(maskedURLs.join('\n') || 'No resources found')
+            .setThumbnail(`https://raw.githubusercontent.com/shinyfinder/chatot-assets/${commitHash}/images/formats.png`)
+            .addFields([
+                { name: 'Overview', value: `For more info, see this format's [Dex page](https://www.smogon.com/dex/${gen}/formats/${queryStr}/).` },
+            ])
+            .setColor(embedColor);
 
             await interaction.followUp({ embeds: [embed] });
         }
