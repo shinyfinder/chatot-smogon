@@ -4,6 +4,7 @@ import { addRater } from '../helpers/addrater.js';
 import { removeRater, removeRaterAll } from '../helpers/removerater.js';
 import { listRater } from '../helpers/listrater.js';
 import { psFormats } from '../helpers/loadDex.js';
+import { toPSAlias } from '../helpers/autocomplete.js';
 /**
  * Command to manage the team rater database.
  * Subcommands are add, remove, list all, and list meta.
@@ -117,21 +118,37 @@ export const command: SlashCommand = {
     async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
 
+        /**
+         * ADD
+         */
+
         if (interaction.options.getSubcommand() === 'add') {
             // get the user inputs
             // get the inputs
-            const metaIn = interaction.options.getString('meta', true).toLowerCase();
+            const metaIn = toPSAlias(interaction.options.getString('meta', true));
             const user = interaction.options.getUser('user', true);
 
             await addRater(interaction, metaIn, user);
         }
+
+
+        /**
+         * REMOVE
+         */
+
         else if (interaction.options.getSubcommand() === 'remove') {
             // get the inputs
-            const metaIn = interaction.options.getString('meta', true).toLowerCase();
+            const metaIn = toPSAlias(interaction.options.getString('meta', true));
             const user = interaction.options.getUser('user', true);
 
             await removeRater(interaction, metaIn, user);
         }
+
+
+        /**
+         * REMOVE ALL
+         */
+
         else if (interaction.options.getSubcommand() === 'removeall') {
             // get the input
             const user = interaction.options.getUser('user', true);
@@ -142,12 +159,24 @@ export const command: SlashCommand = {
             // done
             await interaction.followUp(`${user.username} was removed from all rater lists`);  
         }
+
+
+        /**
+         * LIST ALL
+         */
+
         else if (interaction.options.getSubcommand() === 'all') {
             await listRater(interaction);
         }
+
+
+        /**
+         * LIST META
+         */
+
         else if (interaction.options.getSubcommand() === 'meta') {
             // get the inputs
-            const metaIn = interaction.options.getString('meta', true).toLowerCase();
+            const metaIn = toPSAlias(interaction.options.getString('meta', true));
             await listRater(interaction, metaIn);
         }
     },

@@ -5,8 +5,8 @@ import fetch from 'node-fetch';
 import { IPSLearnsets } from '../types/ps';
 import { myColors } from '../helpers/constants.js';
 import { res2JSON } from '../helpers/res2JSON.js';
-import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
-import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
+import { filterAutocomplete, toAlias, toGenAlias, validateAutocomplete } from '../helpers/autocomplete.js';
+
 
 /**
  * Determines whether and how a Pokemon learns a move in the specified generation
@@ -59,9 +59,11 @@ export const command: SlashCommand = {
         }
 
         // get the inputs
-        const monIn = interaction.options.getString('pokemon', true).toLowerCase();
-        const gen = interaction.options.getString('gen') ?? latestGen;
-        const move = interaction.options.getString('move', true).toLowerCase();
+        const monIn = toAlias(interaction.options.getString('pokemon', true));
+        let gen = interaction.options.getString('gen') ?? latestGen;
+        const move = toAlias(interaction.options.getString('move', true));
+
+        gen = await toGenAlias(gen);
 
         // validate autos
         if (!validateAutocomplete(monIn, monNames)) {

@@ -3,8 +3,7 @@ import { SlashCommand } from '../types/slash-command-base';
 import { pokedex, allNames, fullDexNameQuery, items, moves, dexGens, latestGen, dexGenNumAbbrMap, commitHash } from '../helpers/loadDex.js';
 import { myColors } from '../helpers/constants.js';
 import { pool } from '../helpers/createPool.js';
-import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
-import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
+import { filterAutocomplete, toAlias, toGenAlias, validateAutocomplete } from '../helpers/autocomplete.js';
 /**
  * Posts detailed information about the provided query
  * @param name Name of the pokemon/item/nature/etc
@@ -51,8 +50,11 @@ export const command: SlashCommand = {
         }
 
         // get the inputs
-        const queryStr = interaction.options.getString('name', true).toLowerCase();
-        const gen = interaction.options.getString('gen') ?? latestGen;
+        const queryStr = toAlias(interaction.options.getString('name', true));
+        let gen = interaction.options.getString('gen') ?? latestGen;
+
+        // map the gen to the alias to be safe
+        gen = await toGenAlias(gen);
 
         // validate autos
         if (!validateAutocomplete(queryStr, allNames)) {

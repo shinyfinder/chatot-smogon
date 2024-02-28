@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, EmbedBuilder, MessageReaction, User, APIEmbedField } from 'discord.js';
 import { pool } from '../helpers/createPool.js';
 import { fetchUser } from './updatePublicRatersList.js';
-import { validateAutocomplete } from './validateAutocomplete.js';
+import { validateAutocomplete } from './autocomplete.js';
 import { psFormats } from './loadDex.js';
 
 /**

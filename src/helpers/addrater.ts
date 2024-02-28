@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, User } from 'discord.js';
 import { pool } from './createPool.js';
 import { updatePublicRatersList } from './updatePublicRatersList.js';
-import { validateAutocomplete } from './validateAutocomplete.js';
+import { validateAutocomplete } from './autocomplete.js';
 import { psFormats } from './loadDex.js';
 /**
  * Command to add a team rater

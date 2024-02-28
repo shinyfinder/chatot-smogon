@@ -35,6 +35,12 @@ export const command: ContextCommand = {
         // get the targeted message
         const msg = interaction.targetMessage;
 
+        // you can't pin a system messsage apparently
+        if (msg.system) {
+            await interaction.followUp('You cannot pin a system message!');
+            return;
+        }
+
         // get the pins in the channel
         const pins = await msg.channel.messages.fetchPinned();
 

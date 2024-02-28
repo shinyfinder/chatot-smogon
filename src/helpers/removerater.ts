@@ -1,7 +1,7 @@
 import { ChatInputCommandInteraction, User } from 'discord.js';
 import { pool } from '../helpers/createPool.js';
 import { updatePublicRatersList } from './updatePublicRatersList.js';
-import { validateAutocomplete } from './validateAutocomplete.js';
+import { validateAutocomplete } from './autocomplete.js';
 import { psFormats } from './loadDex.js';
 /**
  * Helper function to renove a team rater from a specific gen+meta

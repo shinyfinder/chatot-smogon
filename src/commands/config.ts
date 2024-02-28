@@ -15,9 +15,9 @@ import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
-import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
+import { toAlias, validateAutocomplete, toGenAlias, filterAutocomplete } from '../helpers/autocomplete.js';
 import { modifiedDexFormats, dexGens } from '../helpers/loadDex.js';
-import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
+
 
 /**
  * Command for configuring multiple aspects of the bot
@@ -398,8 +398,12 @@ export const command: SlashCommand = {
 
         else if (interaction.options.getSubcommand() === 'dex') {
             // get the inputs
-            const format = interaction.options.getString('format')?.toLowerCase() ?? '';
-            const gen = interaction.options.getString('gen')?.toLowerCase() ?? '';
+            let format = interaction.options.getString('format') ?? '';
+            let gen = interaction.options.getString('gen') ?? '';
+
+            // map them to their aliases
+            format = toAlias(format);
+            gen = await toGenAlias(gen);
 
             if (format) {
                 // validate the autocomplete entry
@@ -438,9 +442,9 @@ export const command: SlashCommand = {
             if (interaction.options.getSubcommand() === 'add') {
                 // get inputs
                 const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
-                const tier = interaction.options.getString('tier', true).toLowerCase();
+                const tier = toAlias(interaction.options.getString('tier', true));
                 const role = interaction.options.getRole('role');
-                const gen = interaction.options.getString('gen', true).toLowerCase();
+                const gen = await toGenAlias(interaction.options.getString('gen', true));
                 const stage = interaction.options.getString('stage') ?? 'all';
                 const cooldown = interaction.options.getInteger('cooldown');
                 const prefix = interaction.options.getString('tierprefix')?.toLowerCase();
@@ -535,8 +539,8 @@ export const command: SlashCommand = {
             else if (interaction.options.getSubcommand() === 'remove') {
                 // get inputs
                 const channel = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
-                const tier = interaction.options.getString('tier', true).toLowerCase();
-                const gen = interaction.options.getString('gen', true).toLowerCase();
+                const tier = toAlias(interaction.options.getString('tier', true));
+                const gen = await toGenAlias(interaction.options.getString('gen', true));
 
                 // validate the autocomplete entry
                 // if it's not valid, return and let them know

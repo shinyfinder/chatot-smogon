@@ -2,8 +2,8 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteracti
 import { SlashCommand } from '../types/slash-command-base';
 import { dexGens, dexMondb, latestGen, spriteNames, dexGenNumAbbrMap } from '../helpers/loadDex.js';
 import fetch from 'node-fetch';
-import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
-import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
+import { filterAutocomplete, toAlias, toGenAlias, validateAutocomplete } from '../helpers/autocomplete.js';
+
 /**
  * Posts an image in the chat of the specified Pokemon
  * @param pokemon Name of the pokemon
@@ -60,10 +60,12 @@ export const command: SlashCommand = {
         }
 
         // get the inputs
-        const mon = interaction.options.getString('pokemon', true).toLowerCase();
-        const gen = interaction.options.getString('gen') ?? latestGen;
+        const mon = toAlias(interaction.options.getString('pokemon', true));
+        let gen = interaction.options.getString('gen') ?? latestGen;
         const shiny = interaction.options.getBoolean('shiny') ?? false;
         const home = interaction.options.getBoolean('home') ?? false;
+        
+        gen = await toGenAlias(gen);
         
         // since we're using autocomplete, we have to validate their imputs
         if (!validateAutocomplete(mon, spriteNames)) {

@@ -3,8 +3,8 @@ import { SlashCommand } from '../types/slash-command-base';
 import { dexFormats, dexMondb, monNames, dexGens } from '../helpers/loadDex.js';
 import { pool } from '../helpers/createPool.js';
 import { IPokedexDB } from '../types/dex';
-import { filterAutocomplete } from '../helpers/filterAutocomplete.js';
-import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
+import { filterAutocomplete, toAlias, toGenAlias, validateAutocomplete } from '../helpers/autocomplete.js';
+
 /**
  * Posts a link in the chat to the specified Pokemon analysis
  * @param pokemon Name of the pokemon
@@ -59,9 +59,13 @@ export const command: SlashCommand = {
         }
 
         // get the inputs
-        const mon = interaction.options.getString('pokemon', true).toLowerCase();
-        let gen = interaction.options.getString('gen')?.toLowerCase() ?? '';
-        let format = interaction.options.getString('format')?.toLowerCase() ?? '';
+        const mon = toAlias(interaction.options.getString('pokemon', true));
+        let gen = interaction.options.getString('gen') ?? '';
+        let format = interaction.options.getString('format') ?? '';
+
+        // map the gen and format to their aliases just in case
+        gen = await toGenAlias(gen);
+        format = toAlias(format);
 
         // since we're using autocomplete, we have to validate their imputs
         if (!validateAutocomplete(mon, monNames)) {

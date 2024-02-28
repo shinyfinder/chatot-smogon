@@ -4,7 +4,7 @@ import { Modes, botConfig } from '../config.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
 import { psFormats } from '../helpers/loadDex.js';
 import { pool } from '../helpers/createPool.js';
-import { validateAutocomplete } from '../helpers/validateAutocomplete.js';
+import { toPSAlias, validateAutocomplete } from '../helpers/autocomplete.js';
 import { addRMTCache, removeAllRMTCache, removeRMTCache } from '../helpers/manageRMTCache.js';
 /**
  * Command to dump the line count of the comp helpers in the RMT channels of the main Smogon discord.
@@ -420,7 +420,7 @@ export const command: SlashCommand = {
 
             // inputs
             const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
-            const meta = interaction.options.getString('meta', true).toLowerCase();
+            const meta = toPSAlias(interaction.options.getString('meta', true));
 
             // make sure we have the necessary perms to post there
             let canComplete = true;
@@ -461,7 +461,7 @@ export const command: SlashCommand = {
             
             // inputs
             const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
-            const meta = interaction.options.getString('meta')?.toLowerCase();
+            const meta = toPSAlias(interaction.options.getString('meta') ?? '');
             
             if (meta) {
                 if (!validateAutocomplete(meta, psFormats)) {
