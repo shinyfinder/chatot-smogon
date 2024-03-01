@@ -4,6 +4,7 @@ import { pokedex, allNames, fullDexNameQuery, items, moves, dexGens, latestGen, 
 import { myColors } from '../helpers/constants.js';
 import { pool } from '../helpers/createPool.js';
 import { filterAutocomplete, toAlias, toGenAlias, validateAutocomplete } from '../helpers/autocomplete.js';
+import { fetchTierResources } from '../helpers/fetchTierResources.js';
 /**
  * Posts detailed information about the provided query
  * @param name Name of the pokemon/item/nature/etc
@@ -407,7 +408,7 @@ export const command: SlashCommand = {
                         flagArr.push('* Can target anywhere in Triples');
                     }
                     else if (flag === 'failcopycat') {
-                        flagArr.push('* Cannot be selected byy Copycat');
+                        flagArr.push('* Cannot be selected by Copycat');
                     }
                     else if (flag === 'failencore') {
                         flagArr.push('* Causes Encore to fail');
@@ -661,37 +662,9 @@ export const command: SlashCommand = {
          * FORMATS
          */
         else if (fullDexNameQuery.formats.some(f => f.alias === queryStr)) {
-            // query the db to get the info we want
-            const dtQuery = await pool.query(`
-            SELECT resource_name, url FROM dex.format_resources
-            JOIN dex.formats USING (format_id)
-            WHERE dex.formats.alias=$1 AND dex.formats.gen_id=$2`, [queryStr, gen]);
-
-            interface IDBData {
-                resource_name: string,
-                url: string,
-            }
-
-            const dbData: IDBData[] | [] = dtQuery.rows;
-
-            // extract the name-url pairs so we can join them into a bulleted list
-            const maskedURLs = dbData.map(row => (`* [${row.resource_name}](${row.url})`));
-            
-            // get the name of the format they entered
-            // we can't just get it from the database, because some formats may not have resources (yet)
-            // so get it from the autocomplete
-            const formatName = allNames.find(format => format.value === queryStr)?.name ?? queryStr;
-
-            // build the embed
-            const embed = new EmbedBuilder()
-            .setTitle(`${formatName} (Gen ${genNum})`)
-            .setDescription(maskedURLs.join('\n') || 'No resources found')
-            .setThumbnail(`https://raw.githubusercontent.com/shinyfinder/chatot-assets/${commitHash}/images/formats.png`)
-            .addFields([
-                { name: 'Overview', value: `For more info, see this format's [Dex page](https://www.smogon.com/dex/${gen}/formats/${queryStr}/).` },
-            ])
-            .setColor(embedColor);
-
+            // build an embed of the tier's resources
+            const embed = await fetchTierResources(queryStr, gen, interaction);
+            // post
             await interaction.followUp({ embeds: [embed] });
         }
         else {

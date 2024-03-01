@@ -57,7 +57,7 @@ export interface ILogChan {
     channelid: string,
     logtype: string,
 }
-export async function postLogEvent(ogEmbed: EmbedBuilder, guild: Guild, event: loggedEventTypes, message?: Message) {
+export async function postLogEvent(ogEmbed: EmbedBuilder, guild: Guild, event: loggedEventTypes, { message, oldBuf, newBuf }: { message?: Message, oldBuf?: Buffer, newBuf?: Buffer } = {}) {
     // see if logging is enabled in the server
     const pgres = await pool.query('SELECT channelid, logtype FROM chatot.logchan WHERE serverid=$1', [guild.id]);
     const logchan: ILogChan[] | [] = pgres.rows;
@@ -161,6 +161,19 @@ export async function postLogEvent(ogEmbed: EmbedBuilder, guild: Guild, event: l
                 else {
                     await channel.send({ embeds: [embed] });
                 }
+
+                // if the message was too long to output (nonzero length buffer), post the message content as an attachment as well
+                if (oldBuf && oldBuf.length) {    
+                    await channel.send({ content: 'Message content was too long to output. Here\'s the original content.', files: [
+                        { attachment: oldBuf, name: 'old_message_content.txt' },
+                    ] });
+                }
+                
+                if (newBuf && newBuf.length) {
+                    await channel.send({ content: 'Message content was too long to output. Here\'s the new content.', files: [
+                        { attachment: newBuf, name: 'new_message_content.txt' },
+                    ] });
+                }
             }
             catch (e) {
                 errorHandler(e);
@@ -197,9 +210,10 @@ export async function echoPunishment(guild: Guild, target: User, reason: string,
  * @param message Message that was deleted
  * @returns Array containing the embed title, descr, color, and fields
  */
-export function buildMsgDeleteEmbedParams(executor: User | string, message: Message): [string, string, number, embedField[]] {
+export function buildMsgDeleteEmbedParams(executor: User | string, message: Message): [string, string, number, embedField[], Buffer] {
     // set the embed title
     const title = 'Message Deleted';
+    let buf = Buffer.from('');
 
     // set the embed description
     let description = '';
@@ -232,6 +246,9 @@ export function buildMsgDeleteEmbedParams(executor: User | string, message: Mess
     if (message.content) {
         if (message.content.length > 1024) {
             contentFieldVal = 'Message too long to output.';
+
+            // create a buffer so we can send it as an attachment
+            buf = Buffer.from(message.content);
         }
         else {
             contentFieldVal = message.content;
@@ -248,5 +265,5 @@ export function buildMsgDeleteEmbedParams(executor: User | string, message: Mess
         { name: 'Deleted By', value: `${executorOut}` },
     ];
 
-    return [title, description, color, fields];
+    return [title, description, color, fields, buf];
 }

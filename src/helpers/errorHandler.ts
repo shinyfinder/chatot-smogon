@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-base-to-string */
-import { DiscordAPIError, Collection } from 'discord.js';
+import { DiscordAPIError, Collection, ChatInputCommandInteraction } from 'discord.js';
 import { IErrorPack } from '../types/error';
 import { startupFlags } from './constants.js';
 
@@ -37,9 +36,17 @@ export function errorHandler(err: unknown) {
         console.error(err.err);
 
         if (err.int) {
+            let cmdStr = '';
+
+            if (err.int instanceof ChatInputCommandInteraction) {
+                cmdStr = err.int.toString();
+            }
+            else {
+                cmdStr = err.int.commandName;
+            }
             // form the err message
             const intInfo = `This error occurred in the following interaction:
-            Command: ${err.int.toString()}
+            Command: ${cmdStr}
             Guild: ${err.int.guild ? err.int.guild.name : 'None'}
             User: ${err.int.user.tag} (${err.int.id})`;
             

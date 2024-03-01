@@ -2,6 +2,7 @@ import { DiscordAPIError, Collection, BaseInteraction } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { SlashCommand } from '../types/slash-command-base';
 import { createTicket } from '../helpers/createTicket.js';
+import { errorHandler } from '../helpers/errorHandler.js';
 
 /**
  * interactionCreate handler
@@ -75,6 +76,16 @@ export const clientEvent: eventHandler = {
             catch (error) {
                 // let the user know there was a problem
                 // try to keep errors ephemeral so it doesn't clog the chat and only the person who initiated can see the error
+                // but first, route the error through the error handler so that we don't lose the info if the followups fail (those errors will be automatically routed as well)
+                errorHandler({ err: error, int: interaction });
+
+                // depending on the response method, we only have so long to respond
+                // deferred responses give you 15 minutes
+                // non-deferred have 3 seconds
+                const timeDelay = Date.now() - interaction.createdTimestamp;
+                const followUpLimit = 15 * 60 * 1000;
+                const replyLimit = 3 * 1000;
+
                 if (error instanceof DiscordAPIError) {
                     let msgout = '';
 
@@ -93,22 +104,20 @@ export const clientEvent: eventHandler = {
                     }
                     // if we haven't replied yet, but we deferred a reply, follow up
                     else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
-                        await interaction.followUp(msgout);
+                        if (timeDelay < followUpLimit) {
+                            await interaction.followUp(msgout);
+                        }
+                        
                     }
                     // if we haven't deferred or replied, reply
                     else if (!interaction.replied && interaction.isRepliable()) {
-                        await interaction.reply({ content: msgout, ephemeral: true });
+                        if (timeDelay < replyLimit) {
+                            await interaction.reply({ content: msgout, ephemeral: true });
+                        }
                     }
-                    
-                    throw { err: error, int: interaction };
-                }
-                // if it's a collector timeout error, just return without letting them know
-                 else if (error instanceof Error && error.message === 'Collector received no interactions before ending with reason: time') {
-                    throw { err: error, int: interaction };
                 }
                 else if (error instanceof Collection && error.size === 0) {
                     await interaction.channel?.send('Collector timed out without receiving an interaction');
-                    throw { err: error, int: interaction };
                 }
                 // if we already replied, send a new one
                 else if (interaction.replied) {
@@ -116,15 +125,16 @@ export const clientEvent: eventHandler = {
                 }
                 // if we haven't replied yet, but we deferred a reply, follow up
                 else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
-                    await interaction.followUp('There was an error while executing this command');
+                    if (timeDelay < followUpLimit) {
+                        await interaction.followUp('There was an error while executing this command');
+                    }
                 }
                 // if we haven't deferred or replied, reply
                 else if (!interaction.replied && interaction.isRepliable()) {
-                    await interaction.reply({ content: 'There was an error while executing this command', ephemeral: true });
+                    if (timeDelay < replyLimit) {
+                        await interaction.reply({ content: 'There was an error while executing this command', ephemeral: true });
+                    }
                 }
-                
-                throw { err: error, int: interaction };
-                
             }
         }
         // buttons
@@ -136,6 +146,16 @@ export const clientEvent: eventHandler = {
             catch (error) {
                 // let the user know there was a problem
                 // try to keep errors ephemeral so it doesn't clog the chat and only the person who initiated can see the error
+                // but first, route the error through the error handler so that we don't lose the info if the followups fail (those errors will be automatically routed as well)
+                errorHandler({ err: error, int: interaction });
+
+                // depending on the response method, we only have so long to respond
+                // deferred responses give you 15 minutes
+                // non-deferred have 3 seconds
+                const timeDelay = Date.now() - interaction.createdTimestamp;
+                const followUpLimit = 15 * 60 * 1000;
+                const replyLimit = 3 * 1000;
+
                 if (error instanceof DiscordAPIError) {
                     // if we already replied, send a new one
                     if (interaction.replied) {
@@ -143,18 +163,16 @@ export const clientEvent: eventHandler = {
                     }
                     // if we haven't replied yet, but we deferred a reply, follow up
                     else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
-                        await interaction.followUp(error.message);
+                        if (timeDelay < followUpLimit) {
+                            await interaction.followUp(error.message);
+                        }   
                     }
                     // if we haven't deferred or replied, reply
                     else if (!interaction.replied && interaction.isRepliable()) {
-                        await interaction.reply({ content: error.message, ephemeral: true });
+                        if (timeDelay < replyLimit) {
+                            await interaction.reply({ content: error.message, ephemeral: true });
+                        }
                     }
-                    
-                    throw { err: error, int: interaction };
-                }
-                // if it's a collector timeout error, just return without letting them know
-                 else if (error instanceof Error && error.message === 'Collector received no interactions before ending with reason: time') {
-                    throw { err: error, int: interaction };
                 }
                 // if we already replied, send a new one
                 else if (interaction.replied) {
@@ -162,15 +180,16 @@ export const clientEvent: eventHandler = {
                 }
                 // if we haven't replied yet, but we deferred a reply, follow up
                 else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
-                    await interaction.followUp('There was an error while executing this command');
+                    if (timeDelay < followUpLimit) {
+                        await interaction.followUp('There was an error while executing this command');
+                    }
                 }
                 // if we haven't deferred or replied, reply
                 else if (!interaction.replied && interaction.isRepliable()) {
-                    await interaction.reply({ content: 'There was an error while executing this command', ephemeral: true });
+                    if (timeDelay < replyLimit) {
+                        await interaction.reply({ content: 'There was an error while executing this command', ephemeral: true });
+                    }
                 }
-                
-                throw { err: error, int: interaction };
-                
             }
         }
         // autocomplete handler

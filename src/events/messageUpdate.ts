@@ -30,15 +30,6 @@ export const clientEvent: eventHandler = {
         }
         
         // check if the server wants to log these
-        /*
-        const editPG = await pool.query(`
-            SELECT logedits, channelid
-            FROM chatot.logprefs
-            INNER JOIN chatot.logchan USING (serverid)
-            WHERE serverid=$1`, [newMessage.guildId]);
-
-        const dbmatches: { logedits: boolean, logchan: string }[] | [] = editPG.rows;
-        */
         const editPG = await pool.query('SELECT ignoreid, logedits FROM chatot.logprefs WHERE serverid=$1', [newMsg.guildId]);
         const dbmatches: { ignoreid: string, logedits: boolean }[] | [] = editPG.rows;
 
@@ -63,6 +54,8 @@ export const clientEvent: eventHandler = {
         // make sure the content is short enough for us to log it
         let oldContent = '';
         let newContent = '';
+        let oldBuffer = Buffer.from('');
+        let newBuffer = Buffer.from('');
 
         // make sure there's actually content in the messages. If there isn't, insert something so it's non-zero length
         // also make sure the content is less than the max field length of 1024 char
@@ -70,13 +63,24 @@ export const clientEvent: eventHandler = {
             oldContent = oldMsg.content.length ? oldMsg.content : '\u200b';
             newContent = newMsg.content.length ? newMsg.content : '\u200b';
         }
-        else if (oldMsg.content.length + newMsg.content.length > 5800 && oldMsg.content.length < 1025) {
+        else if (oldMsg.content.length + newMsg.content.length < 5800 && oldMsg.content.length < 1025 && newMsg.content.length > 1025) {
             oldContent = oldMsg.content;
             newContent = 'Message too long to output';
+
+            newBuffer = Buffer.from(newMsg.content);
+        }
+        else if (oldMsg.content.length + newMsg.content.length < 5800 && oldMsg.content.length > 1025 && newMsg.content.length < 1025) {
+            oldContent = 'Message too long to output';
+            newContent = newMsg.content;
+
+            newBuffer = Buffer.from(oldMsg.content);
         }
         else {
             oldContent = 'Message too long to output';
             newContent = 'Message too long to output';
+
+            oldBuffer = Buffer.from(oldMsg.content);
+            newBuffer = Buffer.from(newMsg.content);
         }
         
         const title = 'Message Edited';
@@ -89,6 +93,6 @@ export const clientEvent: eventHandler = {
         const embed = buildEmbed(title, { fields: fields });
         
         // try to post it
-        await postLogEvent(embed, newMsg.guild, loggedEventTypes.Edit);
+        await postLogEvent(embed, newMsg.guild, loggedEventTypes.Edit, { oldBuf: oldBuffer, newBuf: newBuffer });
     },
 };

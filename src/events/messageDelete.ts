@@ -94,13 +94,13 @@ export const clientEvent: eventHandler = {
         const old = Math.abs(currentTime - message.createdTimestamp) > 1000 * 60 * 60 * 24 * 7 * 2;
         if (!deletionLog && scope === 'all' && !old) {
             // build the embed params
-            const [title, description, color, fields] = buildMsgDeleteEmbedParams('Self', message);
+            const [title, description, color, fields, buf] = buildMsgDeleteEmbedParams('Self', message);
 
             // build the embed itself
             const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
             // post it to the log chan
-            await postLogEvent(embed, message.guild, loggedEventTypes.SelfDelete, message);
+            await postLogEvent(embed, message.guild, loggedEventTypes.SelfDelete, { message: message, oldBuf: buf });
             return;
         }
 
@@ -130,13 +130,13 @@ export const clientEvent: eventHandler = {
             // so see if they want to log those and if it's not too old
             if (scope === 'all' && !old) {
                 // build the embed params
-                const [title, description, color, fields] = buildMsgDeleteEmbedParams('Self', message);
+                const [title, description, color, fields, buf] = buildMsgDeleteEmbedParams('Self', message);
 
                 // build the embed
                 const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
                 // post it to the log chan
-                await postLogEvent(embed, message.guild, loggedEventTypes.SelfDelete, message);
+                await postLogEvent(embed, message.guild, loggedEventTypes.SelfDelete, { message: message, oldBuf: buf });
                 return;
             }
             else {
@@ -157,26 +157,26 @@ export const clientEvent: eventHandler = {
         // check to make sure that the log returned was for the same author's message
         if (target.id === message.author.id) {
             // build the embed params
-            const [title, description, color, fields] = buildMsgDeleteEmbedParams(executor, message);
+            const [title, description, color, fields, buf] = buildMsgDeleteEmbedParams(executor, message);
                 
             // build the embed
             const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
             // post it to the log chan
-            await postLogEvent(embed, message.guild, loggedEventTypes.ModDelete, message);
+            await postLogEvent(embed, message.guild, loggedEventTypes.ModDelete, { message: message, oldBuf: buf });
             return;
         }
         // if you got a new audit log but it was for a different user, this is probably a self delete
         // so check to see if it's a valid log case
         else if (scope === 'all' && !old) {
             // build the embed params
-            const [title, description, color, fields] = buildMsgDeleteEmbedParams('Self', message);
+            const [title, description, color, fields, buf] = buildMsgDeleteEmbedParams('Self', message);
             
             // build the embed
             const embed = buildEmbed(title, { description: description, color: color, fields: fields });
 
             // post it to the log chan
-            await postLogEvent(embed, message.guild, loggedEventTypes.SelfDelete, message);
+            await postLogEvent(embed, message.guild, loggedEventTypes.SelfDelete, { message: message, oldBuf: buf });
             return;
         }
 

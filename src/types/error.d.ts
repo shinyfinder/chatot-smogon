@@ -1,4 +1,4 @@
-import { AutocompleteInteraction, ChatInputCommandInteraction } from 'discord.js';
+import { CommandInteraction } from 'discord.js';
 
 /**
  * Interface used in packaging errors for logging
@@ -7,5 +7,5 @@ import { AutocompleteInteraction, ChatInputCommandInteraction } from 'discord.js
  */
 export interface IErrorPack {
     err: unknown,
-    int?: ChatInputCommandInteraction | AutocompleteInteraction
+    int?: CommandInteraction
 }

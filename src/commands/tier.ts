@@ -1,8 +1,8 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { dexFormats, dexGens, latestGen, dexGenNumAbbrMap, commitHash } from '../helpers/loadDex.js';
-import { pool } from '../helpers/createPool.js';
+import { dexFormats, dexGens, latestGen } from '../helpers/loadDex.js';
 import { filterAutocomplete, toAlias, toGenAlias, validateAutocomplete } from '../helpers/autocomplete.js';
+import { fetchTierResources } from '../helpers/fetchTierResources.js';
 
 /**
  * Gets the details of a specific tier.
@@ -66,42 +66,10 @@ export const command: SlashCommand = {
             return;
         }
 
-        // get the gen number for the supplied gen
-        // null check if it can't find it, but that will never happen because we already validated the input above
-        const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)!.num;
-        const embedColor = 0x6363b0;
-        
-        // query the db to get the info we want
-        const dtQuery = await pool.query(`
-        SELECT resource_name, url FROM dex.format_resources
-        JOIN dex.formats USING (format_id)
-        WHERE dex.formats.alias=$1 AND dex.formats.gen_id=$2`, [tier, gen]);
+        // build the embed of the tier's resrouces
+        const embed = await fetchTierResources(tier, gen, interaction);
 
-        interface IDBData {
-            resource_name: string,
-            url: string,
-        }
-
-        const dbData: IDBData[] | [] = dtQuery.rows;
-
-        // extract the name-url pairs so we can join them into a bulleted list
-        const maskedURLs = dbData.map(row => (`* [${row.resource_name}](${row.url})`));
-        
-        // get the name of the format they entered
-        // we can't just get it from the database, because some formats may not have resources (yet)
-        // so get it from the autocomplete
-        const formatName = dexFormats.find(format => format.value === tier)?.name ?? tier;
-
-        // build the embed
-        const embed = new EmbedBuilder()
-        .setTitle(`${formatName} (Gen ${genNum})`)
-        .setDescription(maskedURLs.join('\n') || 'No resources found')
-        .setThumbnail(`https://raw.githubusercontent.com/shinyfinder/chatot-assets/${commitHash}/images/formats.png`)
-        .addFields([
-            { name: 'Overview', value: `For more info, see this format's [Dex page](https://www.smogon.com/dex/${gen}/formats/${tier}/).` },
-        ])
-        .setColor(embedColor);
-
+        // post
         await interaction.followUp({ embeds: [embed] });
     },
 };
