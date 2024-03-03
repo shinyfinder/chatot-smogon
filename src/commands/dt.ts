@@ -665,7 +665,9 @@ export const command: SlashCommand = {
             // build an embed of the tier's resources
             const embed = await fetchTierResources(queryStr, gen, interaction);
             // post
-            await interaction.followUp({ embeds: [embed] });
+            if (embed) {
+                await interaction.followUp({ embeds: [embed] });
+            }
         }
         else {
             await interaction.followUp('I did not understand that input. Please select an option from the list');

@@ -70,6 +70,8 @@ export const command: SlashCommand = {
         const embed = await fetchTierResources(tier, gen, interaction);
 
         // post
-        await interaction.followUp({ embeds: [embed] });
+        if (embed) {
+            await interaction.followUp({ embeds: [embed] });
+        }
     },
 };
