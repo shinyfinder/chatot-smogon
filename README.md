@@ -27,7 +27,7 @@ This bot uses slash commands (a subset of application commands). Deployment of t
 global: <boolean>
 guilds: <string[]>
 ```
-Setting the global flag to `true` will cause the command to be deployed globally (i.e. to every server the bot is in). Setting the global flag to `false` and providing a list of server IDs as strings within the guilds array will instead deploy the command as a guild command (i.e. only to that guild) to the listed servers. Note that if the bot is in dev mode (its client id is equal to a value specifed in `/src/helpers/hashCommands.ts`), the specified guild array will be overwritten with the dev guild id specifed in the `.env`. 
+Setting the global flag to `true` will cause the command to be deployed globally (i.e. to every server the bot is in). Setting the global flag to `false` and providing a list of server IDs as strings within the guilds array will instead deploy the command as a guild command (i.e. only to that guild) to the listed servers. Note that if the bot is in 'dev' mode, the specified guild array will be overwritten with the dev guild id specifed in the `.env`. 
 
 Start the bot from the terminal with the following:
 
@@ -41,6 +41,11 @@ You should see that the bot is now online in Discord. To confirm it is respondin
 `/ping`
 
 The bot should respond with "Pong!".
+
+# Tunneling to production
+The bot supports tunneling into and making (read) queries against select production databases. To use this feature, you must be setup with SSH access to the production server. This is restricted to trusted developers, but if you believe you qualify, contact chaos.
+
+To use this feature, first SSH into the server within the terminal. This creates a live connection (which can be killed with ctrl + c). Then, in a new terminal, set the `SSH` flag to true within your `.env` and run Chatot. SQL queries against the `variablePool` connection will now query against the production database. If the `SSH` flag is set to false, `variablePool` queries will default to the local database. See `/src/helpers/createPool.ts`.
 
 # Further Reading
 Please refer to the Discord documentation for further information on [adding](https://discordjs.guide/creating-your-bot/creating-commands.html), [using](https://discordjs.guide/interactions/slash-commands.html), and [deleting](https://discordjs.guide/creating-your-bot/deleting-commands.html) slash commands. For more in-depth information, see the devloper documentation on [application commands](https://discord.com/developers/docs/interactions/application-commands).

@@ -14,20 +14,9 @@ export async function filterAutocomplete(interaction: AutocompleteInteraction, f
     // cast what they enter to lower case for comparison
     const enteredText = focused.value.toLowerCase();
     
-    const filteredPairs: INVPair[] = [];
     // filter the options shown to the user based on what they've typed in
-    // everything is cast to lower case to handle differences in case
-    // discord has a limit of 25 options shown
-    for (const pair of opts) {
-        if (filteredPairs.length < 25) {
-            if (pair.name.toLowerCase().includes(enteredText)) {
-                filteredPairs.push(pair);
-            }
-        }
-        else {
-            break;
-        }
-    }
+    // everything is cast to lower case to handle differences in case 
+    const filteredPairs = opts.filter(pair => pair.name.toLowerCase().includes(enteredText));
     
     // if they entered something, sort the array by shortest to longest match
     // the shortest match that contains their substring is in theory the closest one to what they entered
@@ -36,8 +25,11 @@ export async function filterAutocomplete(interaction: AutocompleteInteraction, f
         filteredPairs.sort((a, b) => a.name.length - b.name.length);
     }
 
+    // limit to 25 options shown because discord has a limit of 25
+    const filteredOut = filteredPairs.slice(0, 25);
+
     // respond
-    await interaction.respond(filteredPairs);
+    await interaction.respond(filteredOut);
     
 }
 

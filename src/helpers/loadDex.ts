@@ -1,6 +1,6 @@
 import { IPSDex, IPSMoves, IPSItems } from '../types/ps';
 import { alcremieFormes, genderDiffs } from './constants.js';
-import { pool } from './createPool.js';
+import { variablePool } from './createPool.js';
 import fetch from 'node-fetch';
 import { res2JSON } from './res2JSON.js';
 import { IDtNameDump, IDexNameDump, IPokedexDB, IChatotAssetHash } from '../types/dex';
@@ -24,6 +24,7 @@ export let dexGens: INVPair[];
 export let latestGen: string = '';
 export let dexGenNumAbbrMap: { abbr: string, num: number }[];
 export let commitHash = '';
+
 
 /**
  * Queries the info we need from the dex tables
@@ -79,7 +80,7 @@ export async function loadSpriteDex() {
 
 export async function loadAllDexNames() {
     // poll the db
-    const dexNameDump = await pool.query(`
+    const dexNameDump = await variablePool.query(`
         WITH pokemon AS
         (SELECT dex.pokemon.name, dex.pokemon.alias, dex.pokemon.gen_id, dex.pokemon.isNonstandard FROM dex.pokemon JOIN dex.gens ON dex.pokemon.gen_id = dex.gens.gen_id ORDER BY dex.pokemon.alias, dex.gens.order),
 

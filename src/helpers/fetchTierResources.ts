@@ -1,5 +1,5 @@
 import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
-import { pool } from './createPool.js';
+import { variablePool } from './createPool.js';
 import { dexGenNumAbbrMap, dexFormats, commitHash } from './loadDex.js';
 
 export async function fetchTierResources(tier: string, gen: string, interaction: ChatInputCommandInteraction) {
@@ -8,7 +8,7 @@ export async function fetchTierResources(tier: string, gen: string, interaction:
     
     if (!gaveInput) {
         // get the lastest available gen descriptor
-        const genQ = await pool.query(`
+        const genQ = await variablePool.query(`
         SELECT gen_id FROM dex.gens
         JOIN dex.formats USING (gen_id)
         WHERE dex.formats.alias=$1
@@ -26,7 +26,7 @@ export async function fetchTierResources(tier: string, gen: string, interaction:
     const genQuery = gaveInput ? gen : latestAvailGen;
 
     // query the db to get the info we want
-    const resQuery = await pool.query(`
+    const resQuery = await variablePool.query(`
     SELECT resource_name, url FROM dex.format_resources
     JOIN dex.formats USING (format_id)
     WHERE dex.formats.alias=$1 AND dex.formats.gen_id=$2`, [tier, genQuery]);

@@ -1,10 +1,18 @@
+# Bot authentication and target guild parameters
+# GUILD_ID is your dev server's id
 TOKEN = "YOUR.BOTS.AUTHENTICATION.TOKEN"
 CLIENT_ID = "BOT CLIENT ID"
 GUILD_ID = "TARGET SERVER ID"
+
+# Local PostgreSQL config
+# This is used by the chatot and dex schemas
 PGUSER = "postgresusername"
 PGPASSWORD = "postgrespw"
 PGHOST = "localhost"
 PGPORT = 5432
+
+# Local MySQL config
+# This is used by xenforo
 PGDATABASE = "mydb"
 SQLUSER = "mysqlusername"
 SQLPASSWORD = "mysqlpw"
@@ -13,3 +21,22 @@ SQLPORT = 3306
 SQLDATABASE = "mysqldb"
 SQLSOCKETPATH = ""
 INTERNAL_DATA_PATH = "/path/to/internal_data"
+
+# SSH remote Postgres db credentials
+# Requires 'basicdev' access on the production server
+# OPTIONAL
+SMOGON_PG_USER = "basicdev"
+SMOGON_PG_DATABASE = "smogon"
+SMOGON_PG_HOST = "path/to/forwarded/socket"
+
+
+# Toggle to use the local or SSH remote postgres db
+# defaults: false
+# OPTIONAL
+SSH = false
+
+
+# The mode to be in ('dev' or 'production')
+# defaults: 'production'
+# OPTIONAL, (technically) but set it to dev
+MODE = 'dev'

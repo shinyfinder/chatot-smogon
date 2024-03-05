@@ -39,6 +39,11 @@ interface ENV {
     SQLDATABASE: string | undefined;
     SQLSOCKETPATH: string | undefined;
     INTERNAL_DATA_PATH: string | undefined;
+    SMOGON_PG_USER: string | undefined;
+    SMOGON_PG_DATABASE: string | undefined;
+    SMOGON_PG_HOST: string | undefined;
+    MODE: string | undefined;
+    SSH: boolean | undefined;
     // ...
 }
 
@@ -70,6 +75,10 @@ interface Config {
     SQLDATABASE: string;
     SQLSOCKETPATH: string;
     INTERNAL_DATA_PATH: string;
+    SMOGON_PG_USER: string;
+    SMOGON_PG_DATABASE: string;
+    SMOGON_PG_HOST: string;
+    SSH: boolean,
     // ...
 }
 
@@ -97,6 +106,11 @@ const getConfig = (): ENV => {
         SQLDATABASE: process.env.SQLDATABASE,
         SQLSOCKETPATH: process.env.SQLSOCKETPATH || '',
         INTERNAL_DATA_PATH: process.env.INTERNAL_DATA_PATH,
+        SMOGON_PG_USER: process.env.SMOGON_PG_USER || '',
+        SMOGON_PG_DATABASE: process.env.SMOGON_PG_DATABASE || '',
+        SMOGON_PG_HOST: process.env.SMOGON_PG_HOST || '',
+        MODE: process.env.MODE || Modes.Production,
+        SSH: process.env.SSH === 'true',
         // ...
     };
 };
@@ -119,6 +133,16 @@ const getSanitzedConfig = (config: ENV): Config => {
         if (value === undefined) {
             throw new Error(`Missing key ${key} in .env`);
         }
+        // validate their entered mode
+        else if (key === 'MODE' && !Object.values(Modes).includes(value as Modes)) {
+            throw new Error(`Unsupported mode specified in .env. Supported values are: ${Object.values(Modes).join(', ')}`);
+        }
+
+    }
+
+    // make sure they provided the SSH PG credentials if they set SSH to true
+    if (config.SSH && !(config.SMOGON_PG_DATABASE && config.SMOGON_PG_HOST && config.SMOGON_PG_USER)) {
+        throw new Error('Although optional parameters, you must specify the remote PostgreSQL credentials if SSH is set to true.');
     }
     // if everything is defined as it should be, save to config: Config
     return config as Config;
@@ -129,9 +153,3 @@ const envConfig = getConfig();
 
 // check for undefined entries
 export const botConfig = getSanitzedConfig(envConfig);
-
-// assign the run mode
-botConfig.MODE = botConfig.CLIENT_ID === '1040375769798557826' ? Modes.Dev : Modes.Production;
-
-// expose the typed object to the client
-// export default sanitizedConfig;
