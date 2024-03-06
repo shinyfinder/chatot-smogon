@@ -65,28 +65,20 @@ export const command: SlashCommand = {
             }
         }
         else {
-            // respond
-            await interaction.followUp(`${guildNames.join(', ')}\n\nTotal: ${guildNames.length} | Unique owners: ${[...new Set(owners)].length}`);
-            // if this is the dev cord, also print a csv
-            if (interaction.guildId === '1040378543626002442') {
-                let csv = 'server name,server id,owner name,owner id\n';
-                for (const g of guildOwnerObjArr) {
-                    const owner = await interaction.client.guilds.cache.get(g.serverid)?.fetchOwner();
-                    const ownerName = owner?.user.username ?? '';
-                    csv += `${g.serverName},${g.serverid},${ownerName},${g.ownerid}\n`;
-                }
+            let csv = 'server name,server id,owner username,owner id\n';
+            for (const g of guildOwnerObjArr) {
+                const owner = await interaction.client.guilds.cache.get(g.serverid)?.fetchOwner();
+                const ownerName = owner?.user.username ?? '';
+                csv += `${g.serverName},${g.serverid},${ownerName},${g.ownerid}\n`;
+            }
 
-                // output the CSV to wherever the interaction occurred
-                // this will take a variable amount of time, so it's best to send as a new message
-                // data must be stored in a buffer to create an attachment, so do that first
-                const buf = Buffer.from(csv);
-                if (interaction.channel) {
-                    await interaction.channel.send({ files: [
-                        { attachment: buf, name: 'owners.csv' },
-                    ] });
-                }
-                
-
+            // output the CSV to wherever the interaction occurred
+            // data must be stored in a buffer to create an attachment, so do that first
+            const buf = Buffer.from(csv);
+            if (interaction.channel) {
+                await interaction.followUp({ content: `Here is the list of servers I am in:\n\nTotal: ${guildNames.length} | Unique owners: ${[...new Set(owners)].length}`, files: [
+                    { attachment: buf, name: 'servers.csv' },
+                ] });
             }
         }
     },
