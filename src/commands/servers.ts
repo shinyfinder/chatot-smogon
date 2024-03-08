@@ -65,11 +65,9 @@ export const command: SlashCommand = {
             }
         }
         else {
-            let csv = 'server name,server id,owner username,owner id\n';
+            let csv = 'server name,server id\n';
             for (const g of guildOwnerObjArr) {
-                const owner = await interaction.client.guilds.cache.get(g.serverid)?.fetchOwner();
-                const ownerName = owner?.user.username ?? '';
-                csv += `${g.serverName},${g.serverid},${ownerName},${g.ownerid}\n`;
+                csv += `${g.serverName},${g.serverid}\n`;
             }
 
             // output the CSV to wherever the interaction occurred
