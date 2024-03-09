@@ -1,8 +1,8 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, EmbedBuilder, APIEmbedField } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { pokedex, allNames, fullDexNameQuery, items, moves, dexGens, latestGen, dexGenNumAbbrMap, commitHash } from '../helpers/loadDex.js';
+import { pokedex, allNames, fullDexNameQuery, items, dexGens, latestGen, dexGenNumAbbrMap, commitHash } from '../helpers/loadDex.js';
 import { myColors } from '../helpers/constants.js';
-import { pool } from '../helpers/createPool.js';
+import { variablePool } from '../helpers/createPool.js';
 import { filterAutocomplete, toAlias, toGenAlias, validateAutocomplete } from '../helpers/autocomplete.js';
 import { fetchTierResources } from '../helpers/fetchTierResources.js';
 /**
@@ -78,7 +78,7 @@ export const command: SlashCommand = {
          * POKEDEX
          */
         if (fullDexNameQuery.pokemon.some(obj => obj.alias === queryStr)) {
-            const dtQuery = await pool.query(`
+            const dtQuery = await variablePool.query(`
             SELECT dex.pokemon.name, hp, atk, def, spa, spd, spe, weight, dex.types.name AS type, dex.abilities.name AS ability
             FROM dex.pokemon
             INNER JOIN dex.pokemon_types USING (pokemon_id)
@@ -230,7 +230,7 @@ export const command: SlashCommand = {
          */
         else if (fullDexNameQuery.items.some(obj => obj.alias === queryStr)) {
             // query the db to get the info we want
-            const dtQuery = await pool.query(`
+            const dtQuery = await variablePool.query(`
             SELECT name, description
             FROM dex.items
             WHERE dex.items.alias=$1 AND dex.items.gen_id=$2`, [queryStr, gen]);
@@ -297,7 +297,7 @@ export const command: SlashCommand = {
          */
         else if (fullDexNameQuery.abilities.some(obj => obj.alias === queryStr)) {
             // query the db to get the info we want
-            const dtQuery = await pool.query(`
+            const dtQuery = await variablePool.query(`
             SELECT name, description
             FROM dex.abilities
             WHERE dex.abilities.alias=$1 AND dex.abilities.gen_id=$2`, [queryStr, gen]);
@@ -330,10 +330,12 @@ export const command: SlashCommand = {
          */
         else if (fullDexNameQuery.moves.some(obj => obj.alias === queryStr)) {
             // query the db to get the info we want
-            const dtQuery = await pool.query(`
-            SELECT dex.moves.name, power, accuracy, priority, target, category, pp, dex.moves.description, dex.types.name AS type
+            const dtQuery = await variablePool.query(`
+            SELECT dex.moves.name, power, accuracy, priority, target, category, pp, dex.moves.description, dex.types.name AS type, dex.moveflags.description as flag
             FROM dex.moves
             INNER JOIN dex.types USING (type_id)
+            INNER JOIN dex.move_moveflags USING (move_id)
+            INNER JOIN dex.moveflags USING (moveflag_id)
             WHERE dex.moves.alias=$1 AND dex.moves.gen_id=$2`, [queryStr, gen]);
 
             interface IDBData {
@@ -346,6 +348,7 @@ export const command: SlashCommand = {
                 pp: number,
                 description: string,
                 type: string,
+                flag: string,
             }
 
             const dbData: IDBData[] | [] = dtQuery.rows;
@@ -372,7 +375,9 @@ export const command: SlashCommand = {
                 targetText = firstRow.target;
             }
 
+            const flagArr = dbData.map(row => `* ${row.flag}`);
             // look up the move flags from the PS data
+            /*
             const psData = moves[queryStr.replace(/[^a-z]/g, '')];
             const flagArr: string[] = [];
             if (psData) {
@@ -488,6 +493,7 @@ export const command: SlashCommand = {
 
                 }
             }
+            */
 
             // set the embed color
             for (const [color, value] of Object.entries(myColors)) {
@@ -523,7 +529,7 @@ export const command: SlashCommand = {
          */
         else if (fullDexNameQuery.natures.some(obj => obj.alias === queryStr)) {
             // query the db to get the info we want
-            const dtQuery = await pool.query(`
+            const dtQuery = await variablePool.query(`
             SELECT name, summary
             FROM dex.natures
             WHERE dex.natures.alias=$1 AND dex.natures.gen_id=$2`, [queryStr, gen]);
@@ -555,7 +561,7 @@ export const command: SlashCommand = {
          */
         else if (fullDexNameQuery.types.some(obj => obj.alias === queryStr)) {
             // query the db to get the info we want
-            const dtQuery = await pool.query(`
+            const dtQuery = await variablePool.query(`
             SELECT description, json_build_object(
                 'name', name,
                 'atk_effectives',
