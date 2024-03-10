@@ -116,6 +116,10 @@ export const clientEvent: eventHandler = {
                         }
                     }
                 }
+                 // if it's a collector timeout error, just return without letting them know
+                 else if (error instanceof Error && error.message === 'Collector received no interactions before ending with reason: time') {
+                    return;
+                }
                 else if (error instanceof Collection && error.size === 0) {
                     await interaction.channel?.send('Collector timed out without receiving an interaction');
                 }
@@ -173,6 +177,10 @@ export const clientEvent: eventHandler = {
                             await interaction.reply({ content: error.message, ephemeral: true });
                         }
                     }
+                }
+                // if it's a collector timeout error, just return without letting them know
+                else if (error instanceof Error && error.message === 'Collector received no interactions before ending with reason: time') {
+                    return;
                 }
                 // if we already replied, send a new one
                 else if (interaction.replied) {
