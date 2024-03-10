@@ -36,11 +36,10 @@ export async function createTicket(interaction: ButtonInteraction) {
     // add the action row to the modal
     modal.addComponents(row);
 
-    // show it to the user
     // show the modal to the user
     await interaction.showModal(modal);
 
-    // await their input
+    // create a filter to only accept interactions on this modal by the submitter
     const modalFilter = (modalInteraction: ModalSubmitInteraction) => modalInteraction.customId === `createTicket${randInt}` && modalInteraction.user.id === interaction.user.id;
     
     // wait for them to submit the modal
