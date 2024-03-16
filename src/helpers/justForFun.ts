@@ -244,12 +244,6 @@ async function isPermitted(msg: Message) {
 
     // unpack and update cache
     const permSet = permSetQ.rows.map((row: { perms: IFUNPERMS }) => row.perms)[0];
-
-    // check if the user is exempt
-    const exemptIDS = permSet.exemptions.map(id => id.roleid);
-    if (msg.member.roles.cache.hasAny(...exemptIDS)) {
-        return true;
-    }
     
     // check whether this is turned off completely
     if (permSet.allowance.length) {
@@ -257,6 +251,13 @@ async function isPermitted(msg: Message) {
             return false;
         }
     }
+    
+    // check if the user is exempt
+    const exemptIDS = permSet.exemptions.map(id => id.roleid);
+    if (msg.member.roles.cache.hasAny(...exemptIDS)) {
+        return true;
+    }
+    
 
     // check if the user has the permitted roles
     // if they don't, return early
