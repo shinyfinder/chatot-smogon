@@ -1,5 +1,10 @@
 CREATE SCHEMA chatot;
 
+
+-- ###############################
+-- #    COOLDOWNS
+-- ################################
+
 CREATE TABLE chatot.cooldown (
     channelid varchar(20),
     identifier text,
@@ -7,16 +12,11 @@ CREATE TABLE chatot.cooldown (
     PRIMARY KEY (channelid, identifier)
 );
 
--- no longer used
-CREATE TABLE chatot.raters (
-    channelid varchar(20),
-    meta text,
-    gen text,
-    userid varchar(20),
-    ping text NOT NULL DEFAULT 'All',
-    PRIMARY KEY (channelid, meta, gen, userid)
-);
 
+
+-- ###################################
+-- #     RMT SYSTEM
+-- ###################################
 
 CREATE TABLE chatot.raterlists (
     meta text,
@@ -33,6 +33,10 @@ CREATE TABLE chatot.rmtchans (
 );
 
 
+-- #######################################
+-- #     CUSTOM PREFIX COMMANDS
+-- ########################################
+
 CREATE TABLE chatot.customs (
     serverid varchar(20),
     cmd text,
@@ -40,6 +44,11 @@ CREATE TABLE chatot.customs (
     prefix varchar(1) NOT NULL DEFAULT '!',
     PRIMARY KEY (serverid, cmd)
 );
+
+
+-- ####################################
+-- #     LOGGING
+-- #####################################
 
 CREATE TYPE chatot.logchan_type AS enum ('all', 'edits', 'nonedits', 'userex', 'modex', 'usertarget', 'msgtarget');
 
@@ -60,11 +69,33 @@ CREATE TABLE chatot.modlog (
     PRIMARY KEY (serverid, executor, target, action, date, reason)
 );
 
+
+CREATE TYPE chatot.logdeletescope AS enum ('mod', 'all');
+
+CREATE TABLE chatot.logprefs (
+    serverid varchar(20),
+    ignoreid varchar(20),
+    deletescope chatot.logdeletescope,
+    logedits BOOLEAN,
+    PRIMARY KEY (serverid, ignoreid)
+);
+
+
+
+-- ########################################
+-- #     CHATOT
+-- #########################################
+
 CREATE TABLE chatot.states (
     target text,
     hash integer,
     PRIMARY KEY (target)
 );
+
+
+-- ###########################################
+-- #     SERVER MANAGEMENT
+-- ###########################################
 
 CREATE TABLE chatot.keepalives (
     id varchar(20),
@@ -87,67 +118,6 @@ CREATE TABLE chatot.dexdefaults (
     PRIMARY KEY (serverid)
 );
 
-CREATE TABLE chatot.identities (
-    discordid varchar(20),
-    forumid integer,
-    PRIMARY KEY (discordid)
-);
-
-
-CREATE TYPE chatot.verifymethod AS enum ('add', 'remove');
-
-CREATE TABLE chatot.verifyreqs (
-    serverid varchar(20),
-    roleid varchar(20),
-    age integer,
-    method chatot.verifymethod NOT NULL DEFAULT 'remove',
-    PRIMARY KEY (serverid)
-);
-
-CREATE TYPE chatot.logdeletescope AS enum ('mod', 'all');
-
-CREATE TABLE chatot.logprefs (
-    serverid varchar(20),
-    ignoreid varchar(20),
-    deletescope chatot.logdeletescope,
-    logedits BOOLEAN,
-    PRIMARY KEY (serverid, ignoreid)
-);
-
-
-CREATE TABLE chatot.ccstatus (
-    thread_id integer,
-    stage text,
-    progress text,
-    PRIMARY KEY (thread_id)
-);
-
-
-CREATE TYPE chatot.ccstagealert AS enum ('qc', 'done', 'all');
-CREATE TABLE chatot.ccprefs (
-    serverid varchar(20),
-    channelid varchar(20),
-    tier text,
-    role varchar(20),
-    gen text,
-    stage chatot.ccstagealert,
-    cooldown int,
-    prefix text,
-    PRIMARY KEY (serverid, channelid, tier, gen, stage)
-);
-
--- lastcheck currently unused
-CREATE TABLE chatot.lastcheck (
-    topic text,
-    tstamp timestamptz,
-    PRIMARY KEY (topic)
-);
-
-CREATE TABLE chatot.castatus (
-    thread_id integer, 
-    phrase_text text,
-    PRIMARY KEY (thread_id)
-);
 
 CREATE TYPE chatot.fcgames AS enum ('3ds', 'home', 'switch', 'pogo');
 CREATE TABLE chatot.fc (
@@ -174,18 +144,6 @@ CREATE TABLE chatot.stickies (
     PRIMARY KEY (channelid)
 );
 
-CREATE TABLE chatot.gbans (
-    target varchar(20),
-    date timestamptz,
-    reason text,
-    PRIMARY KEY (target)
-);
-
-CREATE TABLE chatot.gbanignores (
-    serverid varchar(20) PRIMARY KEY
-);
-
-
 CREATE TABLE chatot.tickets (
     serverid varchar(20),
     messageid varchar(20),
@@ -206,12 +164,138 @@ CREATE TABLE chatot.livetours (
     PRIMARY KEY (messageid)
 );
 
+
+CREATE TABLE chatot.fun_settings (
+    serverid varchar(20) PRIMARY KEY,
+    allow BOOLEAN,
+    cooldown integer
+);
+
+CREATE TABLE chatot.fun_permitted_roles (
+    roleid varchar(20) PRIMARY KEY,
+    serverid varchar(20) NOT NULL REFERENCES chatot.fun_settings ON DELETE CASCADE
+);
+
+CREATE TABLE chatot.fun_permitted_channels (
+    channelid varchar(20) PRIMARY KEY,
+    serverid varchar(20) NOT NULL REFERENCES chatot.fun_settings ON DELETE CASCADE
+);
+
+CREATE TABLE chatot.fun_exemptions (
+    roleid varchar(20) PRIMARY KEY,
+    serverid varchar(20) NOT NULL REFERENCES chatot.fun_settings ON DELETE CASCADE
+);
+
+
+-- ##################################
+-- #     VERIFICATION
+-- ###################################
+
+CREATE TABLE chatot.identities (
+    discordid varchar(20),
+    forumid integer,
+    PRIMARY KEY (discordid)
+);
+
+
+CREATE TYPE chatot.verifymethod AS enum ('add', 'remove');
+
+CREATE TABLE chatot.verifyreqs (
+    serverid varchar(20),
+    roleid varchar(20),
+    age integer,
+    method chatot.verifymethod NOT NULL DEFAULT 'remove',
+    PRIMARY KEY (serverid)
+);
+
+
+-- #################################
+-- #    FORUM ALERTS
+-- #################################
+
+CREATE TABLE chatot.ccstatus (
+    thread_id integer,
+    stage text,
+    progress text,
+    PRIMARY KEY (thread_id)
+);
+
+
+CREATE TYPE chatot.ccstagealert AS enum ('qc', 'done', 'all');
+CREATE TABLE chatot.ccprefs (
+    serverid varchar(20),
+    channelid varchar(20),
+    tier text,
+    role varchar(20),
+    gen text,
+    stage chatot.ccstagealert,
+    cooldown int,
+    prefix text,
+    PRIMARY KEY (serverid, channelid, tier, gen, stage)
+);
+
+
+
+CREATE TABLE chatot.castatus (
+    thread_id integer, 
+    phrase_text text,
+    PRIMARY KEY (thread_id)
+);
+
+
 CREATE TABLE chatot.ccforums (
     forumid integer,
     tier text,
     gen text,
     PRIMARY KEY (forumid, tier, gen)
 );
+
+
+-- #############################
+-- #     GBANS
+-- ############################
+
+CREATE TABLE chatot.gbans (
+    target varchar(20),
+    date timestamptz,
+    reason text,
+    PRIMARY KEY (target)
+);
+
+
+CREATE TABLE chatot.officialservers (
+    serverid varchar(20) PRIMARY KEY
+);
+
+CREATE TABLE chatot.gban_opt_ins (
+    serverid varchar(20) PRIMARY KEY
+);
+
+
+-- ########################################
+-- #    UNUSED
+-- #########################################
+
+CREATE TABLE chatot.gbanignores (
+    serverid varchar(20) PRIMARY KEY
+);
+
+CREATE TABLE chatot.raters (
+    channelid varchar(20),
+    meta text,
+    gen text,
+    userid varchar(20),
+    ping text NOT NULL DEFAULT 'All',
+    PRIMARY KEY (channelid, meta, gen, userid)
+);
+
+CREATE TABLE chatot.lastcheck (
+    topic text,
+    tstamp timestamptz,
+    PRIMARY KEY (topic)
+);
+
+
 -- The following is in the dex.gens schema, not the chatot schema. It is provided for reference only
 -- gen_id | alias | shorthand |      name      | order |               build_id               
 -- --------+-------+-----------+----------------+-------+--------------------------------------

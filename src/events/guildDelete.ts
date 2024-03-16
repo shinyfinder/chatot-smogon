@@ -46,6 +46,8 @@ export const clientEvent: eventHandler = {
             await pgClient.query('DELETE FROM chatot.gbanignores WHERE serverid=$1', [guild.id]);
             await pgClient.query('DELETE FROM chatot.livetours WHERE NOT interactionchanid=ANY($1) OR NOT announcechanid=ANY($1)', [chanIDs]);
             await pgClient.query('DELETE FROM chatot.rmtchans WHERE NOT channelid=ANY($1)', [chanIDs]);
+            await pgClient.query('DELETE FROM chatot.fun_settings WHERE serverid=$1', [guild.id]);
+            await pgClient.query('DELETE FROM chatot.gban_opt_ins WHERE serverid=$1', [guild.id]);
             // end
             await pgClient.query('COMMIT');
         }
@@ -58,3 +60,4 @@ export const clientEvent: eventHandler = {
         }
     },
 };
+

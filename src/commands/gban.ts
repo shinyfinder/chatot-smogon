@@ -11,6 +11,7 @@ import {
     Message,
     DiscordAPIError,
     ChannelType,
+    AutocompleteInteraction,
 } from 'discord.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
@@ -20,6 +21,7 @@ import { errorHandler } from '../helpers/errorHandler.js';
 import { pool } from '../helpers/createPool.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
 import { removeRaterAll } from '../helpers/removerater.js';
+import { filterAutocomplete } from '../helpers/autocomplete.js';
 /**
  * Command to ban a user from every server the bot is in
  * Supports banning a single user or a group of users depending on the selected subcommand
@@ -53,20 +55,36 @@ export const command: SlashCommand = {
         )
         .addSubcommand(new SlashCommandSubcommandBuilder()
                 .setName('ignore')
-                .setDescription('Errors in this server will not be reported')
+                .setDescription('Errors in the specified server will not be reported')
                 .addStringOption(option =>
                     option.setName('server')
                     .setDescription('Full name or id of the server')
-                    .setRequired(true)),
+                    .setRequired(true)
+                    .setAutocomplete(true)),
         )
         .addSubcommand(new SlashCommandSubcommandBuilder()
                 .setName('unignore')
-                .setDescription('Restores error logging for the specified server')
+                .setDescription('Restores gban error logging for the specified server')
                 .addStringOption(option =>
                     option.setName('server')
                     .setDescription('Full name or id of the server')
-                    .setRequired(true)),
+                    .setRequired(true)
+                    .setAutocomplete(true)),
         ),
+    
+     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
+     async autocomplete(interaction: AutocompleteInteraction) {
+        const focusedOption = interaction.options.getFocused(true);
+
+        if (focusedOption.name === 'server') {
+            // create autocomplete pairs using the guild names and ids from cache
+            const guildNamesIDs = interaction.client.guilds.cache.map(guild => ({ name: guild.name, id: guild.id }));
+            const guildPairs = guildNamesIDs.map(g => ({ name: g.name, value: g.id }));
+
+            await filterAutocomplete(interaction, focusedOption, guildPairs);
+        }
+    },
+    
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
@@ -130,13 +148,31 @@ export const command: SlashCommand = {
                 await interaction.channel?.send('Grabbing my banhammer...');
 
                 // get the list of guild IDs the bot is in
-                const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
+                // const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
+
+                // get the list of guild ids we care about
+                const officialGuilds: { serverid: string}[] | [] = (await pool.query('SELECT serverid FROM chatot.officialservers')).rows;
+                const optIns: { serverid: string}[] | [] = (await pool.query('SELECT serverid FROM chatot.gban_opt_ins')).rows;
+                
+                if (!officialGuilds.length && !optIns.length) {
+                    throw 'No gban guilds found; nothing to do!';
+                }
+                else if (!officialGuilds.length) {
+                    throw 'No official guilds found!';
+                }
+
+                // extract their ids
+                const officialIDs = officialGuilds.map(og => og.serverid);
+                const optInIDs = optIns.map(oi => oi.serverid);
+                // it's possible that some official servers ran the opt in command since they get the welcome message
+                // since those are already covered, we don't need to duplicate the work
+                const nonOfficialOptInIDs = optInIDs.filter(id => !officialIDs.some(oid => oid === id));
 
                 // create a flag for failed ban attempts
                 let failedBans = false;
 
                 // loop over the list of ids and ban the user from them
-                for (const id of guildIds) {
+                for (const id of officialIDs) {
                     const guild = interaction.client.guilds.cache.get(id);
                     if (guild === undefined) {
                         continue;
@@ -161,11 +197,9 @@ export const command: SlashCommand = {
                         failedGuilds.push({ name: guild.name, id: guild.id });
 
                         // try to send a message to their logging channel so they know we tried and they may have to tweak their settings
-                        // first, fetch the member of this guild so we can tell them who it is
-
                         // set the inputs needed to build the embed
                         const title = 'Failed Ban Attempt';
-                        const description = `I attempted to ban ${user.toString()} (${user.tag}), but was unsuccessful. Please ensure I have the Ban Users permission and that my role is above that of other users in the Roles menu. <https://support.discord.com/hc/en-us/articles/214836687-Role-Management-101>`;
+                        const description = `I attempted to ban ${user.username} (${user.id}), but was unsuccessful. Please ensure I have the Ban Users permission and that my role is above that of other users in the Roles menu. <https://support.discord.com/hc/en-us/articles/214836687-Role-Management-101>`;
                         const color = 0xf00000;
 
                         // build the discord embed
@@ -187,22 +221,14 @@ export const command: SlashCommand = {
                 }
 
                 // let them know you're done and whether you had issues along the way
+                // we only want to respond to the interaction with an error message if any of the official guilds had issues
+                // since we only looped over officials first, we don't need to filter anything
                 if (failedBans) {
-                    // query the db to see if any of the failed channels are being ignored
-                    const ignoredGuilds: { serverid: string }[] | [] = (await pool.query('SELECT serverid FROM chatot.gbanignores')).rows;
-                    
-                    const filteredFailures = failedGuilds.filter(obj => !ignoredGuilds.some(iguild => iguild.serverid === obj.id));
-
-                    if (filteredFailures.length) {
-                        // get the list of names 
-                        const failedNames = [...new Set(filteredFailures.map(f => f.name))];
-                        await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}`);
-                    }
-                    else {
-                        await interaction.channel?.send('I have banned the user from every server of interest.');
-                    }
-                    
+                   // get the list of names 
+                   const failedNames = [...new Set(failedGuilds.map(f => f.name))];
+                   await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}`);
                 }
+                // no failures, nothing to report
                 else {
                     await interaction.channel?.send('I have banned the user from every server of interest.');
                 }
@@ -216,6 +242,51 @@ export const command: SlashCommand = {
 
                 // remove them from the list of raters, returning an array of the deleted metas/gens
                 await removeRaterAll(interaction, [user.id]);
+
+                // loop over the opt in guilds
+                for (const id of nonOfficialOptInIDs) {
+                    const guild = interaction.client.guilds.cache.get(id);
+                    if (guild === undefined) {
+                        continue;
+                    }
+
+                    // ban the user and don't delete any messages
+                    // I think this defaults to 0 deleted, but I'd rather be safe
+                    // try catch the bans in case one of the servers removed ban access from the bot
+                    try {
+                        await guild.members.ban(user, {
+                            reason: auditEntry,
+                            deleteMessageSeconds: 0,
+                        });
+                    }
+                    // catch the errors and alert staff so they know which ones the user wasn't banned from
+                    // continue, instead of throwing, so that we can ban from as many servers as we can
+                    catch (err) {
+                        // try to send a message to their logging channel so they know we tried and they may have to tweak their settings
+                        // first, fetch the member of this guild so we can tell them who it is
+
+                        // set the inputs needed to build the embed
+                        const title = 'Failed Ban Attempt';
+                        const description = `I attempted to ban ${user.username} (${user.id}), but was unsuccessful. Please ensure I have the Ban Users permission and that my role is above that of other users in the Roles menu. <https://support.discord.com/hc/en-us/articles/214836687-Role-Management-101>`;
+                        const color = 0xf00000;
+
+                        // build the discord embed
+                        const embed = buildEmbed(title, { description: description, color: color });
+
+                        // post the log to the logging channel
+                        // wrap in its own try catch so that if this errors too the whole execution doesn't quit
+                        try {
+                            await postLogEvent(embed, guild, loggedEventTypes.Ban);
+                        }
+                        catch (e) {
+                            // if it errors, run it thru the error handler to make sure it's not something we need to address
+                            errorHandler(e);
+                        }
+                        continue;
+                        
+                    }
+
+                }
             } 
             else {
                 await interaction.channel?.send('Global ban exited');
@@ -325,13 +396,31 @@ export const command: SlashCommand = {
                 await interaction.channel?.send('Grabbing my banhammer...');
 
                 // get the list of guild IDs the bot is in
-                const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
+                // const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
+
+                // get the list of guild ids we care about
+                const officialGuilds: { serverid: string}[] | [] = (await pool.query('SELECT serverid FROM chatot.officialservers')).rows;
+                const optIns: { serverid: string}[] | [] = (await pool.query('SELECT serverid FROM chatot.gban_opt_ins')).rows;
+                
+                if (!officialGuilds.length && !optIns.length) {
+                    throw 'No gban guilds found; nothing to do!';
+                }
+                else if (!officialGuilds.length) {
+                    throw 'No official guilds found!';
+                }
+
+                const officialIDs = officialGuilds.map(og => og.serverid);
+                const optInIDs = optIns.map(oi => oi.serverid);
+
+                // it's possible that some official servers ran the opt in command since they get the welcome message
+                // since those are already covered, we don't need to duplicate the work
+                const nonOfficialOptInIDs = optInIDs.filter(id => !officialIDs.some(oid => oid === id));
 
                 // create a flag to check for failed ban attempts
                 let failedBans = false;
 
                 // loop over the list of ids and ban the user(s) from them
-                for (const id of guildIds) {
+                for (const id of officialIDs) {
                     // loop over the list of provided ids
                     for (const uid of uids) {
                         // retrieve the guild from the cache
@@ -370,7 +459,7 @@ export const command: SlashCommand = {
 
                                 // set the inputs needed to build the embed
                                 const title = 'Failed Ban Attempt';
-                                const description = `I attempted to ban ${user.toString()} (${user.tag}), but was unsuccessful. Please ensure I have the Ban Users permission and that my Role is above that of other users. <https://support.discord.com/hc/en-us/articles/214836687-Role-Management-101>`;
+                                const description = `I attempted to ban ${user.username} (${user.id}), but was unsuccessful. Please ensure I have the Ban Users permission and that my Role is above that of other users. <https://support.discord.com/hc/en-us/articles/214836687-Role-Management-101>`;
                                 const color = 0xf00000;
 
                                 // build the discord embed
@@ -397,22 +486,9 @@ export const command: SlashCommand = {
                 
                 // let the user know you're done, and indicate whether all bans were successful. 
                 if (failedBans) {
-                    // query the db to see if any of the failed channels are being ignored
-                    const ignoredGuilds: { serverid: string }[] | [] = (await pool.query('SELECT serverid FROM chatot.gbanignores')).rows;
-                    
-                    // filter out the ones we want to ignore
-                    const filteredFailures = failedGuilds.filter(obj => !ignoredGuilds.some(iguild => iguild.serverid === obj.id));
-
-                    if (filteredFailures.length) {
-                        // get the unique names of the guilds left
-                        const failedNames = [...new Set(filteredFailures.map(f => f.name))];
-
-                        await interaction.channel?.send(`I attempted to ban the provided id(s) from every server I am in, but I had some issues in:\n\n${failedNames.join(', ')}`);
-                    }
-                    else {
-                        await interaction.channel?.send('I have banned the provided id(s) from every server of interest.');
-                    }
-
+                    // get the unique names of the failed guilds
+                    const failedNames = [...new Set(failedGuilds.map(f => f.name))];
+                    await interaction.channel?.send(`I attempted to ban the provided id(s) from every server I am in, but I had some issues in:\n\n${failedNames.join(', ')}`);
                 }
                 else {
                     await interaction.channel?.send('I have banned the provided id(s) from every server of interest.');
@@ -430,6 +506,56 @@ export const command: SlashCommand = {
 
                 // remove them from the list of raters, returning an array of the deleted metas/gens
                 await removeRaterAll(interaction, uids);
+
+                // loop over the opt in guilds
+                for (const id of nonOfficialOptInIDs) {
+                    // loop over the list of provided ids
+                    for (const uid of uids) {
+                        // retrieve the guild from the cache
+                        const guild = interaction.client.guilds.cache.get(id);
+                        // make sure there were no errors in getting the guild
+                        // and make sure the uid isn't blank (i.e. a blank line in the modal)
+                        if (guild === undefined || uid === '') {
+                            continue;
+                        }
+
+                        // ban the user and don't delete any messages
+                        // I think this defaults to 0 deleted, but I'd rather be safe
+                        try {
+                            // get the member in the guild
+                            await guild.members.ban(uid, {
+                                reason: auditEntry,
+                                deleteMessageSeconds: 0,
+                            });
+                        }
+                        catch (err) {
+                            // first, fetch the member of this guild so we can tell them who it is
+                            const user = await interaction.client.users.fetch(uid);
+
+                            // set the inputs needed to build the embed
+                            const title = 'Failed Ban Attempt';
+                            const description = `I attempted to ban ${user.username} (${user.id}), but was unsuccessful. Please ensure I have the Ban Users permission and that my Role is above that of other users. <https://support.discord.com/hc/en-us/articles/214836687-Role-Management-101>`;
+                            const color = 0xf00000;
+
+                            // build the discord embed
+                            const embed = buildEmbed(title, { description: description, color: color });
+
+                            // post the log to the logging channel
+                            // wrap in a try catch in case this errors too
+                            try {
+                                await postLogEvent(embed, guild, loggedEventTypes.Ban);
+                            }
+                            catch (e) {
+                                errorHandler(e);
+                            }
+
+                            continue;
+                            
+                            
+                        }
+                        
+                    }
+                }
                 
             }
             else {
@@ -438,10 +564,7 @@ export const command: SlashCommand = {
 
             
         }
-
-        /**
-         * IGNORE
-         */
+       
         else if (interaction.options.getSubcommand() === 'ignore') {
             await interaction.deferReply({ ephemeral: true });
 
@@ -457,15 +580,12 @@ export const command: SlashCommand = {
                 await interaction.followUp('More than one guild found by that name. Please provide the id of the server to ignore');
             }
             else {
-                await pool.query('INSERT INTO chatot.gbanignores (serverid) VALUES ($1)', [guildCollection.first()?.id]);
-                await interaction.followUp(`I will no longer log gban errors in ${guildCollection.first()?.name}`);
+                await pool.query('DELETE FROM chatot.officialservers WHERE serverid=$1', [guildCollection.first()?.id]);
+                await interaction.followUp(`Ok, I won't log gban errors in ${guildCollection.first()?.name}`);
             }
 
         }
 
-        /**
-         * UNIGNORE
-         */
         else if (interaction.options.getSubcommand() === 'unignore') {
             await interaction.deferReply({ ephemeral: true });
 
@@ -481,10 +601,11 @@ export const command: SlashCommand = {
                 await interaction.followUp('More than one guild found by that name. Please provide the id of the server to unignore');
             }
             else {
-                await pool.query('DELETE FROM chatot.gbanignores WHERE serverid=$1', [guildCollection.first()?.id]);
-                await interaction.followUp(`I will again log gban errors in ${guildCollection.first()?.name}`);
+                await pool.query('INSERT INTO chatot.officialservers (serverid) VALUES ($1) ON CONFLICT (serverid) DO NOTHING', [guildCollection.first()?.id]);
+                await interaction.followUp(`I will log gban errors in ${guildCollection.first()?.name}`);
             }
         }
+        
         
     },
 };

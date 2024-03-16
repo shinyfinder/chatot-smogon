@@ -3,6 +3,7 @@ import { eventHandler } from '../types/event-base';
 import { SlashCommand } from '../types/slash-command-base';
 import { createTicket } from '../helpers/createTicket.js';
 import { errorHandler } from '../helpers/errorHandler.js';
+import { markOfficial } from '../helpers/markOfficial.js';
 
 /**
  * interactionCreate handler
@@ -146,6 +147,7 @@ export const clientEvent: eventHandler = {
             // check if it's a ticket event
             try {
                 await createTicket(interaction);
+                await markOfficial(interaction);
             }
             catch (error) {
                 // let the user know there was a problem

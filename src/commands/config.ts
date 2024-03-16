@@ -10,6 +10,8 @@ import {
     ButtonBuilder,
     ButtonStyle,
     ActionRowBuilder,
+    RoleSelectMenuBuilder,
+    ChannelSelectMenuBuilder,
  } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
@@ -17,6 +19,7 @@ import { getRandInt } from '../helpers/getRandInt.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
 import { toAlias, validateAutocomplete, toGenAlias, filterAutocomplete } from '../helpers/autocomplete.js';
 import { modifiedDexFormats, dexGens } from '../helpers/loadDex.js';
+import { errorHandler } from '../helpers/errorHandler.js';
 
 
 /**
@@ -236,7 +239,42 @@ export const command: SlashCommand = {
             .addRoleOption(option =>
                 option.setName('staff3')
                 .setDescription('Additional staff role that can access the ticket')
-                .setRequired(false))),
+                .setRequired(false)))
+        
+        /**
+         * JUST FOR FUN
+         */
+        .addSubcommandGroup(new SlashCommandSubcommandGroupBuilder()
+            .setName('fun')
+            .setDescription('Configures the allowance and cooldown of the just-for-fun features')
+            .addSubcommand(new SlashCommandSubcommandBuilder()
+                .setName('roles')
+                .setDescription('The roles allowed to have fun'))
+            .addSubcommand(new SlashCommandSubcommandBuilder()
+                .setName('channels')
+                .setDescription('The channels where fun is allowed'))
+            .addSubcommand(new SlashCommandSubcommandBuilder()
+                .setName('cooldown')
+                .setDescription('How often fun can be had (per channel)')
+                .addIntegerOption(option =>
+                    option.setName('seconds')
+                    .setDescription('The cooldown in seconds between allowed usage in a channel')
+                    .setMinValue(0)
+                    .setMaxValue(10 * 60)
+                    .setRequired(true)))
+            .addSubcommand(new SlashCommandSubcommandBuilder()
+                .setName('exemptions')
+                .setDescription('The roles which can have fun wherever, whenever'))
+            .addSubcommand(new SlashCommandSubcommandBuilder()
+                .setName('allowance')
+                .setDescription('Whether fun is allowed at all in the server')
+                .addBooleanOption(option =>
+                    option.setName('flag')
+                    .setDescription('Are users allowed to have fun?')
+                    .setRequired(true)))
+            .addSubcommand(new SlashCommandSubcommandBuilder()
+            .setName('reset')
+            .setDescription('Resets all fun confgiurations to default values in the server'))),
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {
@@ -253,9 +291,8 @@ export const command: SlashCommand = {
     
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
-        await interaction.deferReply({ ephemeral: true });
-
-        if (!interaction.guildId) {
+        
+        if (!interaction.guild) {
             return;
         }
 
@@ -264,6 +301,8 @@ export const command: SlashCommand = {
          */
 
         if (interaction.options.getSubcommand() === 'verify') {
+            await interaction.deferReply({ ephemeral: true });
+
             // retrieve the user input
             const role = interaction.options.getRole('role', true);
             const method = interaction.options.getString('method', true);
@@ -296,6 +335,8 @@ export const command: SlashCommand = {
          * LOGGING SCOPE
          */
         else if (interaction.options.getSubcommand() === 'scope') {
+            await interaction.deferReply({ ephemeral: true });
+
             // get the user input
             const ignoreChan = interaction.options.getChannel('ignore');
             const unignoreChan = interaction.options.getChannel('unignore');
@@ -370,6 +411,8 @@ export const command: SlashCommand = {
          * LOGGING CHAN TYPE
          */
         else if (interaction.options.getSubcommand() === 'chantype') {
+            await interaction.deferReply({ ephemeral: true });
+
             // get the user input
             const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
             const type = interaction.options.getString('type', true);
@@ -397,6 +440,8 @@ export const command: SlashCommand = {
          */
 
         else if (interaction.options.getSubcommand() === 'dex') {
+            await interaction.deferReply({ ephemeral: true });
+
             // get the inputs
             let format = interaction.options.getString('format') ?? '';
             let gen = interaction.options.getString('gen') ?? '';
@@ -434,6 +479,8 @@ export const command: SlashCommand = {
          */
         
         else if (interaction.options.getSubcommandGroup() === 'cc') {
+
+            await interaction.deferReply({ ephemeral: true });
 
             /**
              * ADD
@@ -581,6 +628,8 @@ export const command: SlashCommand = {
          * TICKETS
          */
         else if (interaction.options.getSubcommand() === 'tickets') {
+            await interaction.deferReply({ ephemeral: true });
+
             // get inputs
             const threadChannel = interaction.options.getChannel('threadchan', true, [ChannelType.GuildText]);
             const staffRole = interaction.options.getRole('staff');
@@ -665,6 +714,304 @@ export const command: SlashCommand = {
             
             // let them know we're done
             await interaction.followUp('Ticket system updated; a new button has been created. Please delete any old posts containing the original submission button.');
+        }
+
+        /**
+         * JUST FOR FUN
+         */
+        else if (interaction.options.getSubcommandGroup() === 'fun') {
+            /**
+             * ROLES
+             */
+            if (interaction.options.getSubcommand() === 'roles') {
+                const randInt = getRandInt(0, 65535);
+
+                const roleSelect = new RoleSelectMenuBuilder()
+                .setCustomId(`fun-roles-${randInt}`)
+                .setPlaceholder('Select up to 10 roles')
+                .setMinValues(1)
+                .setMaxValues(10);
+    
+                const allowAnyButton = new ButtonBuilder()
+                .setCustomId(`fun-role-any-${randInt}`)
+                .setLabel('Restore default (everyone)')
+                .setStyle(ButtonStyle.Secondary);
+    
+                const row1 = new ActionRowBuilder<RoleSelectMenuBuilder>()
+                    .addComponents(roleSelect);
+    
+                const row2 = new ActionRowBuilder<ButtonBuilder>()
+                    .addComponents(allowAnyButton);
+    
+                const prompt = await interaction.reply({
+                    content: 'Select role(s) allowed to use the fun message response features, or click the button to restore the default configuration (everyone is permitted). **Once at least 1 role is selected, clicking outside of the dropdown menu will submit your choices.**',
+                    components: [row1, row2],
+                    ephemeral: true,
+                });
+    
+                // query the pool with a transaction
+                const pgClient = await pool.connect();
+                let hadError = false;
+    
+                try {
+                    const selectedRoles = await prompt.awaitMessageComponent({ time: 5 * 60 * 1000 });
+    
+                    // defer the update to allow us to process
+                    await selectedRoles.deferUpdate();
+    
+                    // start
+                    await pgClient.query('BEGIN');
+    
+                    // make sure the parent table has a row
+                    await pgClient.query('INSERT INTO chatot.fun_settings (serverid) VALUES ($1) ON CONFLICT (serverid) DO NOTHING', [interaction.guildId]);
+    
+                    // delete the existing rows from the permitted roles table so that we can update the values
+                    await pgClient.query('DELETE FROM chatot.fun_permitted_roles WHERE serverid=$1', [interaction.guildId]);
+    
+                    // if they responded with the select menu, get the array of values they used and insert
+                    // if they clicked the button, don't insert anything since we default to everyone
+                    if (selectedRoles.isRoleSelectMenu()) {
+                        const targetRolesArr = selectedRoles.values;
+                        await pgClient.query('INSERT INTO chatot.fun_permitted_roles (serverid, roleid) VALUES ($1, UNNEST($2::text[]))', [interaction.guildId, targetRolesArr]);
+                    }
+
+                    // end
+                    await pgClient.query('COMMIT');
+                }
+                catch (e) {
+                    await pgClient.query('ROLLBACK');
+                    hadError = true;
+                    
+                    // try to log the error
+                    errorHandler({ err: e, int: interaction });
+                    
+                    // cleanup the reply
+                    if (e instanceof Error && e.message.includes('Collector received')) {
+                        await interaction.editReply({ content: 'The interaction has expired and no updates were made.', components: [] });
+                    }
+                    else {
+                        await interaction.editReply({ content: 'An error occurred and your preferences were not saved', components: [] });
+                    }    
+                }
+                finally {
+                    pgClient.release();
+                }
+    
+                if (!hadError) {
+                    await interaction.editReply({ content: 'Preferences updated', components: [] });
+                }
+            }
+
+            /**
+             * CHANNELS
+             */
+           
+            else if (interaction.options.getSubcommand() === 'channels') {
+                const randInt = getRandInt(0, 65535);
+
+                const chanSelect = new ChannelSelectMenuBuilder()
+                .setCustomId(`fun-channels-${randInt}`)
+                .setPlaceholder('Select up to 20 channels')
+                .setMinValues(1)
+                .setMaxValues(20)
+                .setChannelTypes([ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread, ChannelType.GuildCategory]);
+    
+                const allowAnyButton = new ButtonBuilder()
+                .setCustomId(`fun-channels-any-${randInt}`)
+                .setLabel('Restore default (everywhere)')
+                .setStyle(ButtonStyle.Secondary);
+    
+                const row1 = new ActionRowBuilder<ChannelSelectMenuBuilder>()
+                    .addComponents(chanSelect);
+    
+                const row2 = new ActionRowBuilder<ButtonBuilder>()
+                    .addComponents(allowAnyButton);
+    
+                const prompt = await interaction.reply({
+                    content: 
+                    `Select channels or channel groups allowed to use the fun message response features, or click the button to restore the default settings (permitted everywhere). Selecting a channel group will apply the settings to all channels within it. **Once at least 1 item is selected, clicking outside of the dropdown menu will submit your choices.**
+Please remember that in all cases, Chatot must have view + post access to the channel for the features to work.`,
+                    components: [row1, row2],
+                    ephemeral: true,
+                });
+    
+                // query the pool with a transaction
+                const pgClient = await pool.connect();
+                let hadError = false;
+    
+                try {
+                    const selectedChannels = await prompt.awaitMessageComponent({ time: 5 * 60 * 1000 });
+    
+                    // defer the update to allow us to process
+                    await selectedChannels.deferUpdate();
+    
+                    // start
+                    await pgClient.query('BEGIN');
+    
+                    // make sure the parent table has a row
+                    await pgClient.query('INSERT INTO chatot.fun_settings (serverid) VALUES ($1) ON CONFLICT (serverid) DO NOTHING', [interaction.guildId]);
+    
+                    // delete the existing rows from the permitted roles table so that we can update the values
+                    await pgClient.query('DELETE FROM chatot.fun_permitted_channels WHERE serverid=$1', [interaction.guildId]);
+    
+                    // if they responded with the select menu, get the array of values they used and insert
+                    // if they clicked the button, just don't insert anything since we default to everywhere
+                    if (selectedChannels.isChannelSelectMenu()) {
+                        const targetChannelsArr = selectedChannels.values;
+                        await pgClient.query('INSERT INTO chatot.fun_permitted_channels (serverid, channelid) VALUES ($1, UNNEST($2::text[]))', [interaction.guildId, targetChannelsArr]);
+                    }
+                    
+                    // end
+                    await pgClient.query('COMMIT');
+                }
+                catch (e) {
+                    await pgClient.query('ROLLBACK');
+                    hadError = true;
+                    // try to log the error
+                    errorHandler({ err: e, int: interaction });
+                    
+                    // cleanup the reply
+                    if (e instanceof Error && e.message.includes('Collector received')) {
+                        await interaction.editReply({ content: 'The interaction has expired and no updates were made.', components: [] });
+                    }
+                    else {
+                        await interaction.editReply({ content: 'An error occurred and your preferences were not saved', components: [] });
+                    }    
+                }
+                finally {
+                    pgClient.release();
+                }
+    
+                if (!hadError) {
+                    await interaction.editReply({ content: 'Preferences updated', components: [] });
+                }
+            }
+
+            /**
+             * COOLDOWNS
+             */
+
+            else if (interaction.options.getSubcommand() === 'cooldown') {
+                await interaction.deferReply({ ephemeral: true });
+
+                // inputs
+                const cd = interaction.options.getInteger('seconds', true);
+
+                // insert
+                await pool.query('INSERT INTO chatot.fun_settings (serverid, cooldown) VALUES ($1, $2) ON CONFLICT (serverid) DO UPDATE SET serverid=EXCLUDED.serverid, cooldown=EXCLUDED.cooldown', [interaction.guildId, cd]);
+
+                // done
+                await interaction.followUp('Preferences updated');
+            }
+
+            /**
+             * EXEMPTIONS
+             */
+
+            else if (interaction.options.getSubcommand() === 'exemptions') {
+                const randInt = getRandInt(0, 65535);
+
+                const roleSelect = new RoleSelectMenuBuilder()
+                .setCustomId(`fun-exempt-${randInt}`)
+                .setPlaceholder('Select up to 10 roles')
+                .setMinValues(1)
+                .setMaxValues(10);
+    
+                const allowAnyButton = new ButtonBuilder()
+                .setCustomId(`fun-exempt-any-${randInt}`)
+                .setLabel('Restore default (none)')
+                .setStyle(ButtonStyle.Secondary);
+    
+                const row1 = new ActionRowBuilder<RoleSelectMenuBuilder>()
+                    .addComponents(roleSelect);
+    
+                const row2 = new ActionRowBuilder<ButtonBuilder>()
+                    .addComponents(allowAnyButton);
+    
+                const prompt = await interaction.reply({
+                    content: 'Select role(s) allowed to use the fun message response features without restriction, or click the button to restore the default setting (no exemptions). **Once at least 1 role is selected, clicking outside of the dropdown menu will submit your choices.**',
+                    components: [row1, row2],
+                    ephemeral: true,
+                });
+    
+                // query the pool with a transaction
+                const pgClient = await pool.connect();
+                let hadError = false;
+    
+                try {
+                    const selectedRoles = await prompt.awaitMessageComponent({ time: 5 * 60 * 1000 });
+    
+                    // defer the update to allow us to process
+                    await selectedRoles.deferUpdate();
+    
+                    // start
+                    await pgClient.query('BEGIN');
+    
+                    // make sure the parent table has a row
+                    await pgClient.query('INSERT INTO chatot.fun_settings (serverid) VALUES ($1) ON CONFLICT (serverid) DO NOTHING', [interaction.guildId]);
+    
+                    // delete the existing rows from the permitted roles table so that we can update the values
+                    await pgClient.query('DELETE FROM chatot.fun_exemptions WHERE serverid=$1', [interaction.guildId]);
+    
+                    // if they responded with the select menu, get the array of values they used and insert
+                    // if they clicked the button, don't insert anything since we default to everyone
+                    if (selectedRoles.isRoleSelectMenu()) {
+                        const targetRolesArr = selectedRoles.values;
+                        await pgClient.query('INSERT INTO chatot.fun_exemptions (serverid, roleid) VALUES ($1, UNNEST($2::text[]))', [interaction.guildId, targetRolesArr]);
+                    }
+
+                    // end
+                    await pgClient.query('COMMIT');
+                }
+                catch (e) {
+                    await pgClient.query('ROLLBACK');
+                    hadError = true;
+                    
+                    // try to log the error
+                    errorHandler({ err: e, int: interaction });
+                    
+                    // cleanup the reply
+                    if (e instanceof Error && e.message.includes('Collector received')) {
+                        await interaction.editReply({ content: 'The interaction has expired and no updates were made.', components: [] });
+                    }
+                    else {
+                        await interaction.editReply({ content: 'An error occurred and your preferences were not saved', components: [] });
+                    }    
+                }
+                finally {
+                    pgClient.release();
+                }
+    
+                if (!hadError) {
+                    await interaction.editReply({ content: 'Preferences updated', components: [] });
+                }
+            }
+
+
+            /**
+             * ALLOWANCE
+             */
+            else if (interaction.options.getSubcommand() === 'allowance') {
+                await interaction.deferReply({ ephemeral: true });
+
+                // inputs
+                const allow = interaction.options.getBoolean('flag', true);
+
+                // insert
+                await pool.query('INSERT INTO chatot.fun_settings (serverid, allow) VALUES ($1, $2) ON CONFLICT (serverid) DO UPDATE SET serverid=EXCLUDED.serverid, allow=EXCLUDED.allow', [interaction.guildId, allow]);
+
+                // done
+                await interaction.followUp('Preferences updated');
+            }
+
+            /**
+             * RESET
+             */
+            else if (interaction.options.getSubcommand() === 'reset') {
+                await interaction.deferReply({ ephemeral: true });
+                await pool.query('DELETE FROM chatot.fun_settings WHERE serverid=$1', [interaction.guildId]);
+                await interaction.followUp('All fun restrictions reset to default values.');
+            }
         }
 
     },
