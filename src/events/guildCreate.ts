@@ -1,7 +1,6 @@
 import { Guild, ButtonBuilder, ButtonStyle, ActionRowBuilder, PermissionFlagsBits, ChannelType } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { Modes, botConfig } from '../config.js';
-import { pool } from '../helpers/createPool.js';
 
 /**
  * Add guild handler
