@@ -46,9 +46,6 @@ export const command: SlashCommand = {
         const user = interaction.options.getUser('user', true);
         const auditEntry = interaction.options.getString('reason') ?? 'Unbanned from forums';
        
-        // get the list of guild IDs the bot is in
-        const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
-
         // get the gban data for this user
         const gbanPG = await pool.query('SELECT date, reason FROM chatot.gbans WHERE target=$1', [user.id]);
         const gbanData: { date: Date, reason: string }[] | [] = gbanPG.rows;
@@ -59,8 +56,14 @@ export const command: SlashCommand = {
             return;
         }
 
-        // get the modlog entry for this user across all of the servers
-        const modlogPG = await pool.query('SELECT serverid, date, reason FROM chatot.modlog WHERE executor=$1 AND action=$2 AND target=$3 ORDER BY date DESC', [botConfig.CLIENT_ID, 'Ban', user.id]);
+
+        // get the list of eligibile server ids from the database
+        const gbanGuilds: { serverid: string }[] | [] = (await pool.query('SELECT serverid FROM chatot.officialservers UNION SELECT serverid FROM chatot.gban_opt_ins')).rows;
+        const guildIds = gbanGuilds.map(g => g.serverid);
+
+
+        // get the modlog entry for this user across all of the eligible servers
+        const modlogPG = await pool.query('SELECT serverid, date, reason FROM chatot.modlog WHERE executor=$1 AND action=$2 AND target=$3 AND serverid=ANY($4) ORDER BY date DESC', [botConfig.CLIENT_ID, 'Ban', user.id, guildIds]);
         const modlogRows: IModlogPG[] | [] = modlogPG.rows;
 
         // at this point the PG query will return all bans associated with each user.
@@ -77,7 +80,7 @@ export const command: SlashCommand = {
             }
         }
 
-        // uniqGbans is now an array of the current server ban for the user for each server
+        // uniqGbans is now an array of the current server ban for the user for each server done by Chatot
 
         // for comparison later, find the upper and lower bound of allowable times to compare with the gban data
         // use +/- 5 min, which should be more than enough time
