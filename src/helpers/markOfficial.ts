@@ -23,19 +23,22 @@ export async function markOfficial(interaction: ButtonInteraction) {
     // id of new guild that was added
     const guildID = splitCustomID[0];
 
+    // get the guild name for better reporting
+    const guildName = (await interaction.client.guilds.fetch(guildID)).name;
+
     // whether we care or not
     const action = splitCustomID[splitCustomID.length - 1];
 
     if (action === 'confirm') {
-        // try to add the id to the db again
-        // if it's already there, we don't have to do anything
-        // but trying again will ensure the id is added in case the logic on server join failed before this step
+        // insert into the db
         await pool.query('INSERT INTO chatot.officialservers (serverid) VALUES ($1) ON CONFLICT (serverid) DO NOTHING', [guildID]);
-        await interaction.message.edit({ content: `Ok, I will try to gban in server ID ${guildID} from now on. If I have any issues, I'll let you know.`, components: [] });
+
+        // update log message
+        await interaction.message.edit({ content: `Ok, I will try to gban in ${guildName} (${guildID}) from now on. If I have any issues, I'll let you know.`, components: [] });
     }
     else if (action === 'deny') {
-        await pool.query('DELETE FROM chatot.officialservers WHERE serverid=$1', [guildID]);
-        await interaction.message.edit({ content: `Ok, I'll ignore gban errors in server ID ${guildID}.`, components: [] });
+        // update log message
+        await interaction.message.edit({ content: `Ok, I'll ignore gban errors in ${guildName} (${guildID}).`, components: [] });
     }
     else {
         return;

@@ -14,7 +14,7 @@ export const clientEvent: eventHandler = {
     // execute the code for this event
     async execute(guild: Guild) {
         // get the output channel and guild
-        const logChanID = botConfig.MODE === Modes.Dev ? '1040378543626002445' : '729783541981773864';
+        const logChanID = botConfig.MODE === Modes.Dev ? '1040378543626002445' : '1219382359929917490';
         const logGuildID = botConfig.MODE === Modes.Dev ? '1040378543626002442' : '192713314399289344';
 
         const logChan = await guild.client.channels.fetch(logChanID);
