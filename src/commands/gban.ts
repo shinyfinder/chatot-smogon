@@ -22,6 +22,7 @@ import { pool } from '../helpers/createPool.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
 import { removeRaterAll } from '../helpers/removerater.js';
 import { filterAutocomplete } from '../helpers/autocomplete.js';
+import { ServerClass } from '../helpers/constants.js';
 /**
  * Command to ban a user from every server the bot is in
  * Supports banning a single user or a group of users depending on the selected subcommand
@@ -54,8 +55,8 @@ export const command: SlashCommand = {
                 .setDescription('Bans a group of users from every server the bot is in'),
         )
         .addSubcommand(new SlashCommandSubcommandBuilder()
-                .setName('ignore')
-                .setDescription('Errors in the specified server will not be reported')
+                .setName('enforce')
+                .setDescription('Forces gbans in the specified server')
                 .addStringOption(option =>
                     option.setName('server')
                     .setDescription('Full name or id of the server')
@@ -63,8 +64,8 @@ export const command: SlashCommand = {
                     .setAutocomplete(true)),
         )
         .addSubcommand(new SlashCommandSubcommandBuilder()
-                .setName('unignore')
-                .setDescription('Restores gban error logging for the specified server')
+                .setName('unenforce')
+                .setDescription('Allows the server to opt into gbans')
                 .addStringOption(option =>
                     option.setName('server')
                     .setDescription('Full name or id of the server')
@@ -147,26 +148,17 @@ export const command: SlashCommand = {
                 // confirm we got the message
                 await interaction.channel?.send('Grabbing my banhammer...');
 
-                // get the list of guild IDs the bot is in
-                // const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
-
                 // get the list of guild ids we care about
-                const officialGuilds: { serverid: string}[] | [] = (await pool.query('SELECT serverid FROM chatot.officialservers')).rows;
-                const optIns: { serverid: string}[] | [] = (await pool.query('SELECT serverid FROM chatot.gban_opt_ins')).rows;
-                
-                if (!officialGuilds.length && !optIns.length) {
-                    throw 'No gban guilds found; nothing to do!';
-                }
-                else if (!officialGuilds.length) {
-                    throw 'No official guilds found!';
+                const gbanGuilds: { serverid: string, class: ServerClass }[] | [] = (await pool.query('SELECT serverid, class FROM chatot.servers WHERE class > $1', [ServerClass.OptOut])).rows;
+                                
+                if (!gbanGuilds.length) {
+                    throw 'No gban guilds found, nothing to do!';
                 }
 
                 // extract their ids
-                const officialIDs = officialGuilds.map(og => og.serverid);
-                const optInIDs = optIns.map(oi => oi.serverid);
-                // it's possible that some official servers ran the opt in command since they get the welcome message
-                // since those are already covered, we don't need to duplicate the work
-                const nonOfficialOptInIDs = optInIDs.filter(id => !officialIDs.some(oid => oid === id));
+                const officialIDs = gbanGuilds.filter(g => g.class === ServerClass.Official).map(g => g.serverid);
+                const optInIDs = gbanGuilds.filter(g => g.class === ServerClass.OptIn).map(g => g.serverid);
+                
 
                 // create a flag for failed ban attempts
                 let failedBans = false;
@@ -244,7 +236,7 @@ export const command: SlashCommand = {
                 await removeRaterAll(interaction, [user.id]);
 
                 // loop over the opt in guilds
-                for (const id of nonOfficialOptInIDs) {
+                for (const id of optInIDs) {
                     const guild = interaction.client.guilds.cache.get(id);
                     if (guild === undefined) {
                         continue;
@@ -399,22 +391,16 @@ export const command: SlashCommand = {
                 // const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
 
                 // get the list of guild ids we care about
-                const officialGuilds: { serverid: string}[] | [] = (await pool.query('SELECT serverid FROM chatot.officialservers')).rows;
-                const optIns: { serverid: string}[] | [] = (await pool.query('SELECT serverid FROM chatot.gban_opt_ins')).rows;
-                
-                if (!officialGuilds.length && !optIns.length) {
-                    throw 'No gban guilds found; nothing to do!';
-                }
-                else if (!officialGuilds.length) {
-                    throw 'No official guilds found!';
+                // get the list of guild ids we care about
+                const gbanGuilds: { serverid: string, class: ServerClass }[] | [] = (await pool.query('SELECT serverid, class FROM chatot.servers WHERE class > $1', [ServerClass.OptOut])).rows;
+                                
+                if (!gbanGuilds.length) {
+                    throw 'No gban guilds found, nothing to do!';
                 }
 
-                const officialIDs = officialGuilds.map(og => og.serverid);
-                const optInIDs = optIns.map(oi => oi.serverid);
-
-                // it's possible that some official servers ran the opt in command since they get the welcome message
-                // since those are already covered, we don't need to duplicate the work
-                const nonOfficialOptInIDs = optInIDs.filter(id => !officialIDs.some(oid => oid === id));
+                // extract their ids
+                const officialIDs = gbanGuilds.filter(g => g.class === ServerClass.Official).map(g => g.serverid);
+                const optInIDs = gbanGuilds.filter(g => g.class === ServerClass.OptIn).map(g => g.serverid);
 
                 // create a flag to check for failed ban attempts
                 let failedBans = false;
@@ -508,7 +494,7 @@ export const command: SlashCommand = {
                 await removeRaterAll(interaction, uids);
 
                 // loop over the opt in guilds
-                for (const id of nonOfficialOptInIDs) {
+                for (const id of optInIDs) {
                     // loop over the list of provided ids
                     for (const uid of uids) {
                         // retrieve the guild from the cache
@@ -565,7 +551,7 @@ export const command: SlashCommand = {
             
         }
        
-        else if (interaction.options.getSubcommand() === 'ignore') {
+        else if (interaction.options.getSubcommand() === 'enforce') {
             await interaction.deferReply({ ephemeral: true });
 
             // get the user input
@@ -577,16 +563,19 @@ export const command: SlashCommand = {
                 await interaction.followUp('No guilds found by that info, returning');
             }
             else if (guildCollection.size > 1) {
-                await interaction.followUp('More than one guild found by that name. Please provide the id of the server to ignore');
+                await interaction.followUp('More than one guild found by that name. Please provide the id of the server or choose one from the list');
             }
             else {
-                await pool.query('DELETE FROM chatot.officialservers WHERE serverid=$1', [guildCollection.first()?.id]);
-                await interaction.followUp(`Ok, I won't log gban errors in ${guildCollection.first()?.name}`);
+                await pool.query(`
+                INSERT INTO chatot.servers (serverid, class)
+                VALUES ($1, $2)
+                ON CONFLICT (serverid) DO
+                UPDATE SET class = EXCLUDED.class`, [guildCollection.first()?.id, ServerClass.Official]);
+                await interaction.followUp(`I will enforce gbans in ${guildCollection.first()?.name}. I'll let you know if I have problems`);
             }
-
         }
 
-        else if (interaction.options.getSubcommand() === 'unignore') {
+        else if (interaction.options.getSubcommand() === 'unenforce') {
             await interaction.deferReply({ ephemeral: true });
 
             // get the user input
@@ -598,14 +587,18 @@ export const command: SlashCommand = {
                 await interaction.followUp('No guilds found by that info, returning');
             }
             else if (guildCollection.size > 1) {
-                await interaction.followUp('More than one guild found by that name. Please provide the id of the server to unignore');
+                await interaction.followUp('More than one guild found by that name. Please provide the id of the server or choose one from the list');
             }
             else {
-                await pool.query('INSERT INTO chatot.officialservers (serverid) VALUES ($1) ON CONFLICT (serverid) DO NOTHING', [guildCollection.first()?.id]);
-                await interaction.followUp(`I will log gban errors in ${guildCollection.first()?.name}`);
+                await pool.query(`
+                INSERT INTO chatot.servers (serverid, class)
+                VALUES ($1, $2)
+                ON CONFLICT (serverid) DO
+                UPDATE SET class = EXCLUDED.class WHERE chatot.servers.class = $3`, [guildCollection.first()?.id, ServerClass.OptIn, ServerClass.Official]);
+                await interaction.followUp(`Ok, I won't enforce gbans in ${guildCollection.first()?.name} unless they opt in. This server is no longer considered official.`);
             }
-        }
-        
+
+        }        
         
     },
 };

@@ -24,11 +24,10 @@ async function checkCAs(client: Client) {
     // get the current statuses
     const newCAStatus = await pollCAForum();
 
-    // if you didn't get a match, there's nothing in the forums
-    // so empty the cache because nothing is there
-    // this should never be the case
+    // in the past we've emptied the cache if there was nothing there, but this seems to create more problems than it's worth
+    // this should be handled further down in the call stack anyway
     if (!newCAStatus.length) {
-        await uncacheRemovedCAThreads(newCAStatus, oldCAStatus);
+        // await uncacheRemovedCAThreads(newCAStatus, oldCAStatus);
         // release the lock
         lockout.ca = false;
         return;

@@ -3,6 +3,7 @@ import { SlashCommand } from '../types/slash-command-base';
 import { buildEmbed, embedField } from '../helpers/logging.js';
 import { filterAutocomplete } from '../helpers/autocomplete.js';
 import { pool } from '../helpers/createPool.js';
+import { ServerClass } from '../helpers/constants.js';
 /**
  * Prints a list of servers the bot is in,
  * or the details of the specified server.
@@ -61,15 +62,17 @@ export const command: SlashCommand = {
                     const owner = await guild.fetchOwner();
 
                     // fetch the gban info
-                    const officialQ = (await pool.query('SELECT * FROM chatot.officialservers WHERE serverid=$1', [guild.id])).rowCount;
-                    const optInQ = (await pool.query('SELECT * FROM chatot.gban_opt_ins WHERE serverid=$1', [guild.id])).rowCount;
+                    const classRows: { class: ServerClass }[] | [] = (await pool.query('SELECT class FROM chatot.servers WHERE serverid=$1', [guild.id])).rows;
 
-                    // if you returned some rows, it's an official server
-                    const isOfficial = !!officialQ;
-
-                    // if it's an official server, it's auto opted in.
-                    // otherwise, check if you returned some rows from the query
-                    const isOptedIn = isOfficial ? true : !!optInQ;
+                    // get the text associated with the class
+                    // if you don't return a row, just assuming its unofficial opted out
+                    let classKey = '';
+                    if (classRows.length) {
+                        classKey = ServerClass[classRows[0].class];
+                    }
+                    else {
+                        classKey = ServerClass[ServerClass.OptOut];
+                    }
 
                     // build an embed
                     const title = 'Server Details';
@@ -78,8 +81,7 @@ export const command: SlashCommand = {
                         { name: 'Name', value: guild.name, inline: true },
                         { name: 'ID', value: guild.id, inline: true },
                         { name: 'Owner (display name | username)', value: `${owner.user.displayName} | ${owner.user.username} (<@${guild.ownerId}>)` },
-                        { name: 'Official', value: `${isOfficial}`, inline: true },
-                        { name: 'Gban Opt In', value: `${isOptedIn}`, inline: true },
+                        { name: 'Gbans', value: `${classKey}` },
                     ];
 
                     const embed = buildEmbed(title, { description: desc, fields: fields });

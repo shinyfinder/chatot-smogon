@@ -1,6 +1,6 @@
 import { ButtonInteraction } from 'discord.js';
 import { pool } from './createPool.js';
-
+import { ServerClass } from './constants.js';
 /**
  * Posts the discord server directory to the chat
  */
@@ -31,7 +31,11 @@ export async function markOfficial(interaction: ButtonInteraction) {
 
     if (action === 'confirm') {
         // insert into the db
-        await pool.query('INSERT INTO chatot.officialservers (serverid) VALUES ($1) ON CONFLICT (serverid) DO NOTHING', [guildID]);
+        await pool.query(`
+        INSERT INTO chatot.servers (serverid, class)
+        VALUES ($1, $2)
+        ON CONFLICT (serverid) DO
+        UPDATE SET class = EXCLUDED.class`, [guildID, ServerClass.Official]);
 
         // update log message
         await interaction.message.edit({ content: `Ok, I will try to gban in ${guildName} (${guildID}) from now on. If I have any issues, I'll let you know.`, components: [] });

@@ -1,6 +1,8 @@
 import { Guild, ButtonBuilder, ButtonStyle, ActionRowBuilder, PermissionFlagsBits, ChannelType } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { Modes, botConfig } from '../config.js';
+import { pool } from '../helpers/createPool.js';
+import { ServerClass } from '../helpers/constants.js';
 
 /**
  * Add guild handler
@@ -68,8 +70,11 @@ export const clientEvent: eventHandler = {
         // post the buttons for confirmation
         const owner = await guild.fetchOwner();
 
+        // for new joins, default to unofficial/opted out
+        await pool.query('INSERT INTO chatot.servers (serverid, class) VALUES ($1, $2) ON CONFLICT DO NOTHING', [guild.id, ServerClass.OptOut]);
+
         await logChan.send({
-            content: `I joined a new server: ${guild.name} (${guild.id}) | Owned by ${owner.user.username} (${owner.id}). Would you like to enforce gbans there and be alerted if there are issues?`,
+            content: `I joined a new server: ${guild.name} (${guild.id}) | Owned by ${owner.user.username} (${owner.id}).\nWould you like to enforce gbans there and be alerted if there are issues?`,
             components: [row],
         });
 
@@ -80,7 +85,7 @@ Hey! Thanks for adding Chatot to your server! We hope you'll find its resource a
 
 One of Chatot's many capabilities is automatic removal of Smogon-banned users through a command that can only be run by Smogon's Senior Staff and PS!'s Upper Staff. This functionality is mandatory for official Smogon servers, but it's not necessarily something most smaller servers will need.
 
-**Chatot's ability to gban is disabled by default in your server.** However, if you'd like to turn it on, please run the \`/opt in\` command within your server (available to your server mods+). If you'd like to remain opted out, no further action is required.
+**Chatot's ability to gban is disabled by default in unofficial servers.** However, if you'd like to turn it on, please run the \`/opt in\` command within your server (available to your server mods+). If you'd like to remain opted out, no further action is required.
         
 If you have any questions about Chatot or its functionality, please refer to its [wiki](<https://github.com/shinyfinder/chatot-smogon/wiki/Commands>). This page is also available via Chatot's profile and the \`/wiki\` command.
 

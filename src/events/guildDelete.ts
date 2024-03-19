@@ -1,8 +1,9 @@
-import { Guild } from 'discord.js';
+import { Guild, EmbedBuilder } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { pool } from '../helpers/createPool.js';
 import { errorHandler } from '../helpers/errorHandler.js';
-
+import { ServerClass } from '../helpers/constants.js';
+import { botConfig, Modes } from '../config.js';
 /**
  * Guild deletion/left handler
  *
@@ -15,6 +16,8 @@ export const clientEvent: eventHandler = {
     name: 'guildDelete',
     // execute the code for this event
     async execute(guild: Guild) {
+        // return the guild info that got deleted so we can make sure this wasn't an official guild
+        let serverInfo: { serverid: string, class: ServerClass }[] | [] = [];
         // get the list of channel IDs the bot has access to
         // upon removal of a guild, the guild info is uncached
         const chanIDs = guild.client.channels.cache.map(chan => chan.id);
@@ -47,7 +50,7 @@ export const clientEvent: eventHandler = {
             await pgClient.query('DELETE FROM chatot.livetours WHERE NOT interactionchanid=ANY($1) OR NOT announcechanid=ANY($1)', [chanIDs]);
             await pgClient.query('DELETE FROM chatot.rmtchans WHERE NOT channelid=ANY($1)', [chanIDs]);
             await pgClient.query('DELETE FROM chatot.fun_settings WHERE serverid=$1', [guild.id]);
-            await pgClient.query('DELETE FROM chatot.gban_opt_ins WHERE serverid=$1', [guild.id]);
+            serverInfo = (await pgClient.query('DELETE FROM chatot.servers WHERE serverid=$1 RETURNING serverid, class', [guild.id])).rows;
             // end
             await pgClient.query('COMMIT');
         }
@@ -57,6 +60,25 @@ export const clientEvent: eventHandler = {
         }
         finally {
             pgClient.release();
+        }
+
+        if (serverInfo.length) {
+            // if the guild was an official server, send an alert to the guild join channel
+            if (serverInfo[0].class === ServerClass.Official) {
+                // get the output channel and guild
+                const logChanID = botConfig.MODE === Modes.Dev ? '1040378543626002445' : '1219382359929917490';
+
+                const logChan = await guild.client.channels.fetch(logChanID);
+                if (logChan && logChan.isTextBased()) {
+                    // build the embed
+                    const embed = new EmbedBuilder()
+                    .setTitle('Official Guild Left')
+                    .setDescription(`I just left an official guild! ${guild.name} (${guild.id})`)
+                    .setColor(0xED4245);
+                    
+                    await logChan.send({ embeds: [embed] });
+                }
+            }
         }
     },
 };

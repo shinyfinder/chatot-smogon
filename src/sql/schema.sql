@@ -97,6 +97,18 @@ CREATE TABLE chatot.states (
 -- #     SERVER MANAGEMENT
 -- ###########################################
 
+-- class 0: unofficial opted out
+-- class 1: unofficial opted in
+-- class 2: official
+CREATE TABLE chatot.servers (
+    id integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    serverid varchar(20) UNIQUE,
+    class integer NOT NULL CHECK(class >= 0)
+);
+
+CREATE INDEX ON chatot.servers (serverid);
+
+
 CREATE TABLE chatot.keepalives (
     id varchar(20),
     PRIMARY KEY (id)
@@ -262,14 +274,6 @@ CREATE TABLE chatot.gbans (
     PRIMARY KEY (target)
 );
 
-
-CREATE TABLE chatot.officialservers (
-    serverid varchar(20) PRIMARY KEY
-);
-
-CREATE TABLE chatot.gban_opt_ins (
-    serverid varchar(20) PRIMARY KEY
-);
 
 
 -- ########################################

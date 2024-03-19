@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandSubcommandBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
-
+import { ServerClass } from '../helpers/constants.js';
 /**
  * Deletes messages in bulk from the specified channel
  * This is currently a dev-only command
@@ -34,11 +34,49 @@ export const command: SlashCommand = {
         }
         
         if (interaction.options.getSubcommand() === 'in') {
-            await pool.query('INSERT INTO chatot.gban_opt_ins (serverid) VALUES ($1) ON CONFLICT (serverid) DO NOTHING', [interaction.guildId]);
-            await interaction.followUp('Ok, I will ban users here as well. You can update your preferences at any time with the opt in/out command.\n\nIt is recommended to setup a [logging channel](<https://github.com/shinyfinder/chatot-smogon/wiki/Commands#logging>) if you haven\'t already so you can be alerted if there are any issues.');
+            // we do an upsert in case the initial insertion failed when the bot joined the server (which really shouldn't happen)
+            // we only allow people to opt out if they aren't official
+            const q = await pool.query(`
+            INSERT INTO chatot.servers (serverid, class)
+            VALUES ($1, $2) 
+            ON CONFLICT (serverid) DO
+            UPDATE SET class = EXCLUDED.class WHERE chatot.servers.class < $2
+            RETURNING *`, [interaction.guildId, ServerClass.OptIn]);
+
+            const count = q.rowCount;
+
+            if (count !== 1) {
+                await interaction.followUp('Your server is already enrolled in gbans.');
+            }
+            else {
+                await interaction.followUp('Ok, I will ban users here as well. You can update your preferences at any time with the opt in/out command.\n\nIt is recommended to setup a [logging channel](<https://github.com/shinyfinder/chatot-smogon/wiki/Commands#logging>) if you haven\'t already so you can be alerted if there are any issues.');
+            }
+            
         }
         else if (interaction.options.getSubcommand() === 'out') {
-            await pool.query('DELETE FROM chatot.gban_opt_ins WHERE serverid=$1', [interaction.guildId]);
+            // first, check if they are official
+            const officialCheck: { class: ServerClass }[] | [] = (await pool.query('SELECT class FROM chatot.servers WHERE serverid=$1', [interaction.guildId])).rows;
+
+            if (officialCheck.length) {
+                if (officialCheck[0].class === ServerClass.Official) {
+                    await interaction.followUp('Your server is marked as official and cannot opt out of gbans.');
+                    return;
+                }
+                else if (officialCheck[0].class === ServerClass.OptOut) {
+                    await interaction.followUp('Your server is already opted out of gbans.');
+                    return;
+                }
+            }
+
+            // upsert to ensure there's a row
+            // we only allow people to opt out if they aren't official
+            const q = await pool.query(`
+            INSERT INTO chatot.servers (serverid, class)
+            VALUES ($1, $2) 
+            ON CONFLICT (serverid) DO
+            UPDATE SET class = EXCLUDED.class
+            RETURNING *`, [interaction.guildId, ServerClass.OptOut]);
+
             await interaction.followUp('Ok, I will not try to globally ban users from here. You can update your preferences at any time with the opt in/out command.');
         }
         

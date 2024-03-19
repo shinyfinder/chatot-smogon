@@ -3,6 +3,7 @@ import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 import { botConfig } from '../config.js';
 import { errorHandler } from '../helpers/errorHandler.js';
+import { ServerClass } from '../helpers/constants.js';
 
 interface IModlogPG {
     serverid: string,
@@ -58,9 +59,13 @@ export const command: SlashCommand = {
 
 
         // get the list of eligibile server ids from the database
-        const gbanGuilds: { serverid: string }[] | [] = (await pool.query('SELECT serverid FROM chatot.officialservers UNION SELECT serverid FROM chatot.gban_opt_ins')).rows;
+        const gbanGuilds: { serverid: string }[] | [] = (await pool.query('SELECT serverid FROM chatot.servers WHERE class > $1', [ServerClass.OptOut])).rows;
         const guildIds = gbanGuilds.map(g => g.serverid);
 
+        if (!guildIds.length) { 
+            await interaction.followUp('No guilds enrolled in gbans found, nothing to do');
+            return;
+        }
 
         // get the modlog entry for this user across all of the eligible servers
         const modlogPG = await pool.query('SELECT serverid, date, reason FROM chatot.modlog WHERE executor=$1 AND action=$2 AND target=$3 AND serverid=ANY($4) ORDER BY date DESC', [botConfig.CLIENT_ID, 'Ban', user.id, guildIds]);

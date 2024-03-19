@@ -266,3 +266,8 @@ export const lockout: { [key: string]: boolean } = {
 // flag to signal successful startup
 export const startupFlags: {success: boolean } = { success: false };
 
+export enum ServerClass {
+    OptOut = 0,
+    OptIn = 1,
+    Official = 2,
+}
