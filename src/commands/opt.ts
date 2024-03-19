@@ -70,7 +70,7 @@ export const command: SlashCommand = {
 
             // upsert to ensure there's a row
             // we only allow people to opt out if they aren't official
-            const q = await pool.query(`
+            await pool.query(`
             INSERT INTO chatot.servers (serverid, class)
             VALUES ($1, $2) 
             ON CONFLICT (serverid) DO
