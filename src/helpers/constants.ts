@@ -22,7 +22,9 @@ export const garbageInterval = 2 * 24 * 60 * 60 * 1000;
 
 // list of aliases for the gen abbreivations
 // we dont need the numbers because we can get those from the db
-export const genAliases = {
+// case doesn't matter, but the keys should be the aliases used by the dex
+// if no custom alias, either leave off or use empty set for the value
+export const genAliases: { [key: string]: string[] } = {
     'RB': ['RBY'],
     'GS': ['GSC'],
     'RS': ['RSE', 'ADV'],
