@@ -463,8 +463,10 @@ export async function parseCCStage(threadData: IXFStatusQuery[]) {
                 // at least that way part of it will always be updated, and it may be totally sufficient if people don't use other random acronyms
                 // we match with the 'i' flag, so it doesn't really matter if we use the shorthand or alias
                 // but we use the alias because we also allow them to use the gen number as a gen choice. 
-                // this creates issues with extendedGenAliases because it inserts "|[1-9]" into the regex
-                const extendedGenAliases = [...new Set(dexGens.map(g => g.value))].concat(...Object.values(genAliases));
+                // if we used shorthands, this creates issues with extendedGenAliases because it inserts "|[1-9]" into the regex
+                const dexGenAlias = [...new Set(dexGens.map(g => g.value))];
+                const customGenAlias = Object.values(genAliases);
+                const extendedGenAliases = dexGenAlias.concat(...customGenAlias);
                 const genRegex = new RegExp(`\\b(?:Gen|G|Generation)\\s*([0-9]+)\\b|\\b(${extendedGenAliases.join('|')})\\b`, 'i');
                 const matchArr = thread.title.match(genRegex);
 
@@ -476,7 +478,20 @@ export async function parseCCStage(threadData: IXFStatusQuery[]) {
                         gen = genAlias.map(a => a.alias);
                     }
                     else if (matchArr[2]) {
-                        gen = [matchArr[2].toLowerCase()];
+                        // if we matched an abbreviation, we have to check whether it actually matched the extended values
+                        // if it does, we have to go extended -> key -> lowercase
+                        const lowerMatch = matchArr[2].toLowerCase();
+                        // first check to see if it's already the abbreviation we want
+                        if (dexGenAlias.some(alias => alias === lowerMatch)) {
+                            gen = [lowerMatch];
+                        }
+                        // if it's not, we matched the extension
+                        // so find the key in the genAlias array which has the value of what we matched
+                        // find can return undefined, but that should never be the case since we know we found it from the above regex match
+                        else {
+                            const key = Object.keys(genAliases).find(k => genAliases[k].some(alias => alias.toLowerCase() === lowerMatch));
+                            gen = [key?.toLowerCase() || lowerMatch];
+                        }
                     }
                 }
                 // else, try to get it from the thread map
