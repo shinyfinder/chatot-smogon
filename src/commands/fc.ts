@@ -6,8 +6,8 @@ import { pool } from '../helpers/createPool.js';
  * Command to manage the friend code database.
  */
 export const command: SlashCommand = {
-    global: false,
-    guilds: ['265293623778607104'],
+    global: true,
+    guilds: [],
     data: new SlashCommandBuilder()
         .setName('fc')
         .setDescription('Manages the friend code database')
