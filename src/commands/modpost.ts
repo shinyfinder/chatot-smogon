@@ -38,7 +38,7 @@ export const command: SlashCommand = {
                 .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread)))
         .addSubcommand(new SlashCommandSubcommandBuilder()
             .setName('edit')
-            .setDescription('Edits the provided Chatot post. Must be text only.')
+            .setDescription('Edits the provided Chatot post if it was made with /modpost create')
             .addStringOption(option =>
                 option.setName('url')
                 .setDescription('The link to the message. Right click/long press > Copy Message Link')
@@ -81,6 +81,7 @@ export const command: SlashCommand = {
                 .setCustomId(`modpost-text-${randInt}`)
                 .setLabel('Message')
                 .setStyle(TextInputStyle.Paragraph)
+                .setMinLength(1)
                 .setMaxLength(1925)
                 .setRequired(true);
 
@@ -100,6 +101,10 @@ export const command: SlashCommand = {
             // wait for them to submit the modal
             const submittedModal = await interaction.awaitModalSubmit({ filter, time: 5 * 60 * 1000 });
 
+            // we defer the reply because discord can be a bit finnicky when it comes to modals
+            // it might hang, especially if there is a lot of text
+            await submittedModal.deferReply({ ephemeral: true });
+
             // get what they entered
             let modMsg = submittedModal.fields.getTextInputValue(`modpost-text-${randInt}`);
 
@@ -116,7 +121,7 @@ export const command: SlashCommand = {
             await chan.send(modMsg);
 
             // done
-            await submittedModal.reply({ content: 'Post made', ephemeral: true });
+            await submittedModal.followUp({ content: 'Post made', ephemeral: true });
         }
 
         /**
@@ -141,11 +146,7 @@ export const command: SlashCommand = {
                 await interaction.reply({ content: 'Did you give me the right link? Please provide a link to the message, not just the ID of the message.', ephemeral: true });
                 return;
             }
-            else if (idMatchArr[0] !== interaction.guildId) {
-                await interaction.reply({ content: 'The message must be in this server', ephemeral: true });
-                return;
-            }
-            
+                       
             // try to fetch the channel
             const chan = interaction.client.channels.cache.get(idMatchArr[1]);
 
@@ -204,6 +205,7 @@ export const command: SlashCommand = {
                 .setCustomId(`modpost-edit-text-${randInt}`)
                 .setLabel('Message')
                 .setStyle(TextInputStyle.Paragraph)
+                .setMinLength(1)
                 .setMaxLength(1925)
                 .setValue(unsignedText)
                 .setRequired(true);
@@ -224,6 +226,9 @@ export const command: SlashCommand = {
             // wait for them to submit the modal
             const submittedModal = await interaction.awaitModalSubmit({ filter, time: 5 * 60 * 1000 });
 
+            // we defer because it can hang sometimes
+            await submittedModal.deferReply({ ephemeral: true });
+
             // get what they entered
             let modMsg = submittedModal.fields.getTextInputValue(`modpost-edit-text-${randInt}`);
 
@@ -240,7 +245,7 @@ export const command: SlashCommand = {
             await msg.edit(modMsg);
 
             // done
-            await submittedModal.reply({ content: 'Post edited', ephemeral: true });
+            await submittedModal.followUp({ content: 'Post edited', ephemeral: true });
             
         }
         

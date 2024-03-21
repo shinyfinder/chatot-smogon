@@ -25,7 +25,7 @@ export async function checkChanPerms(interaction: CommandInteraction | ModalSubm
     if (!chanPerms.has(perms)) {
         // if we don't, reply with the permissions we need
         // try to make this ephemeral since it's an error message
-        if (interaction.replied) {
+        if (interaction.deferred) {
             await interaction.followUp(`I lack the permissions to invoke this command. Please ensure I have the following permissions in ${channel.toString()}, then start over: ${perms.join(', ')}`);
         }
         else {

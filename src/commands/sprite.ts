@@ -12,8 +12,8 @@ import { filterAutocomplete, toAlias, toGenAlias, validateAutocomplete } from '.
  *
  */
 export const command: SlashCommand = {
-    global: false,
-    guilds: ['265293623778607104'],
+    global: true,
+    guilds: [],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('sprite')
