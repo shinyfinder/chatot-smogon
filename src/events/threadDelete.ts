@@ -24,7 +24,7 @@ export const clientEvent: eventHandler = {
             await pgClient.query('DELETE FROM chatot.cooldown WHERE channelid=$1', [thread.id]);
             // raters are only in the main discord
             if (thread.guildId === botConfig.GUILD_ID) {
-                await pgClient.query('DELETE FROM chatot.raters WHERE channelid=$1', [thread.id]);
+                await pgClient.query('DELETE FROM chatot.rmtchans WHERE channelid=$1', [thread.id]);
             }
             await pgClient.query('DELETE FROM chatot.logchan WHERE channelid=$1', [thread.id]);
             await pgClient.query('DELETE FROM chatot.keepalives WHERE id=$1', [thread.id]);

@@ -41,11 +41,11 @@ export const command: SlashCommand = {
         // update the value in the raters postgres table
         // the table schema defaults to All for everyone
         // query the raters table for their ID
-        const res = await pool.query('SELECT ping FROM chatot.raters WHERE userid=$1', [uid]);
+        const res = await pool.query('SELECT ping FROM chatot.raterlists WHERE userid=$1', [uid]);
         const dbmatches: { ping: string}[] | [] = res.rows;
 
         if (dbmatches.length) {
-            await pool.query('UPDATE chatot.raters SET ping=$1 WHERE userid=$2', [status, uid]);
+            await pool.query('UPDATE chatot.raterlists SET ping=$1 WHERE userid=$2', [status, uid]);
             await interaction.followUp({ content: 'Your preferences have been updated.', ephemeral: true });
             return;
         }
