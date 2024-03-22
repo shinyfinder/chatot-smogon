@@ -10,7 +10,6 @@ import {
     ActionRowBuilder,
     ModalActionRowComponentBuilder,
     ModalSubmitInteraction,
-    Message,
  } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { getRandInt } from '../helpers/getRandInt.js';
@@ -165,17 +164,8 @@ export const command: SlashCommand = {
             }
 
             // fetch the mesage
-            let msg: Message;
-            try {
-                msg = await chan.messages.fetch(idMatchArr[2]);
-            }
-            catch (e) {
-                // the only way this will throw is if they somehow mistype the message id or pass a private channel we don't have access to anymore
-                // don't bother passing through the error handler because we wouldn't need to log this error anyway
-                await interaction.reply({ content: 'Unknown message. Did you mistype the URL? Do I still have access to that channel?', ephemeral: true });
-                return;
-            }
-
+            const msg = await chan.messages.fetch(idMatchArr[2]);
+           
             // make sure we're the author
             if (msg.author.id !== botConfig.CLIENT_ID) {
                 await interaction.reply({ content: 'I can only edit messages I am the author of', ephemeral: true });

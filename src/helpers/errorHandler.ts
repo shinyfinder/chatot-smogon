@@ -16,6 +16,7 @@ export function errorHandler(err: unknown) {
         'Unknown Emoji',
         'Unknown Role',
         'Unknown Ban',
+        'Unknown Message',
         'Members didn\'t arrive in time',
         'Collector received no interactions before ending with reason: time',
     ];
