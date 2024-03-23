@@ -29,7 +29,14 @@ export async function filterAutocomplete(interaction: AutocompleteInteraction, f
     const filteredOut = filteredPairs.slice(0, 25);
 
     // respond
-    await interaction.respond(filteredOut);
+    // wrap in a try catch in case it takes too long
+    // if it errors out, they won't be prompted with anything, but they can just type another letter to get results again
+    try {
+        await interaction.respond(filteredOut);
+    }
+    catch (e) {
+        return;
+    }
     
 }
 
