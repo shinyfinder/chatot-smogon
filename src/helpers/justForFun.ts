@@ -16,11 +16,7 @@ interface IFUNPERMS {
 }
 
 
-export async function justForFun(msg: Message) {
-    if (!msg.inGuild()) {
-        return;
-    }
-    
+export async function justForFun(msg: Message) {    
     // HACK
     // we aren't mean to lily anymore, but in case people want this feature again, I'd rather not completely undo all the logic
     // so just use a dummy value for lily's id that'll never resolve
