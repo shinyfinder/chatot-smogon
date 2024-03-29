@@ -7,22 +7,37 @@ import { IDtNameDump, IDexNameDump, IPokedexDB, IChatotAssetHash } from '../type
 import { overwriteTier } from './overwriteTier.js';
 import { INVPair } from '../types/discord';
 
-
+// dex.pokemon dump
 export let dexMondb: IPokedexDB[] | [];
+// dex.pokemon name-alias pairs
 export const monNames: INVPair[] = [];
+// extended name list from PS pokedex (pokedex + cosmetic formes)
 export let spriteNames: INVPair[];
+// dex.moves name-alias pairs
 export let moveNames: INVPair[];
+// PS pokedex info dump
 export let pokedex: IPSDex = {};
+// PS item info dump
 export let items: IPSItems = {};
+// full name-value pair list from dex.* dump -- for /dt
 export const allNames: INVPair[] = [];
+// data holder for dex* dump
 export let fullDexNameQuery: IDexNameDump;
+// PS move info dump
 export let moves: IPSMoves = {};
+// PS name-value pairs for formats -- for raters
 export let psFormats: INVPair[];
+// modified list of PS name-value pairs that consolidates BSS and VGC
 export let modifiedDexFormats: INVPair[];
+// dex.formats name-value pairs
 export let dexFormats: INVPair[];
+// dex.gens name-value pairs
 export let dexGens: INVPair[];
+// dex alias of the latest gen (i.e. sv)
 export let latestGen: string = '';
+// map between dex gen alias and gen number (i.e. sv = 9)
 export let dexGenNumAbbrMap: { abbr: string, num: number }[];
+// latest GitHub commit hash for chatot-assets repo
 export let commitHash = '';
 
 
