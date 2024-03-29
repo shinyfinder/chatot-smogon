@@ -199,6 +199,20 @@ CREATE TABLE chatot.fun_exemptions (
 );
 
 
+
+-- ######################################
+-- #     PING RELAY
+-- ######################################
+
+CREATE TABLE chatot.crosspings (
+    tier TEXT NOT NULL,
+    serverid varchar(20) NOT NULL REFERENCES chatot.servers(serverid) ON DELETE CASCADE,
+    roleid varchar(20) NOT NULL,
+    channelid varchar(20) NOT NULL,
+    PRIMARY KEY (tier, roleid)
+);
+
+
 -- ##################################
 -- #     VERIFICATION
 -- ###################################
