@@ -1,5 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, GuildMember, Collection, SlashCommandSubcommandBuilder, GuildBan } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
+import { pool } from '../helpers/createPool.js';
 
 /**
  * Command to lookup information about a user or to find a particular ban in the ban list
@@ -25,6 +26,13 @@ export const command: SlashCommand = {
             .addStringOption(option =>
                 option.setName('search')
                 .setDescription('Username, display name, user id, or ban reason')
+                .setRequired(true)))
+        .addSubcommand(new SlashCommandSubcommandBuilder()
+            .setName('alts')
+            .setDescription('Finds any alts of a Discord user via their Smogon forum connection')
+            .addUserOption(option =>
+                option.setName('discord')
+                .setDescription('Discord account (can also accept user IDs)')
                 .setRequired(true)))
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
@@ -127,6 +135,29 @@ export const command: SlashCommand = {
             // otherwise, let them know nothing was found
             else {
                 await interaction.followUp('No bans found with that criteria.');
+            }
+        }
+
+        else if (interaction.options.getSubcommand() === 'alts') {
+            // input
+            const user = interaction.options.getUser('discord', true);
+
+            // lookup their alts via the tables
+            const altRowsQ = await pool.query(`
+            WITH forum_account AS
+            (SELECT forumid FROM chatot.identities WHERE discordid=$1)
+            
+            SELECT discordid FROM chatot.identities WHERE forumid = (SELECT * FROM forum_account)`, [user.id]);
+            
+            const altRows: { discordid: string }[] | [] = altRowsQ.rows;
+
+            if (!altRows.length) {
+                await interaction.followUp('No alts found!');
+
+            }
+            else {
+                const altTags = altRows.map(r => `<@${r.discordid}>`);
+                await interaction.followUp(`These Discord accounts have verified with the same forum account: ${altTags.join(', ')}`);
             }
         }
     },
