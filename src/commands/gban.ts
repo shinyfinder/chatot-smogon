@@ -160,6 +160,18 @@ export const command: SlashCommand = {
                 const optInIDs = gbanGuilds.filter(g => g.class === ServerClass.OptIn).map(g => g.serverid);
                 
 
+                // get any alts of the provided user
+                // via the verification table
+                const altRowsQ = await pool.query(`
+                WITH forum_account AS
+                (SELECT forumid FROM chatot.identities WHERE discordid=$1)
+                
+                SELECT discordid FROM chatot.identities WHERE forumid = (SELECT * FROM forum_account) AND discordid <> $1`, [user.id]);
+
+                const altRows: { discordid: string }[] | [] = altRowsQ.rows;
+
+                const altIDs = altRows.map(alt => `<@${alt.discordid}>`);
+
                 // create a flag for failed ban attempts
                 let failedBans = false;
 
@@ -216,9 +228,18 @@ export const command: SlashCommand = {
                 // we only want to respond to the interaction with an error message if any of the official guilds had issues
                 // since we only looped over officials first, we don't need to filter anything
                 if (failedBans) {
-                   // get the list of names 
-                   const failedNames = [...new Set(failedGuilds.map(f => f.name))];
-                   await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}`);
+                    // get the list of names 
+                    const failedNames = [...new Set(failedGuilds.map(f => f.name))];
+                    if (altIDs.length) {
+                        await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}\n\nThis user has verified multiple Discord accounts with the same forum account; they may be alts: ${altIDs.join(', ')}`);
+                    }
+                    else {
+                        await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}`);
+                    }
+                }
+                // banned but has alts
+                else if (altIDs.length) {
+                    await interaction.channel?.send(`I have banned the user from every server of interest. However, this user has verified multiple Discord accounts with the same forum account; they may be alts: ${altIDs.join(', ')}`);
                 }
                 // no failures, nothing to report
                 else {
@@ -402,6 +423,18 @@ export const command: SlashCommand = {
                 const officialIDs = gbanGuilds.filter(g => g.class === ServerClass.Official).map(g => g.serverid);
                 const optInIDs = gbanGuilds.filter(g => g.class === ServerClass.OptIn).map(g => g.serverid);
 
+                // get any alts of the provided users
+                // via the verification table
+                const altRowsQ = await pool.query(`
+                WITH forum_account AS
+                (SELECT forumid FROM chatot.identities WHERE discordid=ANY($1))
+                
+                SELECT discordid FROM chatot.identities WHERE forumid IN (SELECT * FROM forum_account) AND NOT discordid=ANY($1)`, [uids]);
+
+                const altRows: { discordid: string }[] | [] = altRowsQ.rows;
+
+                const altIDs = altRows.map(alt => `<@${alt.discordid}>`);
+
                 // create a flag to check for failed ban attempts
                 let failedBans = false;
 
@@ -474,7 +507,17 @@ export const command: SlashCommand = {
                 if (failedBans) {
                     // get the unique names of the failed guilds
                     const failedNames = [...new Set(failedGuilds.map(f => f.name))];
-                    await interaction.channel?.send(`I attempted to ban the provided id(s) from every server I am in, but I had some issues in:\n\n${failedNames.join(', ')}`);
+                    if (altIDs.length) {
+                        await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}\n\nUsers have verified multiple Discord accounts with the same forum account; they may be alts of the provided IDs: ${altIDs.join(', ')}`);
+                    }
+                    else {
+                        await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}`);
+                    }
+                    
+                }
+                // no fail, but found alts
+                else if (altIDs.length) {
+                    await interaction.channel?.send(`I have banned the user from every server of interest. However, users have verified multiple Discord accounts with the same forum account; they may be alts of the provided IDs: ${altIDs.join(', ')}`);
                 }
                 else {
                     await interaction.channel?.send('I have banned the provided id(s) from every server of interest.');
