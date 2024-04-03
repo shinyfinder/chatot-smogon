@@ -24,7 +24,7 @@ export let dexGens: INVPair[];
 export let latestGen: string = '';
 export let dexGenNumAbbrMap: { abbr: string, num: number }[];
 export let commitHash = '';
-
+export let psFormatAliases: INVPair[];
 
 /**
  * Queries the info we need from the dex tables
@@ -100,7 +100,7 @@ export async function loadAllDexNames() {
         (SELECT dex.types.name, dex.types.alias, dex.types.description FROM dex.types),
 
         formats AS
-        (SELECT DISTINCT dex.formats.shorthand, dex.formats.alias FROM dex.formats),
+        (SELECT DISTINCT dex.formats.shorthand, dex.formats.alias, dex.formats.psname FROM dex.formats),
 
         gens AS
         (SELECT dex.gens.shorthand, dex.gens.alias, dex.gens.order FROM dex.gens ORDER BY dex.gens.order)
@@ -126,7 +126,13 @@ export async function loadAllDexNames() {
     const { gens, ...dtNames } = fullDexNameQuery;
 
     // formulate their auto pairs
-    dexFormats = dtNames.formats.map(f => ({ name: f.shorthand, value: f.alias }));
+    // by returning psname, the formats will be duplicated for each gen
+    // so we need to filter out the unique shorthand/alias pairs
+    const allDexFormats = dtNames.formats.map(f => ({ name: f.shorthand, value: f.alias }));
+    dexFormats = allDexFormats.filter((format, idx) => idx === allDexFormats.findIndex(f => f.name === format.name && f.value === format.value));
+    
+    // we want all the ps ladders, so we reference the original query and not the uniq'd array of formats
+    psFormatAliases = dtNames.formats.map(psn => ({ name: psn.psname, value: psn.psname }));
 
     // BSS and VGC are weird in that they have a bunch of different names for the same meta
     // for the purposes of C&C (and raters), the names don't change to whom/where it applies
@@ -227,6 +233,8 @@ export async function loadItems() {
 
 /**
  * Loads the list of perma format names from PS
+ * Over time, it would be nice to move this onto just the dex
+ * But we don't have a nice way of getting the full type-cased name at the moment
  */
 export async function loadPSFormats() {
     // fetch the json from the PS API
