@@ -36,6 +36,7 @@ export const clientEvent: eventHandler = {
             await pgClient.query('DELETE FROM chatot.livetours WHERE announcechanid=$1 OR interactionchanid=$1', [channel.id]);
             await pgClient.query('DELETE FROM chatot.rmtchans WHERE channelid=$1', [channel.id]);
             await pgClient.query('DELETE FROM chatot.fun_permitted_channels WHERE channelid=$1', [channel.id]);
+            await pgClient.query('DELETE FROM chatot.crossping_subs WHERE channelid=$1', [channel.id]);
             // end
             await pgClient.query('COMMIT');
         }

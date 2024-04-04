@@ -5,7 +5,7 @@ import { filterAutocomplete, validateAutocomplete } from '../helpers/autocomplet
 import { cacheTourPingOptions, tourPingPairs } from '../helpers/relayPings.js';
 import { psFormatAliases } from '../helpers/loadDex.js';
 import { ServerClass } from '../helpers/constants.js';
-
+import { checkChanPerms } from '../helpers/checkChanPerms.js';
 /**
  * Command to change a users subscription to the RMT ping system
  * @param data SlashCommandBuilder() instance from discord.js
@@ -19,7 +19,7 @@ export const command: SlashCommand = {
         .setName('tourpings')
         .setDescription('Ping a role in your server when official servers ping for Smogon tours')
         .addSubcommand(new SlashCommandSubcommandBuilder()
-            .setName('subscribe')
+            .setName('sub')
             .setDescription('Sets up a role to receive pings from another server')
             .addStringOption(option =>
                 option.setName('tour')
@@ -36,11 +36,16 @@ export const command: SlashCommand = {
                 .setRequired(true)
                 .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread)))
         .addSubcommand(new SlashCommandSubcommandBuilder()
-            .setName('unsubscribe')
+            .setName('unsub')
             .setDescription('Stops a role from receiving pings from another server')
             .addStringOption(option =>
                 option.setName('tour')
                 .setDescription('The tour/tournament you no longer want to subscribe to')
+                .setRequired(true)
+                .setAutocomplete(true))
+            .addRoleOption(option =>
+                option.setName('role')
+                .setDescription('The role currently receiving alerts')
                 .setRequired(true)))
         .addSubcommandGroup(new SlashCommandSubcommandGroupBuilder()
             .setName('host')
@@ -107,7 +112,7 @@ export const command: SlashCommand = {
          * SUBSCRIBE
          */
 
-        if (interaction.options.getSubcommand() === 'subscribe') {
+        if (interaction.options.getSubcommand() === 'sub') {
             // get their selection
             const tour = interaction.options.getString('tour', true).toLowerCase().replace(/[^a-z0-9]/g, '');
             const subRole = interaction.options.getRole('role', true);
@@ -116,6 +121,19 @@ export const command: SlashCommand = {
             // validate autocomplete
             if (!validateAutocomplete(tour, tourPingPairs)) {
                 await interaction.followUp('I did not recognize that tour, please choose one from the list');
+                return;
+            }
+
+            // make sure we can post in the channel
+            let canComplete = true;
+            if (subChan.type === ChannelType.PublicThread || subChan.type === ChannelType.PrivateThread) {
+                canComplete = await checkChanPerms(interaction, subChan, ['ViewChannel', 'SendMessagesInThreads']);
+            }
+            else if (subChan.type === ChannelType.GuildText) {
+                canComplete = await checkChanPerms(interaction, subChan, ['ViewChannel', 'SendMessages']);
+            }
+
+            if (!canComplete) {
                 return;
             }
 
@@ -135,9 +153,9 @@ export const command: SlashCommand = {
          * UNSUBSCRIBE
          */
 
-        else if (interaction.options.getSubcommand() === 'unsubscribe') {
+        else if (interaction.options.getSubcommand() === 'unsub') {
             // ins
-            const tour = interaction.options.getString('tour', true).toLowerCase();
+            const tour = interaction.options.getString('tour', true).toLowerCase().replace(/[^a-z0-9]/g, '');
             const subRole = interaction.options.getRole('role', true);
 
             // validate autocomplete

@@ -132,7 +132,8 @@ export async function loadAllDexNames() {
     dexFormats = allDexFormats.filter((format, idx) => idx === allDexFormats.findIndex(f => f.name === format.name && f.value === format.value));
     
     // we want all the ps ladders, so we reference the original query and not the uniq'd array of formats
-    psFormatAliases = dtNames.formats.map(psn => ({ name: psn.psname, value: psn.psname }));
+    // some of the values are null, so we need to filter those out
+    psFormatAliases = dtNames.formats.map(psn => ({ name: psn.psname, value: psn.psname })).filter(psn => psn.name);
 
     // BSS and VGC are weird in that they have a bunch of different names for the same meta
     // for the purposes of C&C (and raters), the names don't change to whom/where it applies
