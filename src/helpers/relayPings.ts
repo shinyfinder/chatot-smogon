@@ -7,6 +7,7 @@ interface ISUBS {
     roleid: string,
     channelid: string,
     tour: string,
+    psladder: string,
 }
 
 let lastCheck = 0;
@@ -45,20 +46,24 @@ export async function relayPings(msg: Message) {
 
     // get the subs from the db
     const subRows: ISUBS[] | [] = (await pool.query(`
-    SELECT chatot.crossping_subs.roleid, channelid, tour FROM chatot.crossping_subs
+    SELECT chatot.crossping_subs.roleid, channelid, tour, psladder FROM chatot.crossping_subs
     JOIN chatot.crossping_sources ON source = tour_alias
-    WHERE psladder=$1 AND chatot.crossping_sources.roleid=ANY($2)`, [tier, ids])).rows;
+    WHERE chatot.crossping_sources.roleid=ANY($1)`, [ids])).rows;
 
     // alert the subbed cords
     for (const sub of subRows) {
         try {
-            const chan = await msg.client.channels.fetch(sub.channelid);
+            // if they didn't specify a psladder, then any sub should get all pings
+            // if they did specify a psladder, only those that subscribed to this ladder should be pinged
+            if (!sub.psladder || sub.psladder === tier) {
+                const chan = await msg.client.channels.fetch(sub.channelid);
 
-            if (!chan || chan.type !== ChannelType.GuildText) {
-                continue;
+                if (!chan || chan.type !== ChannelType.GuildText) {
+                    continue;
+                }
+
+                await chan.send(`${sub.tour} game is starting <@&${sub.roleid}>! <${url}>`);
             }
-
-            await chan.send(`${sub.tour} game is starting <@&${sub.roleid}>! <${url}>`);
         }
         catch (e) {
             errorHandler(e);

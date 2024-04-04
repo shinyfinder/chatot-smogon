@@ -42,11 +42,7 @@ export const command: SlashCommand = {
                 option.setName('tour')
                 .setDescription('The tour/tournament you no longer want to subscribe to')
                 .setRequired(true)
-                .setAutocomplete(true))
-            .addRoleOption(option =>
-                option.setName('role')
-                .setDescription('The role currently receiving alerts')
-                .setRequired(true)))
+                .setAutocomplete(true)))
         .addSubcommandGroup(new SlashCommandSubcommandGroupBuilder()
             .setName('host')
             .setDescription('Manages a role to transmit pings to another server if they subscribe')
@@ -57,15 +53,15 @@ export const command: SlashCommand = {
                     option.setName('tour')
                     .setDescription('Name to identify what you are pinging for (i.e. SV OU SPL matches')
                     .setRequired(true))
-                .addStringOption(option =>
-                    option.setName('psladder')
-                    .setDescription('The PS ladder to alert for (i.e. gen9ou)')
-                    .setRequired(true)
-                    .setAutocomplete(true))
                 .addRoleOption(option =>
                     option.setName('role')
                     .setDescription('The role you ping when these matches take place')
-                    .setRequired(true)))
+                    .setRequired(true))
+                .addStringOption(option =>
+                    option.setName('psladder')
+                    .setDescription('The PS ladder to alert for (i.e. gen9ou)')
+                    .setRequired(false)
+                    .setAutocomplete(true)))
             .addSubcommand(new SlashCommandSubcommandBuilder()
                 .setName('editrole')
                 .setDescription('Edits the role for a tier whose pings get relayed')
@@ -154,9 +150,8 @@ export const command: SlashCommand = {
          */
 
         else if (interaction.options.getSubcommand() === 'unsub') {
-            // ins
+            // inputs
             const tour = interaction.options.getString('tour', true).toLowerCase().replace(/[^a-z0-9]/g, '');
-            const subRole = interaction.options.getRole('role', true);
 
             // validate autocomplete
             if (!validateAutocomplete(tour, tourPingPairs)) {
@@ -165,7 +160,7 @@ export const command: SlashCommand = {
             }
 
             // outs
-            await pool.query('DELETE FROM chatot.crossping_subs WHERE source=$1 AND roleid=$2', [tour, subRole.id]);
+            await pool.query('DELETE FROM chatot.crossping_subs WHERE source=$1 AND serverid=$2', [tour, interaction.guildId]);
 
             await interaction.followUp('Preferences updated');
         }
@@ -184,11 +179,11 @@ export const command: SlashCommand = {
             if (interaction.options.getSubcommand() === 'add') {
                 // get their inputs
                 const tour = interaction.options.getString('tour', true);
-                const ladder = interaction.options.getString('psladder', true);
+                const ladder = interaction.options.getString('psladder');
                 const role = interaction.options.getRole('role', true);
 
                 // validate autocomplete
-                if (!validateAutocomplete(ladder, psFormatAliases)) {
+                if (ladder && !validateAutocomplete(ladder, psFormatAliases)) {
                     await interaction.followUp('I did not recognize that ladder, please choose one from the list');
                     return;
                 }
