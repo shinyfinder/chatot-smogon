@@ -3,6 +3,7 @@ import { eventHandler } from '../types/event-base';
 import { rmtMonitor } from '../helpers/rmtMonitor.js';
 import { dbmatches } from '../helpers/manageCustomsCache.js';
 import { justForFun } from '../helpers/justForFun.js';
+import { relayPings } from '../helpers/relayPings.js';
 /**
  * messageCreate handler
  *
@@ -48,5 +49,8 @@ export const clientEvent: eventHandler = {
 
         // fun
         await justForFun(msg);
+
+        // relay pings
+        await relayPings(msg);
     },
 };

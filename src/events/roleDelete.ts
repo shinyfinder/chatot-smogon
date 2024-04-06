@@ -24,6 +24,8 @@ export const clientEvent: eventHandler = {
             await pgClient.query('DELETE FROM chatot.verifyreqs WHERE roleid=$1', [role.id]);
             await pgClient.query('DELETE FROM chatot.fun_permitted_roles WHERE roleid=$1', [role.id]);
             await pgClient.query('DELETE FROM chatot.fun_exemptions WHERE roleid=$1', [role.id]);
+            await pgClient.query('DELETE FROM chatot.crossping_sources WHERE roleid=$1', [role.id]);
+            await pgClient.query('DELETE FROM chatot.crossping_subs WHERE roleid=$1', [role.id]);
             // tickets are a bit trickier, because if we delete the staff role we don't want to lose total functionality of the button
             // so first we delete the staff role, and if we do we try to insert a row with a staff id of '-' in its place
             // if this already exists (because they somehow did this twice), then just deleting the row is sufficient

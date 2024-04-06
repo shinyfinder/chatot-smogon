@@ -39,6 +39,7 @@ interface ITypesDB {
 interface IFormatsDB {
     shorthand: string,
     alias: string,
+    psname: string,
 }
 
 export interface IGensDB {

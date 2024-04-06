@@ -199,6 +199,28 @@ CREATE TABLE chatot.fun_exemptions (
 );
 
 
+
+-- ######################################
+-- #     PING RELAY
+-- ######################################
+
+CREATE TABLE chatot.crossping_sources (
+    tour TEXT NOT NULL,
+    tour_alias TEXT PRIMARY KEY,
+    psladder TEXT,
+    roleid varchar(20) NOT NULL,
+    serverid varchar(20) NOT NULL REFERENCES chatot.servers(serverid) ON DELETE CASCADE,
+    UNIQUE (psladder, roleid)
+);
+
+CREATE TABLE chatot.crossping_subs (
+    source TEXT NOT NULL REFERENCES chatot.crossping_sources(tour_alias) ON DELETE CASCADE,
+    serverid varchar(20) NOT NULL REFERENCES chatot.servers(serverid) ON DELETE CASCADE,
+    roleid varchar(20) NOT NULL,
+    channelid varchar(20) NOT NULL,
+    PRIMARY KEY (source, roleid)
+);
+
 -- ##################################
 -- #     VERIFICATION
 -- ###################################
