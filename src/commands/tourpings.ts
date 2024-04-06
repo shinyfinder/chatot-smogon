@@ -51,7 +51,7 @@ export const command: SlashCommand = {
                 .setDescription('Adds a role whose pings other servers can subscribe to')
                 .addStringOption(option =>
                     option.setName('tour')
-                    .setDescription('Name to identify what you are pinging for (i.e. SV OU SPL matches')
+                    .setDescription('Name to identify what you are pinging for (i.e. SV OU SPL, SCL, WCOP)')
                     .setRequired(true))
                 .addRoleOption(option =>
                     option.setName('role')
@@ -64,7 +64,7 @@ export const command: SlashCommand = {
                     .setAutocomplete(true)))
             .addSubcommand(new SlashCommandSubcommandBuilder()
                 .setName('editrole')
-                .setDescription('Edits the role for a tier whose pings get relayed')
+                .setDescription('For the given tour, changes the role whose pings get relayed to subs')
                 .addStringOption(option =>
                     option.setName('tour')
                     .setDescription('Name to identify what you are pinging for (i.e. SV OU SPL matches')
