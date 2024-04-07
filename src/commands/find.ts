@@ -147,9 +147,9 @@ export const command: SlashCommand = {
             WITH forum_account AS
             (SELECT forumid FROM chatot.identities WHERE discordid=$1)
             
-            SELECT discordid FROM chatot.identities WHERE forumid = (SELECT * FROM forum_account)`, [user.id]);
+            SELECT discordid, forumid FROM chatot.identities WHERE forumid = (SELECT * FROM forum_account)`, [user.id]);
             
-            const altRows: { discordid: string }[] | [] = altRowsQ.rows;
+            const altRows: { discordid: string, forumid: number }[] | [] = altRowsQ.rows;
 
             if (!altRows.length) {
                 await interaction.followUp('No alts found!');
@@ -157,7 +157,7 @@ export const command: SlashCommand = {
             }
             else {
                 const altTags = altRows.map(r => `<@${r.discordid}>`);
-                await interaction.followUp(`These Discord accounts have verified with the same forum account: ${altTags.join(', ')}`);
+                await interaction.followUp(`These Discord accounts have verified with the same forum account: ${altTags.join(', ')}\nProfile: https://www.smogon.com/forums/members/${altRows[0].forumid}`);
             }
         }
     },
