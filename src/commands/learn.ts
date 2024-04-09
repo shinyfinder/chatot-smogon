@@ -1,7 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, EmbedBuilder } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { dexGens, monNames, moveNames, pokedex, spriteNames, latestGen, dexGenNumAbbrMap } from '../helpers/loadDex.js';
-import fetch from 'node-fetch';
 import { IPSLearnsets } from '../types/ps';
 import { myColors } from '../helpers/constants.js';
 import { res2JSON } from '../helpers/res2JSON.js';

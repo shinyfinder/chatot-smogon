@@ -1,7 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { dexGens, dexMondb, latestGen, spriteNames, dexGenNumAbbrMap } from '../helpers/loadDex.js';
-import fetch from 'node-fetch';
 import { filterAutocomplete, toAlias, toGenAlias, validateAutocomplete } from '../helpers/autocomplete.js';
 
 /**

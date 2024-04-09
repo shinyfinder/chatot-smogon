@@ -1,7 +1,6 @@
 import { IPSDex, IPSMoves, IPSItems } from '../types/ps';
 import { alcremieFormes, genderDiffs } from './constants.js';
 import { variablePool } from './createPool.js';
-import fetch from 'node-fetch';
 import { res2JSON } from './res2JSON.js';
 import { IDtNameDump, IDexNameDump, IPokedexDB, IChatotAssetHash } from '../types/dex';
 import { overwriteTier } from './overwriteTier.js';

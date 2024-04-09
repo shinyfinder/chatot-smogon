@@ -151,9 +151,11 @@ export const command: SlashCommand = {
             
             const altRows: { discordid: string, forumid: number }[] | [] = altRowsQ.rows;
 
-            if (!altRows.length) {
+            if (altRows.length === 0) {
+                await interaction.followUp('No Discord-forum connection found!');
+            }
+            else if (altRows.length === 1) {
                 await interaction.followUp('No alts found!');
-
             }
             else {
                 const altTags = altRows.map(r => `<@${r.discordid}>`);

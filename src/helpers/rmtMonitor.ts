@@ -1,7 +1,6 @@
 import { Collection, Message } from 'discord.js';
 import { pool } from './createPool.js';
 import { rmtChannels } from './manageRMTCache.js';
-import fetch from 'node-fetch';
 import { overwriteTier } from './overwriteTier.js';
 import { psFormats } from './loadDex.js';
 import { Modes, botConfig } from '../config.js';
