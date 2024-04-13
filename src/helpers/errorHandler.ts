@@ -19,6 +19,7 @@ export function errorHandler(err: unknown) {
         'Unknown Message',
         'Members didn\'t arrive in time',
         'Collector received no interactions before ending with reason: time',
+        'Unknown Member',
     ];
 
     // some errors we don't want to log, so make sure it's not in the list above
