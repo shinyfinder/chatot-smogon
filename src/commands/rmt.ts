@@ -1,4 +1,16 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, Channel, ChannelType, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, AutocompleteInteraction } from 'discord.js';
+import {
+    SlashCommandBuilder,
+    ChatInputCommandInteraction,
+    Channel,
+    ChannelType,
+    PermissionFlagsBits,
+    SlashCommandSubcommandBuilder,
+    SlashCommandSubcommandGroupBuilder,
+    AutocompleteInteraction,
+    PrivateThreadChannel,
+    PublicThreadChannel,
+    TextChannel,
+ } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { Modes, botConfig } from '../config.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
@@ -419,7 +431,7 @@ export const command: SlashCommand = {
             await interaction.deferReply({ ephemeral: true });
 
             // inputs
-            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
+            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]) as PublicThreadChannel | PrivateThreadChannel | TextChannel;
             const meta = toPSAlias(interaction.options.getString('meta', true));
 
             // make sure we have the necessary perms to post there

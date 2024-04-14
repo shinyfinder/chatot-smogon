@@ -12,6 +12,9 @@ import {
     ActionRowBuilder,
     RoleSelectMenuBuilder,
     ChannelSelectMenuBuilder,
+    TextChannel,
+    PublicThreadChannel,
+    PrivateThreadChannel,
  } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
@@ -633,7 +636,8 @@ export const command: SlashCommand = {
             // get inputs
             const threadChannel = interaction.options.getChannel('threadchan', true, [ChannelType.GuildText]);
             const staffRole = interaction.options.getRole('staff');
-            const logchan = interaction.options.getChannel('logchan', false, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
+            // it seems like some package messed up their typings, so we need to cast manually
+            const logchan = interaction.options.getChannel('logchan', false, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]) as PublicThreadChannel | PrivateThreadChannel | TextChannel | null;
             const staff2 = interaction.options.getRole('staff2');
             const staff3 = interaction.options.getRole('staff3');
 

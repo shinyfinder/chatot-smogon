@@ -1,6 +1,6 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, DiscordAPIError, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-
+import { pool } from '../helpers/createPool.js';
 
 export const command: SlashCommand = {
     global: false,
@@ -23,10 +23,22 @@ export const command: SlashCommand = {
         // get the user input
         const user = interaction.options.getUser('user', true);
 
+        // get the list of official guild ids
+        const guildRows: { serverid: string}[] | [] = (await pool.query('SELECT serverid FROM chatot.servers WHERE class = 2')).rows;
+        const officialIDs = guildRows.map(r => r.serverid);
+
         // loop over the list of guilds to determine whether the user is bannable
         const nonBanGuilds: string[] = [];
 
-        for (const guild of interaction.client.guilds.cache.values()) {
+        for (const id of officialIDs) {
+            // get the guild obj from the cache
+            // this shouldn't be undef as we manage the db on server part
+            // but typecheck just in case
+            const guild = interaction.client.guilds.cache.get(id);
+            if (!guild) {
+                continue;
+            }
+            
             // try to get the member object of this user
             try {
                 const member = await guild.members.fetch(user);

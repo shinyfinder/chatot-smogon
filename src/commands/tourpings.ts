@@ -1,4 +1,15 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, ChannelType, AutocompleteInteraction, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder } from 'discord.js';
+import {
+    SlashCommandBuilder,
+    ChatInputCommandInteraction,
+    PermissionFlagsBits,
+    ChannelType,
+    AutocompleteInteraction,
+    SlashCommandSubcommandBuilder,
+    SlashCommandSubcommandGroupBuilder,
+    PublicThreadChannel,
+    PrivateThreadChannel,
+    TextChannel,
+ } from 'discord.js';
 import { pool } from '../helpers/createPool.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { filterAutocomplete, validateAutocomplete } from '../helpers/autocomplete.js';
@@ -112,7 +123,7 @@ export const command: SlashCommand = {
             // get their selection
             const tour = interaction.options.getString('tour', true).toLowerCase().replace(/[^a-z0-9]/g, '');
             const subRole = interaction.options.getRole('role', true);
-            const subChan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
+            const subChan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]) as PublicThreadChannel | PrivateThreadChannel | TextChannel;
 
             // validate autocomplete
             if (!validateAutocomplete(tour, tourPingPairs)) {

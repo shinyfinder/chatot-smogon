@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, PermissionFlagsBits, ChannelType } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, PermissionFlagsBits, ChannelType, PublicThreadChannel, PrivateThreadChannel, TextChannel } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
@@ -74,7 +74,7 @@ export const command: SlashCommand = {
          */
         if (interaction.options.getSubcommand() === 'enable') {
             // get the user input
-            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]);
+            const chan = interaction.options.getChannel('channel', true, [ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread]) as PublicThreadChannel | PrivateThreadChannel | TextChannel;
             let type = interaction.options.getString('type');
 
             // make sure we have the necessary perms to post there
