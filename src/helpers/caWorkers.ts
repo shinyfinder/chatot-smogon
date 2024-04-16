@@ -111,7 +111,7 @@ async function alertCAStatus(newDataArr: IXFCAStatus[], client: Client) {
 
         // if there are too many updates at once, update the database but don't ping anyone
         // this may be because of a db reset
-        const threadsInQC = newDataArr.map(d => d.phrase_text === 'QC');
+        const threadsInQC = newDataArr.filter(d => d.phrase_text === 'QC');
         if (threadsInQC.length > 5) {
             throw `Too many updated CA threads to ping. Total: ${threadsInQC.length}`;
         }
