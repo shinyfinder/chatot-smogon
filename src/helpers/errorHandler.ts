@@ -50,7 +50,7 @@ export function errorHandler(err: unknown) {
             const intInfo = `This error occurred in the following interaction:
             Command: ${cmdStr}
             Guild: ${err.int.guild ? err.int.guild.name : 'None'}
-            User: ${err.int.user.tag} (${err.int.id})`;
+            User: ${err.int.user.tag} (${err.int.user.id})`;
             
             // log it
             console.error(intInfo);
