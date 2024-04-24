@@ -100,7 +100,11 @@ export async function toGenAlias(s: string) {
     return s;
 }
 
-
+/**
+ * Converts a string into its PS alias
+ * @param s input string
+ * @returns String converted to PS alias snytax
+ */
 export function toPSAlias(s: string) {
     s = s.toLowerCase();
     s = s.replace(/[^a-z0-9]/g, '');
