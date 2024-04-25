@@ -102,7 +102,7 @@ export async function loadAllDexNames() {
         (SELECT DISTINCT dex.formats.shorthand, dex.formats.alias, dex.formats.psname FROM dex.formats),
 
         gens AS
-        (SELECT dex.gens.shorthand, dex.gens.alias, dex.gens.order FROM dex.gens ORDER BY dex.gens.order)
+        (SELECT dex.gens.shorthand, dex.gens.alias, dex.gens.order FROM dex.gens ORDER BY dex.gens.order DESC)
 
         SELECT json_build_object(
             'pokemon', (SELECT COALESCE(JSON_AGG(pokemon.*), '[]') FROM pokemon),
@@ -154,7 +154,7 @@ export async function loadAllDexNames() {
     dexGenNumAbbrMap = gens.map(g => ({ abbr: g.alias, num: g.order + 1 }));
 
     if (gens.length) {
-        latestGen = gens[gens.length - 1].alias;
+        latestGen = gens[0].alias;
     }
     
 
