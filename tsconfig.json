@@ -19,6 +19,10 @@
             "node_modules/@types",
         ],
         "sourceMap": false,
-        "baseUrl": "./"
+        "baseUrl": "./",
+        "incremental": true,
+    },
+    "ts-node": {
+        "swc": true,
     }
 }

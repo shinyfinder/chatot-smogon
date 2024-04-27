@@ -70,6 +70,10 @@ client.commands = new Collection();
 // set the path to the commands directory
 const commandsPath = new URL('commands', import.meta.url);
 
+// in dev, we use ts-node to run the ts files directly
+// in production, the ts files are converted to .js before running the app
+const ext = botConfig.MODE === Modes.Dev ? '.ts' : '.js';
+
 // get a list of all the .js files in the commands directory
 // this returns an array of strings
 interface cmdModule {
@@ -82,7 +86,7 @@ const modulePromiseArr: Promise<SlashCommand | eventHandler | ContextCommand>[] 
 // assign dynamically loading all of the local command files to an array so we can load them in parallel
 for (const file of commandFiles) {
     // if the file doesn't end in .js, don't consider it. It's not a command.
-    if (!file.endsWith('.js')) {
+    if (!file.endsWith(ext)) {
         continue;
     }
 
@@ -115,7 +119,7 @@ const eventFiles = await readdir(eventsPath);
 // loop over the list of events
 for (const eventfile of eventFiles) {
     // if it's not a js file, ignore it.
-    if (!eventfile.endsWith('.js')) {
+    if (!eventfile.endsWith(ext)) {
         continue;
     }
 
@@ -128,6 +132,10 @@ for (const eventfile of eventFiles) {
 
 // await loading of the command and event files in parallel
 const localMods = await Promise.all(modulePromiseArr);
+
+if (!localMods.length) {
+    throw 'No command or event files found! Something went wrong';
+}
 
 // assign the commands and events to the client
 for (const mod of localMods) {
