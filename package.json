@@ -2,31 +2,31 @@
   "name": "smogon_main_ts",
   "version": "1.0.0",
   "description": "sf typescript discord bot",
-  "main": "dist/chatot.js",
+  "main": "src/chatot.ts",
   "type": "module",
   "scripts": {
     "preinstall": "npx only-allow pnpm",
-    "start": "node dist/chatot.js",
-    "lint": "eslint . --ext .ts",
+    "start": "node --loader ts-node/esm --no-warnings=ExperimentalWarning ./src/chatot.ts",
+    "lint": "eslint .",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build-paranoid": "rm -r dist && tsc --build",
+    "build-paranoid": "rm -r .cache && tsc --build",
     "build": "tsc --build"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/node": "^20.12.7",
-    "@types/pg": "^8.11.5",
     "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
     "esbuild": "^0.20.2",
     "mysql2": "^3.9.7",
-    "pg": "^8.11.5",
-    "tslib": "^2.6.2"
+    "pg": "^8.11.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.1.1",
+    "@types/node": "^20.12.7",
+    "@types/pg": "^8.11.5",
     "eslint": "^8.57.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
     "typescript-eslint": "^7.7.1"
   }

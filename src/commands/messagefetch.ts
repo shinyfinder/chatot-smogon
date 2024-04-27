@@ -27,7 +27,7 @@ export const command: SlashCommand = {
         // get the user input
         const id = interaction.options.getString('messageid', true);
         
-        const msg = await interaction.channel?.messages.fetch(id);
+        await interaction.channel?.messages.fetch(id);
 
         // done
         await interaction.followUp('Done');

@@ -3,7 +3,7 @@
         "target": "esnext",
         "module": "esnext",
         "rootDir": "./src/",
-        "outDir": "./dist/",
+        "outDir": "./.cache",
         "strict": true,
         "moduleResolution": "node",
         "importHelpers": true,
@@ -20,16 +20,5 @@
         ],
         "sourceMap": false,
         "baseUrl": "./"
-    },
-    "files": [
-        "src/chatot.ts"
-    ],
-    "include": [
-        "./**/*.ts",
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ],
-    
+    }
 }
