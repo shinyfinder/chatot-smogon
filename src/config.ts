@@ -89,30 +89,28 @@ interface Config {
  * Note that process.env returns strings on each entry
  */
 
-const getConfig = (): ENV => {
-    return {
-        TOKEN: process.env.TOKEN,
-        CLIENT_ID: process.env.CLIENT_ID,
-        GUILD_ID: process.env.GUILD_ID,
-        PGUSER: process.env.PGUSER,
-        PGPASSWORD: process.env.PGPASSWORD || '',
-        PGHOST: process.env.PGHOST,
-        PGPORT: parseInt(process.env.PGPORT || '', 10),
-        PGDATABASE: process.env.PGDATABASE,
-        SQLUSER: process.env.SQLUSER,
-        SQLPASSWORD: process.env.SQLPASSWORD || '',
-        SQLHOST: process.env.SQLHOST || '',
-        SQLPORT: parseInt(process.env.SQLPORT || '', 10),
-        SQLDATABASE: process.env.SQLDATABASE,
-        SQLSOCKETPATH: process.env.SQLSOCKETPATH || '',
-        INTERNAL_DATA_PATH: process.env.INTERNAL_DATA_PATH,
-        SMOGON_PG_USER: process.env.SMOGON_PG_USER || '',
-        SMOGON_PG_DATABASE: process.env.SMOGON_PG_DATABASE || '',
-        SMOGON_PG_HOST: process.env.SMOGON_PG_HOST || '',
-        MODE: process.env.MODE || Modes.Production,
-        SSH: process.env.SSH === 'true',
-        // ...
-    };
+const envVar: ENV = {
+    TOKEN: process.env.TOKEN,
+    CLIENT_ID: process.env.CLIENT_ID,
+    GUILD_ID: process.env.GUILD_ID,
+    PGUSER: process.env.PGUSER,
+    PGPASSWORD: process.env.PGPASSWORD || '',
+    PGHOST: process.env.PGHOST,
+    PGPORT: parseInt(process.env.PGPORT || '', 10),
+    PGDATABASE: process.env.PGDATABASE,
+    SQLUSER: process.env.SQLUSER,
+    SQLPASSWORD: process.env.SQLPASSWORD || '',
+    SQLHOST: process.env.SQLHOST || '',
+    SQLPORT: parseInt(process.env.SQLPORT || '', 10),
+    SQLDATABASE: process.env.SQLDATABASE,
+    SQLSOCKETPATH: process.env.SQLSOCKETPATH || '',
+    INTERNAL_DATA_PATH: process.env.INTERNAL_DATA_PATH,
+    SMOGON_PG_USER: process.env.SMOGON_PG_USER || '',
+    SMOGON_PG_DATABASE: process.env.SMOGON_PG_DATABASE || '',
+    SMOGON_PG_HOST: process.env.SMOGON_PG_HOST || '',
+    MODE: process.env.MODE || Modes.Production,
+    SSH: process.env.SSH === 'true',
+    // ...
 };
 
 /**
@@ -125,9 +123,9 @@ const getConfig = (): ENV => {
  * If everything is defined as it should be, retype config as config: Config
  */
 
-const getSanitzedConfig = (config: ENV): Config => {
+const getSanitzedConfig = (envVar: ENV): Config => {
     // loop through the required entries in the Config interface
-    for (const [key, value] of Object.entries(config)) {
+    for (const [key, value] of Object.entries(envVar)) {
         // if any of these entries are undefined, the user did not specify them (or you didn't update the interface)
         // throw an error and quit execution of the app
         if (value === undefined) {
@@ -141,15 +139,12 @@ const getSanitzedConfig = (config: ENV): Config => {
     }
 
     // make sure they provided the SSH PG credentials if they set SSH to true
-    if (config.SSH && !(config.SMOGON_PG_DATABASE && config.SMOGON_PG_HOST && config.SMOGON_PG_USER)) {
+    if (envVar.SSH && !(envVar.SMOGON_PG_DATABASE && envVar.SMOGON_PG_HOST && envVar.SMOGON_PG_USER)) {
         throw new Error('Although optional parameters, you must specify the remote PostgreSQL credentials if SSH is set to true.');
     }
     // if everything is defined as it should be, save to config: Config
-    return config as Config;
+    return envVar as Config;
 };
 
-// load the env variables from .env into our object config: ENV
-const envConfig = getConfig();
-
 // check for undefined entries
-export const botConfig = getSanitzedConfig(envConfig);
+export const botConfig = getSanitzedConfig(envVar);
