@@ -120,7 +120,7 @@ export const command: SlashCommand = {
         
         // conversions
         const psmon = toPSAlias(mon);
-        const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)?.num;
+        const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)!.num;
         const monName = monNames.filter(m => m.value === mon)[0].name;
 
         // define the path to the set

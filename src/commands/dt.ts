@@ -69,8 +69,7 @@ export const command: SlashCommand = {
         }
 
         // get the gen number for the supplied gen
-        // null check if it can't find it, but that will never happen because we already validated the input above
-        const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)?.num ?? -1;
+        const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)!.num;
 
         let embedColor = 0x6363b0;
 

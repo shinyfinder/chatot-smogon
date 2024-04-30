@@ -42,14 +42,8 @@ export async function fetchTierResources(tier: string, gen: string, interaction:
     const formatName = dexFormats.find(format => format.value === tier)?.name ?? tier;
 
     // get the gen number for the supplied gen   
-    const genNum = dexGenNumAbbrMap.find(g => g.abbr === genQuery)?.num;
-
-    // genNum should be defined given we validated the input and/or retrieved it from the database
-    // but just in case
-    if (!genNum) {
-        await interaction.followUp('I can\'t find any gen informaation for that tier. Something went wrong...');
-        return;
-    }
+    const genNum = dexGenNumAbbrMap.find(g => g.abbr === genQuery)!.num;
+    
     // build the embed
     const embed = new EmbedBuilder()
     .setTitle(`${formatName} (Gen ${genNum})`)

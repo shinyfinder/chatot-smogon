@@ -5,30 +5,76 @@ import { res2JSON } from './res2JSON.js';
 import { IDtNameDump, IDexNameDump, IPokedexDB, IChatotAssetHash } from '../types/dex';
 import { overwriteTier } from './overwriteTier.js';
 import { INVPair } from '../types/discord';
+import { toAlias, toPSAlias } from './autocomplete.js';
 
-
+/** 
+ * db dump of dex.pokemon
+ */ 
 export let dexMondb: IPokedexDB[] | [];
-export const monNames: INVPair[] = [];
-export let spriteNames: INVPair[];
-export let moveNames: INVPair[];
-export let pokedex: IPSDex = {};
-export let items: IPSItems = {};
-export const allNames: INVPair[] = [];
-export let fullDexNameQuery: IDexNameDump;
-export let moves: IPSMoves = {};
-export let psFormats: INVPair[];
-export let modifiedDexFormats: INVPair[];
-export let dexFormats: INVPair[];
-export let dexGens: INVPair[];
-export let latestGen: string = '';
-export let dexGenNumAbbrMap: { abbr: string, num: number }[];
-export let commitHash = '';
-export let psFormatAliases: INVPair[];
-
 /**
- * Queries the info we need from the dex tables
+ * mon names, using dex.pokemon syntax
  */
-
+export const monNames: INVPair[] = [];
+/**
+ * mon names + Alcremie + gender diff formes, using dex.pokemon syntax
+ */
+export let spriteNames: INVPair[];
+/**
+ * move names, in PS alias syntax
+ */
+export let moveNames: INVPair[];
+/**
+ * PS API pokemon.json dump
+ */
+export let pokedex: IPSDex = {};
+/**
+ * PS items.json dump
+ */
+export let items: IPSItems = {};
+/**
+ * All names retrieved from the dex db dump, in dex syntax (used for /dt)
+ */ 
+export const allNames: INVPair[] = [];
+/**
+ * all data from dex db dump
+ */
+export let fullDexNameQuery: IDexNameDump;
+/**
+ * PS API moves.json dump
+ */
+export let moves: IPSMoves = {};
+/**
+ * formats from PS, using PS alias syntax
+ */
+export let psFormats: INVPair[];
+/**
+ * list of formats from dex.formats, with VGC/BS modified to be a single alias (for raters/C&C integration)
+ */
+export let modifiedDexFormats: INVPair[];
+/**
+ *  dex.format names, in dex syntax
+ */ 
+export let dexFormats: INVPair[];
+/**
+ * dex.gens names, in dex syntax
+ */ 
+export let dexGens: INVPair[];
+/**
+ * current gen alias, in dex syntax
+ */
+export let latestGen: string = '';
+/**
+ * map between the dex gen alias and the gen number
+ */
+export let dexGenNumAbbrMap: { abbr: string, num: number }[];
+/**
+ * current chatot-asset repo commit hash
+ */
+export let commitHash = '';
+/**
+ * nv pair array of PS formats, in PS syntax, retrieved from the dex (for tourpings)
+ */
+export let psFormatAliases: INVPair[];
 
 /**
  * Extends the SmogDex names to include alt formes
@@ -74,9 +120,12 @@ export async function loadSpriteDex() {
 
     // conert everything to lower case and remvove special chars so we can build the exported pair array
     // the format should match the dex
-    spriteNames = psNames.map(n => ({ name: n, value: n.toLowerCase().replace(/[ _]+/g, '-').replace(/[^a-z0-9-]/g, '') }));
+    spriteNames = psNames.map(n => ({ name: n, value: toAlias(n) }));
 }
 
+/**
+ * Dumps the data from the dex and forms the objects we need throughout the code
+ */
 export async function loadAllDexNames() {
     // poll the db
     const dexNameDump = await variablePool.query(`
@@ -215,7 +264,7 @@ export async function loadMoves() {
     }
 
     // convert everything to lower case and remvove special chars so we can build the exported pair array
-    moveNames = moveArr.map(m => ({ name: m, value: m.toLowerCase().replace(/[^a-z0-9]/g, '') }));
+    moveNames = moveArr.map(m => ({ name: m, value: toPSAlias(m) }));
     
 }
 
@@ -262,7 +311,9 @@ export async function loadPSFormats() {
     psFormats = uniqMatchArr.map(format => ({ name: format, value: format.replace(/[^a-z0-9]/gi, '').toLowerCase() }));
 }
 
-
+/**
+ * gets the latest commit hash on the chatot-assets repo
+ */
 export async function getImageCommitHash() {
     const res = await fetch('https://api.github.com/repos/shinyfinder/chatot-assets/branches/main');
     const json = await res.json() as IChatotAssetHash;

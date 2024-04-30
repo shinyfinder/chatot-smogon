@@ -4,7 +4,7 @@ import { dexGens, monNames, moveNames, pokedex, spriteNames, latestGen, dexGenNu
 import { IPSLearnsets } from '../types/ps';
 import { myColors } from '../helpers/constants.js';
 import { res2JSON } from '../helpers/res2JSON.js';
-import { filterAutocomplete, toAlias, toGenAlias, validateAutocomplete } from '../helpers/autocomplete.js';
+import { filterAutocomplete, toAlias, toGenAlias, toPSAlias, validateAutocomplete } from '../helpers/autocomplete.js';
 
 
 /**
@@ -60,7 +60,7 @@ export const command: SlashCommand = {
         // get the inputs
         const monIn = toAlias(interaction.options.getString('pokemon', true));
         let gen = interaction.options.getString('gen') ?? latestGen;
-        const move = toAlias(interaction.options.getString('move', true));
+        const move = toPSAlias(interaction.options.getString('move', true));
 
         gen = await toGenAlias(gen);
 
@@ -81,8 +81,7 @@ export const command: SlashCommand = {
         }
 
         // get the gen number for the supplied gen
-        // null check if it can't find it, but that will never happen because we already validated the input above
-        const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)?.num ?? -1;
+        const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)!.num;
 
         // fetch the learnsets from the PS API
         const res = await fetch('https://play.pokemonshowdown.com/data/learnsets.json');
@@ -93,7 +92,7 @@ export const command: SlashCommand = {
 
         // get the base specie of the mon, if required
         // the response from the PS api doesn't include dash in the keys, so remove any
-        const mon = monIn.replaceAll('-', '');
+        const mon = toPSAlias(monIn);
 
         // check if the mon has a learnset
         // if it doesn't, use the base specie
@@ -283,16 +282,16 @@ export const command: SlashCommand = {
         }
 
         // get the proper cased names for the text they enter
-        const titleCaseMon = monNames.find(pair => pair.value === monIn)?.name;
-        const titleCaseMove = moveNames.find(pair => pair.value === move)?.name;
+        const titleCaseMon = monNames.find(pair => pair.value === monIn)!.name;
+        const titleCaseMove = moveNames.find(pair => pair.value === move)!.name;
         const monSprite = spriteNames.find(s => s.value === monIn)?.name;
 
         // remove any special characters that aren't -
-        let nameSanitized = monSprite?.replaceAll(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+        let nameSanitized = toAlias(monSprite);
 
         // we need a special overwrite for the jangmo-o line and ho-oh because they have a dash that gets replaced
         if (nameSanitized === 'jangmo-o' || nameSanitized === 'hakamo-o' || nameSanitized === 'kommo-o' || nameSanitized === 'ho-oh') {
-            nameSanitized = nameSanitized.replace('-', '');
+            nameSanitized = toPSAlias(nameSanitized);
         }
 
         // build the embed

@@ -2,6 +2,7 @@ import { pool } from './createPool.js';
 import { EmbedBuilder, ChannelType, Embed, Channel, User, Client } from 'discord.js';
 import { Modes, botConfig } from '../config.js';
 import { psFormats, latestGen, dexGenNumAbbrMap } from './loadDex.js';
+import { toAlias } from './autocomplete.js';
 
 interface raterGroup {
     meta: string,
@@ -98,7 +99,7 @@ export async function updatePublicRatersList(client: Client, editMeta?: string) 
     const raterList: raterGroup[] = [];
 
     for (let i = 0; i < stringArr.length; i++) {
-        raterList.push({ meta: stringArr[i], alias: stringArr[i].replace(/[^a-z0-9]/gi, '').toLowerCase(), raters: raterArr[i] });
+        raterList.push({ meta: stringArr[i], alias: toAlias(stringArr[i]), raters: raterArr[i] });
     }
 
     // now that they are grouped together, we can sort them into current gen official, old gen official, and misc groups
@@ -118,7 +119,7 @@ export async function updatePublicRatersList(client: Client, editMeta?: string) 
     ];
     
     // get the gen number for the latest gen
-    const curGenNum = dexGenNumAbbrMap.find(g => g.abbr === latestGen)?.num ?? -1;
+    const curGenNum = dexGenNumAbbrMap.find(g => g.abbr === latestGen)!.num;
 
     const officialRegex = new RegExp(`gen(?:\\d+)(?:${officialTiers.join('|')})$`, 'im');
     for (const raterGroups of raterList) {

@@ -62,12 +62,18 @@ const removeRe = /[^a-z0-9-]/g;
  * @param s input string
  * @returns String converted to Dex alias snytax
  */
-export function toAlias(s: string) {
-    // dex alias conversion
-    s = s.toLowerCase();
-    s = s.replace(spaceRe, '-');
-    s = s.replace(removeRe, '');
-    return s;
+export function toAlias(s: string | undefined) {
+    if (s) {
+        // dex alias conversion
+        s = s.toLowerCase();
+        s = s.replace(spaceRe, '-');
+        s = s.replace(removeRe, '');
+        return s;
+    }
+    else {
+        return '';
+    }
+   
 }
 
 /**
