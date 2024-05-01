@@ -293,6 +293,7 @@ CREATE TABLE chatot.gbans (
     target varchar(20),
     date timestamptz,
     reason text,
+    unbanned BOOLEAN NOT NULL DEFAULT false,
     PRIMARY KEY (target)
 );
 
