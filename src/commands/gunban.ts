@@ -108,7 +108,7 @@ export const command: SlashCommand = {
                 // the date won't be exactly the same, so just see if it's close enough (+/- 5 min)
                 // if it's outside the range or a different reason, skip it
                 const modlogBanVal = modlogBan.date.valueOf();
-                if (modlogBanVal < lbound || modlogBanVal > ubound || modlogBan.reason !== gbanData[0].reason) {
+                if ((modlogBanVal < lbound || modlogBanVal > ubound || modlogBan.reason !== gbanData[0].reason) && modlogBan.reason !== 'sync gban') {
                     continue;
                 }
             }
@@ -128,6 +128,9 @@ export const command: SlashCommand = {
             }
         }
 
+        // update the db to acknowledge this command was run
+        await pool.query('UPDATE chatot.gbans SET unbanned=true WHERE target=$1', [user.id]);
+        
         // let them know we're done
         await interaction.followUp(`I attempted to unban ${user.username} from every server I gbanned them from`);
         

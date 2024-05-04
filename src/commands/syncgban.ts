@@ -52,11 +52,7 @@ export const command: SlashCommand = {
             }
         }
 
-        await interaction.followUp('gbans synced');
-
-        // TODO
-        // update column of gbans with real data
-        // have gunban also unban these even tho the reason/date don't match
+        await interaction.followUp(`gbans synced. ${missingGbans.length} new bans were found.`);
 
     },
 };
