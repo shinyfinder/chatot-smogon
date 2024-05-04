@@ -1,17 +1,20 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction} from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 import { errorHandler } from '../helpers/errorHandler.js';
 
+/**
+ * Tries to ban all active gbans. This is useful if Chatot was added late to a server
+ */
 export const command: SlashCommand = {
-    global: false,
+    global: true,
     guilds: [],
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('syncgban')
         .setDescription('Ensures all gbans are currently enforced')
         .setDMPermission(false)
-        .setDefaultMemberPermissions(0),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
