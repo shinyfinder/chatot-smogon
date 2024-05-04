@@ -251,7 +251,7 @@ export const command: SlashCommand = {
                 INSERT INTO chatot.gbans (target, date, reason)
                 VALUES ($1, $2, $3)
                 ON CONFLICT (target)
-                DO UPDATE SET target=EXCLUDED.target, date=EXCLUDED.date, reason=EXCLUDED.reason`, [user.id, new Date(), auditEntry]);
+                DO UPDATE SET target=EXCLUDED.target, date=EXCLUDED.date, reason=EXCLUDED.reason, unbanned=false`, [user.id, new Date(), auditEntry]);
 
                 // remove them from the list of raters, returning an array of the deleted metas/gens
                 await removeRaterAll(interaction, [user.id]);
@@ -531,7 +531,7 @@ export const command: SlashCommand = {
                 INSERT INTO chatot.gbans (target, date, reason)
                 VALUES (UNNEST($1::text[]), $2, $3)
                 ON CONFLICT (target)
-                DO UPDATE SET target=EXCLUDED.target, date=EXCLUDED.date, reason=EXCLUDED.reason`, [uids, dates, reasons]);
+                DO UPDATE SET target=EXCLUDED.target, date=EXCLUDED.date, reason=EXCLUDED.reason, unbanned=false`, [uids, dates, reasons]);
 
                 // remove them from the list of raters, returning an array of the deleted metas/gens
                 await removeRaterAll(interaction, uids);

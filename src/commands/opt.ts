@@ -49,7 +49,11 @@ export const command: SlashCommand = {
                 await interaction.followUp('Your server is already enrolled in gbans.');
             }
             else {
-                await interaction.followUp('Ok, I will ban users here as well. You can update your preferences at any time with the opt in/out command.\n\nIt is recommended to setup a [logging channel](<https://github.com/shinyfinder/chatot-smogon/wiki/Commands#logging>) if you haven\'t already so you can be alerted if there are any issues.');
+                await interaction.followUp(`Ok, I will ban users here as well. You can update your preferences at any time with the opt in/out command.
+
+It is recommended to setup a [logging channel](<https://github.com/shinyfinder/chatot-smogon/wiki/Commands#logging>) if you haven't already so you can be alerted if there are any issues.
+
+If you wish to be synced with the current list of global bans, you may run the \`/syncgban\` command.`);
             }
             
         }

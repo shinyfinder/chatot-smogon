@@ -5,6 +5,7 @@ import { parseCCStage, uncacheRemovedThreads } from '../helpers/ccWorkers.js';
 import { lockout } from '../helpers/constants.js';
 import { loadCAStatus, pollCAForum, updateCACache } from '../helpers/caQueries.js';
 import { uncacheRemovedCAThreads } from '../helpers/caWorkers.js';
+import { pool } from '../helpers/createPool.js';
 /**
  * Queries the xf tables to reset the cache of C&C threads
  */
@@ -21,6 +22,7 @@ export const command: SlashCommand = {
             .setChoices(
                 { name: 'C&C', value: 'cc' },
                 { name: 'Custom Avatar', value: 'ca' },
+                { name: 'Gban Status', value: 'gban' },
             )
             .setRequired(true))
         .setDMPermission(false)
@@ -109,6 +111,21 @@ export const command: SlashCommand = {
             lockout.ca = false;
         }
 
+
+        else if (scope === 'gban') {
+            // pull the logs from storage and the dev cord for comparison
+            const gbans: { target: string }[] = (await pool.query('SELECT target FROM chatot.gbans')).rows;
+            const currentBans = await interaction.guild!.bans.fetch();
+
+            // get the ids that are in the db but not in the server
+            // these are the ones that were unbanned
+            const unbanned = gbans.filter(ban => !currentBans.has(ban.target)).map(ban => ban.target);
+
+            // update the db to reflect they were unbanned
+            await pool.query('UPDATE chatot.gbans SET unbanned = true WHERE target=ANY($1)', [unbanned]);
+
+            await interaction.followUp('Unbanned statuses updated for list of gbans');
+        }
         
     },
 };
