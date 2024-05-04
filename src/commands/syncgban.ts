@@ -12,7 +12,7 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('syncgban')
-        .setDescription('Ensures all gbans are currently enforced')
+        .setDescription('Ensures all gbans are enforced')
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 
@@ -20,7 +20,7 @@ export const command: SlashCommand = {
     async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
 
-        if (!interaction.guild) {
+        if (!interaction.guild || !interaction.channel) {
             await interaction.followUp('This command can only be used in a server');
             return;
         }
@@ -30,6 +30,13 @@ export const command: SlashCommand = {
 
         if (!guildClass.length || guildClass[0].class < 1) {
             await interaction.followUp('gbans are not currently enforced in this server. If you wish to subscribe to global bans, please first opt in with the `/opt in` command.');
+            return;
+        }
+
+        // also make sure we have the ability to ban
+        const bot = await interaction.guild.members.fetchMe();
+        if (!bot.permissions.has(PermissionFlagsBits.BanMembers)) {
+            await interaction.followUp('I do not have the Ban Members permission. Cannot continue.');
             return;
         }
 
@@ -51,6 +58,7 @@ export const command: SlashCommand = {
             }
             catch (e) {
                 errorHandler(e);
+                await interaction.channel.send(`Cannot ban id ${ban.target}`);
                 continue;
             }
         }
