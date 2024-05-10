@@ -276,7 +276,7 @@ CREATE TABLE chatot.castatus (
     PRIMARY KEY (thread_id)
 );
 
-
+-- merged with dex.formats
 CREATE TABLE chatot.ccforums (
     forumid integer,
     tier text,

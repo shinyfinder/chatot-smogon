@@ -1,4 +1,4 @@
-import { pool, sqlPool } from './createPool.js';
+import { pool, sqlPool, variablePool } from './createPool.js';
 import { ICCCooldown, ICCData, ICCStatus, IXFParsedThreadData, IXFStatusQuery } from '../types/cc';
 
 
@@ -73,8 +73,8 @@ export async function updateCCCache(data: IXFParsedThreadData[] | ICCStatus[], p
  */
 export async function pollCCForums() {
     // get the subforum ids
-    const forumsPG: { forumid: string }[] | [] = (await pool.query('SELECT forumid FROM chatot.ccforums')).rows;
-    const nodeIds = forumsPG.map(fid => fid.forumid);
+    const forumsPG: { ccforum: string }[] = (await variablePool.query('SELECT DISTINCT ccforum FROM dex.formats WHERE ccforum IS NOT NULL')).rows;
+    const nodeIds = forumsPG.map(fid => fid.ccforum);
     
     // if there are no subforums to monitor, just return
     // this should never be the case
@@ -117,7 +117,7 @@ export async function getGenAlias(num: string) {
     return genAlias;
 }
 
-export async function getFromForumMap(col: string, threadID: string) {
-    const rows: { [key: string]: string }[] | [] = (await pool.query(`SELECT DISTINCT ${col} FROM chatot.ccforums WHERE forumid=$1`, [threadID])).rows;
+export async function getFromForumMap(col: string, ccforum: number) {
+    const rows: { [key: string]: string }[] | [] = (await variablePool.query(`SELECT DISTINCT ${col} FROM dex.formats WHERE ccforum=$1`, [ccforum])).rows;
     return rows;
 }
