@@ -197,6 +197,9 @@ export async function loadAllDexNames() {
             return { name: f.shorthand, value: f.alias };
         }
     });
+
+    // make sure they're unique
+    modifiedDexFormats = modifiedDexFormats.filter((format, idx) => idx === modifiedDexFormats.findIndex(f => f.name === format.name && f.value === format.value));
     
     // map the gens
     dexGens = gens.map(g => ({ name: g.shorthand, value: g.alias }));

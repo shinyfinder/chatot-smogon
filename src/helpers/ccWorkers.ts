@@ -116,13 +116,13 @@ export async function uncacheRemovedThreads(currentData: IXFStatusQuery[], cache
 async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData, client: Client, newNode: boolean) {
     // if there are too many updates at once, update the database but don't ping anyone
     // this may be because of a db reset
-    let totalPingFlag = true;
-    let metaPingFlag = true;
+    let tooManyTotal = false;
+    let tooManyMeta = false;
 
     // chcek for the total number of updated threads
     // if there are too many, don't ping
     if (newDataArr.length > 10) {
-        totalPingFlag = false;
+        tooManyTotal = true;
     }
 
     // talley the number of times a node id appears in the updated list of threads
@@ -140,11 +140,11 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
     for (const newData of newDataArr) {
         // if there are too many updates for this tier, set the flag to not ping
         if (counts[newData.node_id.toString()] > 5) {
-            metaPingFlag = false;
+            tooManyMeta = true;
             metaPingFlagNodeIds.push(newData.node_id);
         }
         else {
-            metaPingFlag = true;
+            tooManyMeta = false;
         }
 
         // to be safe, cast each element in the tier array to lower case
@@ -254,7 +254,7 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
                 if (Date.now().valueOf() < nextAllowedValue && newData.stage === 'QC') {
                     continue;
                 }
-                else if (totalPingFlag && metaPingFlag) {
+                else if (!tooManyTotal && !tooManyMeta) {
                     await chan.send(alertmsg);
                 }
                 else {
@@ -280,7 +280,7 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
         }
     }
     // if there are too many new threads, and we don't have a new node, report tripping the safeguard
-    if ((!totalPingFlag || metaPingFlagNodeIds.length) && !newNode) {
+    if ((tooManyTotal || metaPingFlagNodeIds.length) && !newNode) {
         console.error(`Too many C&C updates to ping. Total: ${newDataArr.length} | Nodes: ${[...new Set(metaPingFlagNodeIds)].join(', ')}`);
     }
     
@@ -512,16 +512,29 @@ export async function parseCCStage(threadData: IXFStatusQuery[]) {
                 }
                 // else, try to get it from the thread map
                 else {
-                    const gensInForum = await getFromForumMap('gen', thread.node_id.toString()) as { gen: string }[] | [];
-                    gen = gensInForum.map(g => g.gen);
+                    const gensInForum = await getFromForumMap('gen_id', thread.node_id) as { gen_id: string }[];
+                    gen = gensInForum.map(g => g.gen_id);
                 }
             }
         }
 
         // get the tier from the thread map or the prefix, if we haven't already
         if (!tier.length) {
-            const tiersInForum = await getFromForumMap('tier', thread.node_id.toString()) as { tier: string }[] | [];
-            tier = tiersInForum.map(t => t.tier);
+            const tiersInForum = await getFromForumMap('alias', thread.node_id) as { alias: string }[] | [];
+            tier = tiersInForum.map(t => t.alias);
+
+            // vgc/bss hack
+            tier = [...new Set(tier.map(t => {
+                if (/^(?:Battle-|BSS)/mi.test(t)) {
+                    return 'bss';
+                }
+                else if (/^VGC/mi.test(t)) {
+                    return 'vgc';
+                }
+                else {
+                    return t;
+                }
+            }))];
 
             // if the list of possible tiers includes the thread prefix, filter out everything but the prefix
             // otherwise, return the original list of all possible tiers
