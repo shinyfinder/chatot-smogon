@@ -13,7 +13,6 @@ import { Colors } from 'discord.js';
 export const ccTimeInterval = 15 * 1000;
 export const cacheInterval = 30 * 60 * 1000;
 export const caTimeInterval = 15 * 1000;
-export const raterListInterval = 24 * 60 * 60 * 1000;
 export const garbageInterval = 2 * 24 * 60 * 60 * 1000;
 
 /**

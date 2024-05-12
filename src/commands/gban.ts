@@ -20,7 +20,6 @@ import { buildEmbed, postLogEvent, loggedEventTypes } from '../helpers/logging.j
 import { errorHandler } from '../helpers/errorHandler.js';
 import { pool } from '../helpers/createPool.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
-import { removeRaterAll } from '../helpers/removerater.js';
 import { filterAutocomplete } from '../helpers/autocomplete.js';
 import { ServerClass } from '../helpers/constants.js';
 /**
@@ -253,8 +252,8 @@ export const command: SlashCommand = {
                 ON CONFLICT (target)
                 DO UPDATE SET target=EXCLUDED.target, date=EXCLUDED.date, reason=EXCLUDED.reason, unbanned=false`, [user.id, new Date(), auditEntry]);
 
-                // remove them from the list of raters, returning an array of the deleted metas/gens
-                await removeRaterAll(interaction, [user.id]);
+                // remove them from the list of raters
+                await pool.query('DELETE FROM chatot.raterlists WHERE userid=$1', [user.id]);
 
                 // loop over the opt in guilds
                 for (const id of optInIDs) {
@@ -533,8 +532,8 @@ export const command: SlashCommand = {
                 ON CONFLICT (target)
                 DO UPDATE SET target=EXCLUDED.target, date=EXCLUDED.date, reason=EXCLUDED.reason, unbanned=false`, [uids, dates, reasons]);
 
-                // remove them from the list of raters, returning an array of the deleted metas/gens
-                await removeRaterAll(interaction, uids);
+                // remove them from the list of raters
+                await pool.query('DELETE FROM chatot.raterlists WHERE userid=ANY($1)', [uids]);
 
                 // loop over the opt in guilds
                 for (const id of optInIDs) {

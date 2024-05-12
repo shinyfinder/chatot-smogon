@@ -11,7 +11,7 @@ interface IRMTChans {
 export let rmtChannels: IRMTChans[];
 
 /**
- * Caches the custom commands table so we don't query it on every message
+ * Caches the rmt channel table so we don't query it on every message
  * @returns Rows from custom command db query
  */
 export async function loadRMTChans() {
