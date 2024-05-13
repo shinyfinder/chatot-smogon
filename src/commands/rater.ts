@@ -4,6 +4,8 @@ import { pool } from '../helpers/createPool.js';
 import { psFormats } from '../helpers/loadDex.js';
 import { toPSAlias, validateAutocomplete } from '../helpers/autocomplete.js';
 import { filterAutocomplete } from '../helpers/autocomplete.js';
+import { updatePublicRatersList } from '../helpers/updatePublicRaterList.js';
+import { errorHandler } from '../helpers/errorHandler.js';
 /**
  * Manages the team rater database
  */
@@ -73,6 +75,16 @@ export const command: SlashCommand = {
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
+
+        // update the public list
+        // we don't super care about this since it'll be deleted anyway, so just swallow any errors
+        try {
+            await updatePublicRatersList(interaction.client);
+        }
+        catch (e) {
+            errorHandler(e);
+        }
+        
 
         /**
          * ADD
