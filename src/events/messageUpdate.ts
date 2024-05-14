@@ -1,7 +1,9 @@
-import { Message } from 'discord.js';
+import { ChannelType, EmbedBuilder, Message } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { buildEmbed, postLogEvent, embedField, loggedEventTypes } from '../helpers/logging.js';
 import { pool } from '../helpers/createPool.js';
+import { botConfig } from '../config.js';
+import { errorHandler } from '../helpers/errorHandler.js';
 
 /**
  * Update message handler
@@ -19,8 +21,46 @@ export const clientEvent: eventHandler = {
             return;
         }
 
-        // ignore bot messages
+        // ignore bot messages, unless they're modposts
         if (newMsg.author.bot === true) {
+            if (!/Last modpost edit: /.test(newMsg.content)) {
+                return;
+            }
+            // do we really need this check? idk. But *technically* there could be another bot's post with this text
+            else if (newMsg.author.id === botConfig.CLIENT_ID) {
+                // strip the sig from the old mod post
+                // and get the previous and current editors
+                const oldEditor = oldMsg.content.match(/(?<=Last modpost edit: )[\w.#]+/)![0];
+                const newEditor = newMsg.content.match(/(?<=Last modpost edit: )[\w.#]+/)![0];
+                const oldUnsignedText = oldMsg.content.replace(/\n\nLast modpost edit:.*/, '');
+
+                // check to see if they want logging
+                const logScopes = ['all', 'edits', 'modex', 'msgtarget'];
+                const logChanIDs: { channelid: string}[] = (await pool.query('SELECT channelid FROM chatot.logchan WHERE serverid=$1 AND logtype=ANY($2)', [oldMsg.guildId, logScopes])).rows;
+
+                for (const chans of logChanIDs) {
+                    try {
+                        const chan = await newMsg.client.channels.fetch(chans.channelid);
+                        if (chan && (chan.type === ChannelType.GuildText || chan.type === ChannelType.PrivateThread || chan.type === ChannelType.PublicThread)) {
+                            const embed = new EmbedBuilder()
+                                .setTitle('Modpost Edited')
+                                .setDescription('A modpost was edited. The previous content is in the subsequent message. You can click the title of this embed to be taken to the modpost.')
+                                .setURL(oldMsg.url)
+                                .addFields(
+                                    { name: 'Old edit by', value: oldEditor, inline: true },
+                                    { name: 'Current edit by', value: newEditor, inline: true },
+                                );
+                            await chan.send({ embeds: [embed]});
+                            await chan.send(oldUnsignedText);
+                        }
+                        
+                    }
+                    catch (e) {
+                        errorHandler(e);
+                        continue;
+                    }
+                }
+            }
             return;
         }
 
