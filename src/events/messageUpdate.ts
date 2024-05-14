@@ -44,7 +44,7 @@ export const clientEvent: eventHandler = {
                         if (chan && (chan.type === ChannelType.GuildText || chan.type === ChannelType.PrivateThread || chan.type === ChannelType.PublicThread)) {
                             const embed = new EmbedBuilder()
                                 .setTitle('Modpost Edited')
-                                .setDescription('A modpost was edited. The previous content is in the subsequent message. You can click the title of this embed to be taken to the modpost.')
+                                .setDescription(`A modpost was edited. The previous content was:\n\`\`\`${oldUnsignedText}\`\`\``)
                                 .setURL(oldMsg.url)
                                 .addFields(
                                     { name: 'Old edit by', value: oldEditor, inline: true },
