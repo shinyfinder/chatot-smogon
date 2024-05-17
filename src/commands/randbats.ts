@@ -124,7 +124,7 @@ export const command: SlashCommand = {
         const monName = monNames.filter(m => m.value === mon)[0].name;
 
         // define the path to the set
-        const pathBase = 'https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/';
+        const pathBase = 'https://raw.githubusercontent.com/smogon/pokemon-showdown/master/data/random-battles/';
         let path = '';
         let modpath = '';
 
@@ -134,44 +134,34 @@ export const command: SlashCommand = {
          * so it's not worth making this really fancy
          */
 
-        // if they want doubles sets,
-        // latest gen is in the root directory under random-doubles-sets.json
-        // gen 8 uses a file called random-data.json for both singles and doubles
-        // everything else is under /mods/gen*/random-doubles-sets.json (which don't exist? but oh well)
+       
         if (mod === 'doubles') {
            if (gen === 'ss') {
-                path = pathBase + 'mods/gen8/random-data.json';
-            }
-            else if (gen === latestGen) {
-                path = pathBase + 'random-doubles-sets.json';
+                path = pathBase + 'gen8/data.json';
             }
             else {
-                path = pathBase + `mods/gen${genNum}/random-doubles-sets.json`;
+                path = pathBase + `gen${genNum}/doubles-sets.json`;
             }
         }
-        // for let's go, it uses an inheritance system so fetching just the */random-data.json isn't enough
+        // for let's go, it uses an inheritance system so fetching just the */data.json isn't enough
         // we also need the gen 7 base file
         else if (mod === 'letsgo') {
-            path = pathBase + `mods/gen${genNum}/random-sets.json`;
-            modpath = pathBase + `mods/gen${genNum}${mod}/random-data.json`;
+            path = pathBase + `gen${genNum}/sets.json`;
+            modpath = pathBase + `gen${genNum}${mod}/data.json`;
         }
-        // similar to lgpe, but the base file for gen 8 is called random-data.json
+        // similar to lgpe, but the base file for gen 8 is called data.json
         // and combines doubles and singles
         else if (mod === 'bdsp') {
-            path = pathBase + `mods/gen${genNum}/random-data.json`;
-            modpath = pathBase + `mods/gen${genNum}${mod}/random-data.json`;
+            path = pathBase + `gen${genNum}/data.json`;
+            modpath = pathBase + `gen${genNum}${mod}/data.json`;
         }
         // gens 1 and 8 use a different filename convention
         else if (gen === 'rb' || gen === 'ss') {
-            path = pathBase + `mods/gen${genNum}/random-data.json`;
-        }
-        // current gen breaks the /mods/gens syntax used by the others
-        else if (gen === latestGen) {
-            path = pathBase + 'random-sets.json';
+            path = pathBase + `gen${genNum}/data.json`;
         }
         // everything else
         else {
-            path = pathBase + `mods/gen${genNum}/random-sets.json`;
+            path = pathBase + `gen${genNum}/sets.json`;
         }
 
         // fetch the file(s)
@@ -205,7 +195,7 @@ export const command: SlashCommand = {
         /**
          * Build the output string
          * Again, stuff isn't consistent
-         * Gen 2 uses a completely different format for the levels for some reason, but we just ignore that and output nothing for level because well, we tried
+         * Gen 2 uses a completely different format for the levels for some reason, but we just ignore that and output nothing for level because well, we tried. Do it later?
          * Some of the files (gens 7 and 8) work on an inheritance system, so we need to merge data
          * Whereas the others contain all the info we need
          * Gen 1 has extra fields that are used for something meaningful I imagine, but are broken up separately and we need to output all of them
