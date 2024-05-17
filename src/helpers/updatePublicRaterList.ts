@@ -24,14 +24,19 @@ export async function updatePublicRatersList(client: Client) {
     const messages = await raterListChannel.messages.fetch({ limit: 100, cache: false });
     
     // then find the id of the messages that is from the bot and has the embeds
-    const botMsgs = messages.filter(msg => msg.author.id === client.user?.id);
+    const botMsgs = messages.filter(msg => msg.author.id === client.user?.id).map(msg => msg);
+
+    const firstMsg = botMsgs.shift();
 
     // delete them
-    for (const [, msg] of botMsgs) {
+    for (const msg of botMsgs) {
         await msg.delete();
     }
 
     // send a new message telling them of the new syntax
-    await raterListChannel.send('Please use the `/raters` command to see the list of raters');
+    if (firstMsg) {
+        await firstMsg.edit({ content: 'Please use the `/raters` command to see the list of raters', embeds: [] });
+    }
+    
     
 }
