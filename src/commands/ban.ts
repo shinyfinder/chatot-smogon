@@ -1,8 +1,7 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { Modes, botConfig } from '../config.js';
-import { removeRaterAll } from '../helpers/removerater.js';
-
+import { pool } from '../helpers/createPool.js';
 /**
  * Command to ban a user from the server
  * @param data SlashCommandBuilder() instance from discord.js
@@ -110,7 +109,7 @@ export const command: SlashCommand = {
         // remove them from the list of raters
         // only do this for the main cord
         if ((botConfig.MODE === Modes.Dev && interaction.guildId === botConfig.GUILD_ID) || (botConfig.MODE === Modes.Production && interaction.guildId === '192713314399289344')) {
-            await removeRaterAll(interaction, [user.id]);
+            await pool.query('DELETE FROM chatot.raterlists WHERE userid=$1', [user.id]);
         }
     },
 };

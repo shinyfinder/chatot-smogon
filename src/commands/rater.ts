@@ -1,22 +1,15 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, AutocompleteInteraction, SlashCommandSubcommandBuilder, PermissionFlagsBits } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
-import { addRater } from '../helpers/addrater.js';
-import { removeRater, removeRaterAll } from '../helpers/removerater.js';
-import { listRater } from '../helpers/listrater.js';
+import { pool } from '../helpers/createPool.js';
 import { psFormats } from '../helpers/loadDex.js';
-import { toPSAlias } from '../helpers/autocomplete.js';
+import { toPSAlias, validateAutocomplete } from '../helpers/autocomplete.js';
+import { filterAutocomplete } from '../helpers/autocomplete.js';
+import { updatePublicRatersList } from '../helpers/updatePublicRaterList.js';
+import { errorHandler } from '../helpers/errorHandler.js';
 /**
- * Command to manage the team rater database.
- * Subcommands are add, remove, list all, and list meta.
- *
- * add: Adds a user to the specified meta.
- *
- * remove: Removes a user from the specified meta.
- *
- * list all: Lists all raters in the database grouped by the meta which they rate for.
- *
- * list meta: Lists all raters for the specified meta.
+ * Manages the team rater database
  */
+
 export const command: SlashCommand = {
     global: false,
     guilds: ['192713314399289344'],
@@ -32,10 +25,10 @@ export const command: SlashCommand = {
          */
         .addSubcommand(new SlashCommandSubcommandBuilder()
             .setName('add')
-            .setDescription('Adds a team rater to the specified meta')
+            .setDescription('Adds a team rater to the specified format')
             .addStringOption(option =>
-                option.setName('meta')
-                .setDescription('Tier which the user rates teams for. Start typing to filter the list')
+                option.setName('format')
+                .setDescription('Format which the user rates teams for. Start typing to filter the list')
                 .setRequired(true)
                 .setAutocomplete(true))
             .addUserOption(option =>
@@ -48,15 +41,15 @@ export const command: SlashCommand = {
          */
         .addSubcommand(new SlashCommandSubcommandBuilder()
             .setName('remove')
-            .setDescription('Removes a team rater from the specified meta')
+            .setDescription('Removes a team rater from the specified format')
             .addStringOption(option =>
-                option.setName('meta')
-                .setDescription('Tier which the user rates teams for. Start typing to filter the list')
+                option.setName('format')
+                .setDescription('Format which the user rates teams for. Start typing to filter the list')
                 .setRequired(true)
                 .setAutocomplete(true))
             .addUserOption(option =>
                 option.setName('user')
-                .setDescription('User to be added (can accept IDs)')
+                .setDescription('User to be removed (can accept IDs)')
                 .setRequired(true)))
 
         /**
@@ -64,59 +57,34 @@ export const command: SlashCommand = {
          */
         .addSubcommand(new SlashCommandSubcommandBuilder()
             .setName('removeall')
-            .setDescription('Removes a team rater from all of their metas')
+            .setDescription('Removes a team rater from all of their formats')
             .addUserOption(option =>
                 option.setName('user')
-                .setDescription('User to be added (can accept IDs)')
-                .setRequired(true)))
-        /**
-         * List TR
-         */
-        .addSubcommandGroup(new SlashCommandSubcommandGroupBuilder()
-            .setName('list')
-            .setDescription('Lists the team raters in the database, optionally for a specified meta')
-            // all
-            .addSubcommand(new SlashCommandSubcommandBuilder()
-                .setName('all')
-                .setDescription('Lists all raters'))
-            // specific meta
-            .addSubcommand(new SlashCommandSubcommandBuilder()
-                .setName('meta')
-                .setDescription('Lists the raters for the specified meta')
-                .addStringOption(option =>
-                    option.setName('meta')
-                    .setDescription('Meta which the user rates teams for')
-                    .setRequired(true)
-                    .setAutocomplete(true)))),
+                .setDescription('User to be removed (can accept IDs)')
+                .setRequired(true))),
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {
         const focusedOption = interaction.options.getFocused(true);
 
-        if (focusedOption.name === 'meta') {
-            const enteredText = focusedOption.value.toLowerCase();
-
-            const filteredOut: {name: string, value: string }[] = [];
-            // filter the options shown to the user based on what they've typed in
-            // everything is cast to lower case to handle differences in case
-            for (const pair of psFormats) {
-                if (filteredOut.length < 25) {
-                    const nameLower = pair.name.toLowerCase();
-                    if (nameLower.includes(enteredText)) {
-                        filteredOut.push(pair);
-                    }
-                }
-                else {
-                    break;
-                }
-            }
-
-            await interaction.respond(filteredOut);
+        if (focusedOption.name === 'format') {
+            await filterAutocomplete(interaction, focusedOption, psFormats);
         }
     },
+
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
+
+        // update the public list
+        // we don't super care about this since it'll be deleted anyway, so just swallow any errors
+        try {
+            await updatePublicRatersList(interaction.client);
+        }
+        catch (e) {
+            errorHandler(e);
+        }
+        
 
         /**
          * ADD
@@ -124,11 +92,33 @@ export const command: SlashCommand = {
 
         if (interaction.options.getSubcommand() === 'add') {
             // get the user inputs
-            // get the inputs
-            const metaIn = toPSAlias(interaction.options.getString('meta', true));
+            const format = toPSAlias(interaction.options.getString('format', true));
             const user = interaction.options.getUser('user', true);
 
-            await addRater(interaction, metaIn, user);
+            // validate AC
+            if (!validateAutocomplete(format, psFormats)) {
+                await interaction.followUp('Unrecognized format, please choose one from the list');
+                return;
+            }
+
+            // try to find their ping preferences
+            const pingMatch: { ping: string }[] = (await pool.query('SELECT ping FROM chatot.raterlists WHERE userid=$1', [user.id])).rows;
+
+            
+            // if they're already a rater for something, use their preferences for this new add
+            // otherwise, default to All
+            const pingOut = pingMatch.length ? pingMatch[0].ping : 'All';
+
+            // push it to the db
+            await pool.query('INSERT INTO chatot.raterlists (meta, userid, ping) VALUES ($1, $2, $3) ON CONFLICT (meta, userid) DO NOTHING', [format, user.id, pingOut]);
+
+            // get the type-cased name of the format so that the output is pretty
+            // we already know what they entered is in the list of formats
+            const metaName = psFormats.find(f => f.value === format)!.name;
+
+            // done!
+            await interaction.followUp(`${user.username} was added to the list of ${metaName} raters.`);
+            
         }
 
 
@@ -137,11 +127,25 @@ export const command: SlashCommand = {
          */
 
         else if (interaction.options.getSubcommand() === 'remove') {
-            // get the inputs
-            const metaIn = toPSAlias(interaction.options.getString('meta', true));
+            // get the user inputs
+            const format = toPSAlias(interaction.options.getString('format', true));
             const user = interaction.options.getUser('user', true);
 
-            await removeRater(interaction, metaIn, user);
+            // validate AC
+            if (!validateAutocomplete(format, psFormats)) {
+                await interaction.followUp('Unrecognized format, please choose one from the list');
+                return;
+            }
+
+            // remove it from the db
+            await pool.query('DELETE FROM chatot.raterlists WHERE meta=$1 AND userid=$2', [format, user.id]);
+
+            // get the type-cased name of the meta so that the output is pretty
+            // we already know what they entered is in the list of formats, but we need to typecheck the find to make TS happy
+            const metaName = psFormats.find(f => f.value === format)!.name;
+
+            // let them know we're done
+            await interaction.followUp(`${user.username} was removed from the list of ${metaName} raters.`);
         }
 
 
@@ -153,31 +157,11 @@ export const command: SlashCommand = {
             // get the input
             const user = interaction.options.getUser('user', true);
 
-            // remove them
-            await removeRaterAll(interaction, [user.id]);
+            // remove them from the db
+            await pool.query('DELETE FROM chatot.raterlists WHERE userid=$1', [user.id]);
 
             // done
             await interaction.followUp(`${user.username} was removed from all rater lists`);  
-        }
-
-
-        /**
-         * LIST ALL
-         */
-
-        else if (interaction.options.getSubcommand() === 'all') {
-            await listRater(interaction);
-        }
-
-
-        /**
-         * LIST META
-         */
-
-        else if (interaction.options.getSubcommand() === 'meta') {
-            // get the inputs
-            const metaIn = toPSAlias(interaction.options.getString('meta', true));
-            await listRater(interaction, metaIn);
         }
     },
 };

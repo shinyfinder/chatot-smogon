@@ -276,14 +276,6 @@ CREATE TABLE chatot.castatus (
     PRIMARY KEY (thread_id)
 );
 
--- merged with dex.formats
-CREATE TABLE chatot.ccforums (
-    forumid integer,
-    tier text,
-    gen text,
-    PRIMARY KEY (forumid, tier, gen)
-);
-
 
 -- #############################
 -- #     GBANS
@@ -320,6 +312,14 @@ CREATE TABLE chatot.lastcheck (
     topic text,
     tstamp timestamptz,
     PRIMARY KEY (topic)
+);
+
+-- merged with dex.formats
+CREATE TABLE chatot.ccforums (
+    forumid integer,
+    tier text,
+    gen text,
+    PRIMARY KEY (forumid, tier, gen)
 );
 
 

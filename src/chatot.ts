@@ -13,8 +13,6 @@ import { loadCustoms } from './helpers/manageCustomsCache.js';
 import { updateState } from './helpers/updateState.js';
 import { loadItems, loadMoves, loadSpriteDex, loadAllDexNames, loadPSFormats, getImageCommitHash } from './helpers/loadDex.js';
 import { loadRRMessages } from './helpers/loadReactRoleMessages.js';
-import { errorHandler } from './helpers/errorHandler.js';
-import { updatePublicRatersList } from './helpers/updatePublicRatersList.js';
 import { createCCTimer } from './helpers/ccWorkers.js';
 import { createCATimer } from './helpers/caWorkers.js';
 import { loadCCCooldowns } from './helpers/manageCCCooldownCache.js';
@@ -24,7 +22,7 @@ import { ContextCommand } from './types/context-command-base';
 import { initGarbageCollection } from './helpers/garbage.js';
 import { createCacheTimer } from './helpers/updateCache.js';
 import { recreateLiveTours } from './helpers/livetourWorkers.js';
-import { raterListInterval, startupFlags } from './helpers/constants.js';
+import { startupFlags } from './helpers/constants.js';
 import { loadRMTChans } from './helpers/manageRMTCache.js';
 
 /**
@@ -196,9 +194,6 @@ await loadRRMessages(client);
 /**
  * Schedule timers
  */
-
-// schedule a timer to post updates the public rater list every so often
-setInterval(() => void updatePublicRatersList(client).catch(e => errorHandler(e)), raterListInterval);
 
 // schedule checking for new/updated QC threads
 createCCTimer(client);
