@@ -100,15 +100,6 @@ export const command: SlashCommand = {
                     option.setName('user6')
                     .setDescription('User to which the role is removed')
                     .setRequired(false)),
-        )
-        .addSubcommand(
-            new SlashCommandSubcommandBuilder()
-                .setName('clear')
-                .setDescription('Removes all members from the specified role')
-                .addRoleOption(option =>
-                    option.setName('role')
-                    .setDescription('Role to be modified')
-                    .setRequired(true)),
         ),
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
@@ -117,29 +108,10 @@ export const command: SlashCommand = {
         }
 
         // get the specified role
-        let role = interaction.options.getRole('role');
+        const role = interaction.options.getRole('role', true);
         
-        // typecheck null
-        if (role === null) {
-            return;
-        }
-        
-        // typecheck APIRole
-        // pick an arbitrary property (guild) in Role but not in APIRole and see if it doesn't exist
-        // if it exists, it's type Role. If not, it's APIRole
-        if (!('guild' in role)) {
-            role = await interaction.guild?.roles.fetch(role.id);
-        }
-        
-
-        // typecheck again
-        if (role === undefined || role === null) {
-            return;
-        }
-
         /**
          * MASS ADD
-         * Subcommand to add user(s) to a role
          */
         if (interaction.options.getSubcommand() === 'add' && interaction.options.getSubcommandGroup() === 'mass') {
             // get a random int to uniquely identify the modal
@@ -189,23 +161,20 @@ export const command: SlashCommand = {
             }
 
             // loop over the list of IDs and add the specified role to each person
-            let hadErrors = false;
             for (const id of uids) {
                 try {
                     // fetch the user
-                    const member = await interaction.guild?.members.fetch(id);
+                    const member = await interaction.guild.members.fetch(id);
                     // add the role
-                    await member.roles.add(role);
+                    await member.roles.add(role.id);
                 }
                 // check to make sure the ID was valid
                 catch (err) {
                     if (err instanceof DiscordAPIError && err.message === 'Unknown User') {
-                        await interaction.channel?.send(`Unable to fetch user with id ${id}`);
-                        hadErrors = true;
                         continue;
                     }
                     else {
-                        await submittedModal.followUp('An error occurred');
+                        await submittedModal.followUp(`An error occurred while trying to add the role to id ${id}`);
                         throw err;
                     }
                     
@@ -214,12 +183,7 @@ export const command: SlashCommand = {
                 
             }
 
-            if (hadErrors) {
-                await submittedModal.followUp('An error occurred');
-            }
-            else {
-                await submittedModal.followUp('Role added to every user provided');
-            }
+            await submittedModal.followUp('Role added to every user provided');
         
             
         }
@@ -274,24 +238,21 @@ export const command: SlashCommand = {
                 return;
             }
 
-            // loop over the list of IDs and add the specified role to each person
-            let hadErrors = false;
+            // loop over the list of IDs and remove the specified role to each person
             for (const id of uids) {
                 try {
                     // fetch the user
-                    const member = await interaction.guild?.members.fetch(id);
-                    // add the role
-                    await member.roles.remove(role);
+                    const member = await interaction.guild.members.fetch(id);
+                    // remove the role
+                    await member.roles.remove(role.id);
                 }
                 // check to make sure the ID was valid
                 catch (err) {
                     if (err instanceof DiscordAPIError && err.message === 'Unknown User') {
-                        await interaction.channel?.send(`Unable to fetch user with id ${id}`);
-                        hadErrors = true;
                         continue;
                     }
                     else {
-                        await submittedModal.followUp('An error occurred');
+                        await submittedModal.followUp(`An error occurred while trying to remove the role from id ${id}`);
                         throw err;
                     }
                     
@@ -299,30 +260,7 @@ export const command: SlashCommand = {
                 }
                 
             }
-
-            if (hadErrors) {
-                await submittedModal.followUp('An error occurred');
-                return;
-            }
-            else {
-                await submittedModal.followUp('Role removed from every user provided');
-                return;
-            }
-        }
-
-        /**
-         * REMOVE ALL FROM ROLE
-         */
-        else if (interaction.options.getSubcommand() === 'clear') {
-            await interaction.deferReply();
-            // loop over the list of members with the role and remove the role
-            for (const member of role.members) {
-                const memberObj = member[1];
-                await memberObj.roles.remove(role);
-            }
-
-            // let them know you're done
-            await interaction.followUp('All members removed from role');
+            await submittedModal.followUp('Role removed from every user provided');
         }
 
         /**
@@ -355,7 +293,7 @@ export const command: SlashCommand = {
                     // fetch the member
                     const member = await interaction.guild.members.fetch(user);
                     // add the role
-                    await member.roles.add(role);
+                    await member.roles.add(role.id);
                 }
             }
             // let them know you're done
@@ -389,7 +327,7 @@ export const command: SlashCommand = {
                     // fetch the member
                     const member = await interaction.guild.members.fetch(user);
                     // add the role
-                    await member.roles.remove(role);
+                    await member.roles.remove(role.id);
                 }
             }
             // let them know you're done
