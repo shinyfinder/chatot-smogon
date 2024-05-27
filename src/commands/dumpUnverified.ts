@@ -52,7 +52,7 @@ export const command: SlashCommand = {
         const guild = await interaction.client.guilds.fetch(guildQ);
         const memberList = (await guild.members.fetch()).filter(member => !member.user.bot);
         
-        const notVerified: { id: string }[] = (await pool.query('SELECT * FROM UNNEST($1::text[]) AS id EXCEPT SELECT discordid FROM chatot.identities;', [Array.from(memberList.keys())])).rows;
+        const notVerified: { id: string }[] = (await pool.query('SELECT * FROM UNNEST($1::text[]) AS id EXCEPT SELECT discordid FROM chatot.identities', [Array.from(memberList.keys())])).rows;
 
         let csvID = '';
         let csvIDUsername = 'id,username\n';
@@ -70,8 +70,8 @@ export const command: SlashCommand = {
 
         if (interaction.channel) {
             await interaction.followUp({ content: `Here is the list users I didn't verify in ${guild.name}`, files: [
-                { attachment: bufID, name: 'manual_verify_ids.csv' },
-                { attachment: bufIDUsername, name: 'manual_verify_ids_usernames.csv' },
+                { attachment: bufID, name: 'no_forum_account_ids.csv' },
+                { attachment: bufIDUsername, name: 'no_forum_account_ids_usernames.csv' },
             ] });
         }
     },
