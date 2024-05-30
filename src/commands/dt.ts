@@ -115,7 +115,9 @@ export const command: SlashCommand = {
             // to get the gender info and whether the abliity is hidden, we need the PS API
             // so get the mon data from that
             // ps mon keys are all lower case and remove all special characters
-            const psData = pokedex[queryStr.replace(/[^a-z]/g, '')] ?? {};
+            // male meowstic has an overwrite 
+            const psQuery = queryStr === 'meowstic-m' ? 'meowstic' : queryStr;
+            const psData = pokedex[psQuery.replace(/[^a-z]/g, '')] ?? {};
   
             // get the base power of Low Kick based on the weight
             // all of the rows should have the same weight/stats, so just take the first entry
