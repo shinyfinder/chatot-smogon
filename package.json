@@ -15,20 +15,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^14.14.1",
+    "discord.js": "^14.15.2",
     "dotenv": "^16.4.5",
     "esbuild": "^0.20.2",
-    "mysql2": "^3.9.7",
+    "mysql2": "^3.10.0",
     "pg": "^8.11.5"
   },
   "devDependencies": {
-    "@eslint/js": "^9.1.1",
-    "@swc/core": "^1.4.17",
-    "@types/node": "^20.12.7",
-    "@types/pg": "^8.11.5",
+    "@eslint/js": "^9.3.0",
+    "@swc/core": "^1.5.24",
+    "@types/node": "^20.12.14",
+    "@types/pg": "^8.11.6",
     "eslint": "^8.57.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
-    "typescript-eslint": "^7.7.1"
+    "typescript-eslint": "^7.11.0"
   }
 }

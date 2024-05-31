@@ -37,10 +37,6 @@ export async function loadRRMessages(client: Client) {
         const server = client.guilds.cache.get(msg.serverid);
 
         if (server === undefined) {
-            // debug hack
-            if (msg.serverid === '192713314399289344') {
-                console.error('Unable to fetch server');
-            }
             continue;
         }
 
@@ -51,10 +47,6 @@ export async function loadRRMessages(client: Client) {
             const chan = await server.channels.fetch(msg.channelid);
 
             if (chan === null || !chan.isTextBased()) {
-                // debug hack
-                if (msg.serverid === '192713314399289344') {
-                    console.error(`Unable to fetch channel ${msg.channelid} in server ${msg.serverid} or channel is not text based`)
-                }
                 continue;
             }
 
@@ -64,18 +56,11 @@ export async function loadRRMessages(client: Client) {
         catch (err) {
             // if they deleted the message and we still didn't catch it, queue deletion from the db
             if (err instanceof DiscordAPIError && err.message.includes('Unknown Message')) {
-                // debug hack
-                console.error(`Unknown message ${msg.messageid} in server ${msg.serverid}. Queueing for deletion`)
                 deletedMessages.push(msg.messageid);
                 continue;
             }
             else {
                 // route it through our error handler to at least give it a shot of printing
-                // debug hack
-                if (msg.serverid === '192713314399289344') {
-                    console.error(`Error while processing message ${msg.messageid}`);
-                    console.error(err);
-                }
                 errorHandler(err);
                 continue;
             }
