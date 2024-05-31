@@ -16,8 +16,19 @@ export const clientEvent: eventHandler = {
     // execute the code for this event
     async execute(reaction: MessageReaction, user: User) {
         // if it's not a cached message, we don't care about it because we purposefully cached the ones we need
+
+        // debug hack
+        if (reaction.message.guildId === '192713314399289344' && rrMessages.includes(reaction.message.id)) {
+            console.error(`Reaction received on RR message ${reaction.message.id}`);
+        }
+
         if (reaction.partial) {
             return;
+        }
+
+        // debug hack
+        if (reaction.message.guildId === '192713314399289344' && rrMessages.includes(reaction.message.id)) {
+            console.error(`RR Message ${reaction.message.id} is cached`);
         }
 
         // ignore bot reactions
@@ -34,6 +45,13 @@ export const clientEvent: eventHandler = {
         const rrpg = await pool.query('SELECT roleid FROM chatot.reactroles WHERE serverid=$1 AND emoji=$2', [reaction.message.guildId, reaction.emoji.toString()]);
         const dbmatches: { roleid: string }[] | [] = rrpg.rows;
 
+
+        // debug hack
+        if (reaction.message.guildId === '192713314399289344' && !dbmatches.length) {
+            console.error(`Reaction received on RR message ${reaction.message.id}, but it's not the right emoji`);
+        }
+
+
         // if we didn't get a match, then we don't care about this emoji
         if (!dbmatches.length) {
             return;
@@ -44,10 +62,22 @@ export const clientEvent: eventHandler = {
 
         // return if there was an error fetching
         if (member === undefined) {
+
+            // debug hack
+            if (reaction.message.guildId === '192713314399289344') {
+                console.error(`Can't fetch member ${user.id}`);
+            }
             return;
         }
         // add the role
-        await member.roles.add(dbmatches[0].roleid);
+        // debug hack
+        try {
+            await member.roles.add(dbmatches[0].roleid);
+        }
+        catch (e) {
+            console.error(e);
+            throw e;
+        }        
 
         return;
     },
