@@ -22,7 +22,7 @@ export const command: SlashCommand = {
             .setRequired(false)
             .setAutocomplete(true))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers) as SlashCommandBuilder,
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {

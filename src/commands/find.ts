@@ -35,7 +35,7 @@ export const command: SlashCommand = {
                 .setDescription('Discord account (can also accept user IDs)')
                 .setRequired(true)))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

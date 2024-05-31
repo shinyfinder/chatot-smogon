@@ -22,7 +22,7 @@ export const command: SlashCommand = {
             .setName('out')
             .setDescription('Opts out of allowing users to be globally banned by Smogon/PS admins'))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

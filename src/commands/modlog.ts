@@ -20,7 +20,7 @@ export const command: SlashCommand = {
             .setDescription('Username (id) to lookup actions against in this server')
             .setRequired(true),
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers) as SlashCommandBuilder,
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         // get the id of the server this command was used in and the supplied user

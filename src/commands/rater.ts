@@ -60,7 +60,7 @@ export const command: SlashCommand = {
             .addUserOption(option =>
                 option.setName('user')
                 .setDescription('User to be removed (can accept IDs)')
-                .setRequired(true))),
+                .setRequired(true))) as SlashCommandBuilder,
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {

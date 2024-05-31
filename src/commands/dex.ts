@@ -33,7 +33,7 @@ export const command: SlashCommand = {
             .setDescription('Optional format to fetch (ou, uu, monotype, etc)')
             .setAutocomplete(true)
             .setRequired(false))
-        .setDMPermission(false),
+        .setDMPermission(false) as SlashCommandBuilder,
 
     // prompt the user with autocomplete options
     async autocomplete(interaction: AutocompleteInteraction) {

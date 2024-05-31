@@ -125,7 +125,7 @@ export const command: SlashCommand = {
                 option.setName('delete')
                 .setDescription('Reminder ID to remove.')
                 .setRequired(false)))
-        .setDMPermission(false),
+        .setDMPermission(false) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

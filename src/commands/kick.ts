@@ -28,7 +28,7 @@ export const command: SlashCommand = {
             .setDescription('Optional message to be sent to the user')
             .setRequired(false))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

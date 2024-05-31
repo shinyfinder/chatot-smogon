@@ -14,7 +14,7 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('ping')
-        .setDescription('Replies with Pong!'),
+        .setDescription('Replies with Pong!') as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

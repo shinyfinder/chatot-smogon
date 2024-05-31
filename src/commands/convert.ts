@@ -29,7 +29,7 @@ export const command: SlashCommand = {
                 { name: 'km', value: 'km' },
                 { name: 'mi', value: 'mi' },
             ))
-        .setDMPermission(false),
+        .setDMPermission(false) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

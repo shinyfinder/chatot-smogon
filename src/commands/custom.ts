@@ -45,8 +45,8 @@ export const command: SlashCommand = {
         .addSubcommand(
             new SlashCommandSubcommandBuilder()
                 .setName('list')
-                .setDescription('Lists the custom commands in the server'),
-        ),
+                .setDescription('Lists the custom commands in the server')
+        ) as SlashCommandBuilder,
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         const serverID = interaction.guildId;

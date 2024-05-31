@@ -94,7 +94,7 @@ export const command: SlashCommand = {
                     .setRequired(true)
                     .setAutocomplete(true))))
        
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers) as SlashCommandBuilder,
 
 
      // prompt the user with autocomplete options

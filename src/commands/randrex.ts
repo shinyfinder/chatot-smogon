@@ -13,7 +13,7 @@ export const command: SlashCommand = {
         .setName('randrex')
         .setDescription('Posts a random picture of Rex, winner of Smog Awards 2022 Cutest Pet')
         .setDMPermission(false)
-        .setDefaultMemberPermissions(0),
+        .setDefaultMemberPermissions(0) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

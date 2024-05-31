@@ -23,8 +23,8 @@ export const command: SlashCommand = {
         .addSubcommand(
             new SlashCommandSubcommandBuilder()
                 .setName('off')
-                .setDescription('Allows the thread to be archived'),
-        ),
+                .setDescription('Allows the thread to be archived')
+        ) as SlashCommandBuilder,
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         const channel = interaction.channel;

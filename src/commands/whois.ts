@@ -28,7 +28,7 @@ export const command: SlashCommand = {
                 .setDescription('Forum profile URL or exact (case sensitive) username')
                 .setRequired(true)))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

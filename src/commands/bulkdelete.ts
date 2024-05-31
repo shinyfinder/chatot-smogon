@@ -24,7 +24,7 @@ export const command: SlashCommand = {
             .setDescription('How many messages to delete')
             .setRequired(true))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

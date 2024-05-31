@@ -8,5 +8,4 @@ set -e
 export CI=true
 # Environment variable makes pnpm put its store at __cache/.local/share/...
 HOME=__cache pnpm --quiet install
-pnpm -r build
 ./ts-to-js.sh

@@ -91,7 +91,7 @@ export const command: SlashCommand = {
                     option.setName('meta')
                     .setDescription('The meta to no longer track in the specified channel')
                     .setRequired(false)
-                    .setAutocomplete(true)))),
+                    .setAutocomplete(true)))) as SlashCommandBuilder,
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {

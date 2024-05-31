@@ -16,7 +16,7 @@ export const command: SlashCommand = {
     data: new SlashCommandBuilder()
         .setName('unverify')
         .setDescription('Removes the link between your discord and forum accounts')
-        .setDMPermission(false),
+        .setDMPermission(false) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

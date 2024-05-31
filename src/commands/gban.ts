@@ -70,7 +70,7 @@ export const command: SlashCommand = {
                     .setDescription('Full name or id of the server')
                     .setRequired(true)
                     .setAutocomplete(true)),
-        ),
+        ) as SlashCommandBuilder,
     
      // prompt the user with autocomplete options since there are too many tiers to have a selectable list
      async autocomplete(interaction: AutocompleteInteraction) {

@@ -32,7 +32,7 @@ export const command: SlashCommand = {
             .setDescription('Optional reason for the unban (for the audit log)')
             .setRequired(false))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(0),
+        .setDefaultMemberPermissions(0) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

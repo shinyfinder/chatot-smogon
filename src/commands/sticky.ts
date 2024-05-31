@@ -14,7 +14,7 @@ export const command: ContextCommand = {
         .setName('(un)sticky')
         .setType(ApplicationCommandType.Message)
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages) as ContextMenuCommandBuilder,
 
     // execute our desired task
     async execute(interaction: MessageContextMenuCommandInteraction) {

@@ -17,7 +17,7 @@ export const command: SlashCommand = {
             .setDescription('Name (or id) of the server to query. Bot must be in it')
             .setRequired(true))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(0),
+        .setDefaultMemberPermissions(0) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

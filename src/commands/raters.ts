@@ -27,7 +27,7 @@ export const command: SlashCommand = {
             .setDescription('Which user to query. Can accept ids')
             .setRequired(false)
         )
-        .setDMPermission(false),
+        .setDMPermission(false) as SlashCommandBuilder,
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {

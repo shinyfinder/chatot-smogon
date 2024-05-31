@@ -71,7 +71,7 @@ export const command: SlashCommand = {
         .addStringOption(option =>
             option.setName('post')
             .setDescription('The message link to or id of the signup post')
-            .setRequired(true))),
+            .setRequired(true))) as SlashCommandBuilder,
  
 
     // execute our desired task

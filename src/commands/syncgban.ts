@@ -14,7 +14,7 @@ export const command: SlashCommand = {
         .setName('syncgban')
         .setDescription('Ensures all gbans are enforced')
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

@@ -71,7 +71,7 @@ export const command: SlashCommand = {
             .addUserOption(option =>
                 option.setName('user')
                 .setDescription('The user\'s code to list (can accept ids)')
-                .setRequired(false))),
+                .setRequired(false))) as SlashCommandBuilder,
         
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

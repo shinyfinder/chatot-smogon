@@ -24,7 +24,7 @@ export const command: SlashCommand = {
             .setDescription('Name for the emoji')
             .setRequired(true),
         )
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuildExpressions),
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuildExpressions) as SlashCommandBuilder,
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         // return if not used in guild

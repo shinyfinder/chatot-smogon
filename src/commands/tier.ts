@@ -26,7 +26,7 @@ export const command: SlashCommand = {
             .setDescription('Which gen to target. If blank, the latest is used')
             .setAutocomplete(true)
             .setRequired(false))
-        .setDMPermission(false),
+        .setDMPermission(false) as SlashCommandBuilder,
 
     // prompt the user with autocomplete options
     async autocomplete(interaction: AutocompleteInteraction) {

@@ -28,7 +28,7 @@ export const command: SlashCommand = {
                 { name: 'None', value: 'None' },
             )
             .setRequired(true))
-        .setDefaultMemberPermissions(0),
+        .setDefaultMemberPermissions(0) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

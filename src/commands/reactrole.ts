@@ -66,7 +66,7 @@ export const command: SlashCommand = {
             .addStringOption(option =>
                 option.setName('message')
                 .setDescription('ID of the message which users react to.')
-                .setRequired(false))),
+                .setRequired(false))) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

@@ -10,7 +10,7 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('wiki')
-        .setDescription('Posts a link to the wiki'),
+        .setDescription('Posts a link to the wiki') as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

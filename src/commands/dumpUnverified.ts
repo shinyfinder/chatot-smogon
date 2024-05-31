@@ -21,9 +21,9 @@ export const command: SlashCommand = {
             .setAutocomplete(true)
             .setRequired(true))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(0),
+        .setDefaultMemberPermissions(0) as SlashCommandBuilder,
 
-     async autocomplete(interaction: AutocompleteInteraction) {
+    async autocomplete(interaction: AutocompleteInteraction) {
         const focusedOption = interaction.options.getFocused(true);
 
         if (focusedOption.name === 'guild') {

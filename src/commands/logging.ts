@@ -18,44 +18,42 @@ export const command: SlashCommand = {
         .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
         .addSubcommand(new SlashCommandSubcommandBuilder()
-                .setName('enable')
-                .setDescription('Turns on logging in the specified channel')
-                .addChannelOption(option =>
-                    option.setName('channel')
-                    .setDescription('Which channel to log in')
-                    .setRequired(true)
-                    .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread))
-                .addStringOption(option =>
-                    option.setName('type')
-                    .setDescription('What actions get logged into the channel. See the wiki for details.')
-                    .setChoices(
-                        // everything
-                        { name: 'All', value: 'all' },
-                        // only edits
-                        { name: 'Edits', value: 'edits' },
-                        // everything but edits
-                        { name: 'Non-Edits', value: 'nonedits' },
-                        // user executed (self deletes, edits, boost)
-                        { name: 'User Executed', value: 'userex' },
-                        // mod executed (kick, ban, TO, mod delete)
-                        { name: 'Mod Executed', value: 'modex' },
-                        // user targeted (kick, ban, TO, boost)
-                        { name: 'User Targeted', value: 'usertarget' },
-                        // message targeted (delete, edit)
-                        { name: 'Message Targeted', value: 'msgtarget' },
-                    )
-                    .setRequired(false)),
-        )
-        .addSubcommand(
-            new SlashCommandSubcommandBuilder()
-                .setName('disable')
-                .setDescription('Turns off logging in the specified channel')
-                .addChannelOption(option =>
-                    option.setName('channel')
-                    .setDescription('The channel currently being logged in')
-                    .setRequired(true)
-                    .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread)),
-        ),
+            .setName('enable')
+            .setDescription('Turns on logging in the specified channel')
+            .addChannelOption(option =>
+                option.setName('channel')
+                .setDescription('Which channel to log in')
+                .setRequired(true)
+                .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread))
+            .addStringOption(option =>
+                option.setName('type')
+                .setDescription('What actions get logged into the channel. See the wiki for details.')
+                .setChoices(
+                    // everything
+                    { name: 'All', value: 'all' },
+                    // only edits
+                    { name: 'Edits', value: 'edits' },
+                    // everything but edits
+                    { name: 'Non-Edits', value: 'nonedits' },
+                    // user executed (self deletes, edits, boost)
+                    { name: 'User Executed', value: 'userex' },
+                    // mod executed (kick, ban, TO, mod delete)
+                    { name: 'Mod Executed', value: 'modex' },
+                    // user targeted (kick, ban, TO, boost)
+                    { name: 'User Targeted', value: 'usertarget' },
+                    // message targeted (delete, edit)
+                    { name: 'Message Targeted', value: 'msgtarget' },
+                )
+                .setRequired(false)))
+        .addSubcommand(new SlashCommandSubcommandBuilder()
+            .setName('disable')
+            .setDescription('Turns off logging in the specified channel')
+            .addChannelOption(option =>
+                option.setName('channel')
+                .setDescription('The channel currently being logged in')
+                .setRequired(true)
+                .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread, ChannelType.PrivateThread)),
+        ) as SlashCommandBuilder,
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         // typecheck

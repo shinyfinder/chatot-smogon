@@ -15,7 +15,7 @@ export const command: SlashCommand = {
     // setup the slash command builder
     data: new SlashCommandBuilder()
         .setName('deletemydata')
-        .setDescription('Removes all instances of your data from the databases where possible'),
+        .setDescription('Removes all instances of your data from the databases where possible') as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

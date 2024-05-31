@@ -13,7 +13,7 @@ export const command: ContextCommand = {
         .setName('reactors')
         .setType(ApplicationCommandType.Message)
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers) as ContextMenuCommandBuilder,
 
     // execute our desired task
     async execute(interaction: MessageContextMenuCommandInteraction) {

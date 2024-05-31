@@ -19,7 +19,7 @@ export const command: SlashCommand = {
             .setDescription('The message to fetch')
             .setRequired(true))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
+        .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

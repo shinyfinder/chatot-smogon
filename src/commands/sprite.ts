@@ -35,7 +35,7 @@ export const command: SlashCommand = {
             .setDescription('Which gen to retrieve the sprite for. If blank, the latest available is used')
             .setAutocomplete(true)
             .setRequired(false))
-        .setDMPermission(false),
+        .setDMPermission(false) as SlashCommandBuilder,
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {

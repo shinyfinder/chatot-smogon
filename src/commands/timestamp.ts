@@ -77,7 +77,7 @@ export const command: SlashCommand = {
                 { name: '1 year ago/from now', value: 'R' },
             )
             .setRequired(true))
-        .setDescription('Converts the entered date/time into a discord timestamp. Please use 24 HR format for time'),
+        .setDescription('Converts the entered date/time into a discord timestamp. Please use 24 HR format for time') as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

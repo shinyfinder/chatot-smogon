@@ -17,7 +17,7 @@ export const command: SlashCommand = {
             option.setName('profile')
             .setDescription('URL or case-sensitive username of your forum profile')
             .setRequired(false))
-        .setDMPermission(false),
+        .setDMPermission(false) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {

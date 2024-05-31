@@ -277,7 +277,7 @@ export const command: SlashCommand = {
                     .setRequired(true)))
             .addSubcommand(new SlashCommandSubcommandBuilder()
             .setName('reset')
-            .setDescription('Resets all fun confgiurations to default values in the server'))),
+            .setDescription('Resets all fun confgiurations to default values in the server'))) as SlashCommandBuilder,
 
     // prompt the user with autocomplete options since there are too many tiers to have a selectable list
     async autocomplete(interaction: AutocompleteInteraction) {

@@ -58,7 +58,7 @@ export const command: SlashCommand = {
                 { name: 'No Dynamax', value: 'nodyna' },
             )
             .setRequired(false))
-        .setDMPermission(false),
+        .setDMPermission(false) as SlashCommandBuilder,
 
     // prompt the user with autocomplete options
     async autocomplete(interaction: AutocompleteInteraction) {

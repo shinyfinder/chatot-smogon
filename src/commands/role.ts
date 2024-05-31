@@ -100,7 +100,7 @@ export const command: SlashCommand = {
                     option.setName('user6')
                     .setDescription('User to which the role is removed')
                     .setRequired(false)),
-        ),
+        ) as SlashCommandBuilder,
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         if (!interaction.guild) {

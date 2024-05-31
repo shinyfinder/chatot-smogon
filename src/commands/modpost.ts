@@ -32,7 +32,7 @@ export const command: SlashCommand = {
             .setRequired(true)
             .addChannelTypes(ChannelType.GuildText, ChannelType.PublicThread))
         .setDMPermission(false)
-        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
+        .setDefaultMemberPermissions(PermissionFlagsBits.BanMembers) as SlashCommandBuilder,
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
         // get the info they entered

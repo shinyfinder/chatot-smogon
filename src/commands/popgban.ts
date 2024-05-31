@@ -20,7 +20,7 @@ export const command: SlashCommand = {
         .setName('popgban')
         .setDescription('Populates the database of gban information')
         .setDMPermission(false)
-        .setDefaultMemberPermissions(0),
+        .setDefaultMemberPermissions(0) as SlashCommandBuilder,
 
     // execute our desired task
     async execute(interaction: ChatInputCommandInteraction) {
