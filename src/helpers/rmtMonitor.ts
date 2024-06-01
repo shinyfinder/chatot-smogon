@@ -8,6 +8,9 @@ import { Modes, botConfig } from '../config.js';
 // cooldown time in hours
 const cd = 6;
 
+
+const lastProcessedRate: { [key: string]: string } = {};
+
 /**
  * Handler to determine whether to ping raters for a new rate.
  * Triggered by messageCreate event.
@@ -41,6 +44,23 @@ export async function rmtMonitor(msg: Message) {
 
     // if the message content doesn't include a pokepaste link, return
     if (!pokeURL) {
+        return;
+    }
+
+    // temp log processing
+    const devLogChan = await msg.client.channels.fetch('1246528141497995314');
+    if (devLogChan && devLogChan.isTextBased()) {
+        await devLogChan.send(`Processing RMT rate:\nChannel: <#${msg.channelId}>\nMessage: ${msg.id}\nURL: <${pokeURL[0]}>\nUp time: ${msg.client.readyAt}`)
+    }
+    
+
+    if (lastProcessedRate[msg.channelId] !== pokeURL[0]) {
+        lastProcessedRate[msg.channelId] = pokeURL[0];
+    }
+    else {
+        if (devLogChan && devLogChan.isTextBased()) {
+            await devLogChan.send(`Rate already processed`)
+        }
         return;
     }
 
