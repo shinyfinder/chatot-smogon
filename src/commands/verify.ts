@@ -53,6 +53,11 @@ export const command: SlashCommand = {
             // if it's a string, they provided a url
             if (typeof forumid === 'string') {
                 forumid = Number(forumid);
+
+                if (forumid === 481341) {
+                    await interaction.followUp('Please provide the URL to *your* profile, not the placeholder. For best results, go to your Smogon profile on the forums and copy the URL from the address bar.');
+                    return;
+                }
                 // query the db to get their username and field value from the provided ID
                 const [sqlMatch] = await sqlPool.execute(`
                     SELECT xenforo.xf_user.user_id, field_value, register_date
@@ -77,7 +82,7 @@ export const command: SlashCommand = {
 
             // if we didn't get a match, they didn't provide a valid profile url or username, so let them know
             if (!userData.length) {
-                await interaction.followUp('Profile not found. Please provide either your forum profile URL or your exact (case sensitive) forum username.');
+                await interaction.followUp('Profile not found. Please provide either your forum profile URL or your exact (case sensitive) forum username. For best results, go to your forum profile in a browser and copy the URL from the address bar.');
                 return;
             }
 
