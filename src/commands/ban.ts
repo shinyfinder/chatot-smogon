@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, SnowflakeUtil } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { Modes, botConfig } from '../config.js';
 import { pool } from '../helpers/createPool.js';
@@ -80,7 +80,7 @@ export const command: SlashCommand = {
         let wasDMd = false;
         if (dm !== null) {
             try {
-                await interaction.client.users.send(user, `You have been banned from ${interaction.guild.name} for the following reason:\n\n${dm}.`);
+                await interaction.client.users.send(user, { content: `You have been banned from ${interaction.guild.name} for the following reason:\n\n${dm}.`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 wasDMd = true;
             }
             catch (error) {

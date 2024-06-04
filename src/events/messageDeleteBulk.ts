@@ -1,4 +1,4 @@
-import { Message, Collection, GuildTextBasedChannel, ChannelType } from 'discord.js';
+import { Message, Collection, GuildTextBasedChannel, ChannelType, SnowflakeUtil } from 'discord.js';
 import { eventHandler } from '../types/event-base.js';
 import { pool } from '../helpers/createPool.js';
 import { ILogChan } from '../helpers/logging.js';
@@ -60,9 +60,12 @@ export const clientEvent: eventHandler = {
                 // create a buffer so we can send it as an attachment
                 const buf = Buffer.from(arrOut.join('\n\n'));
 
-                await chanOut.send({ content: 'Messages were deleted in bulk', files: [
-                    { attachment: buf, name: `${channel.name}_bulkDelete.txt` },
-                ] });
+                await chanOut.send({ 
+                    content: 'Messages were deleted in bulk',
+                    files: [{ attachment: buf, name: `${channel.name}_bulkDelete.txt` }],
+                    enforceNonce: true,
+                    nonce: SnowflakeUtil.generate().toString()
+                });
             }
         }
     },

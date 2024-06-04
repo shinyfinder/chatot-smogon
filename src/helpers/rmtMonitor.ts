@@ -1,4 +1,4 @@
-import { Collection, Message } from 'discord.js';
+import { Collection, Message, SnowflakeUtil } from 'discord.js';
 import { pool } from './createPool.js';
 import { rmtChannels } from './manageRMTCache.js';
 import { overwriteTier } from './overwriteTier.js';
@@ -192,5 +192,5 @@ export async function rmtMonitor(msg: Message) {
 
     // ping them, but first get the name from the n-v pair used in autocomplete
     const metaName = psFormats.find(format => format.value === unifiedFormat)?.name ?? unifiedFormat;
-    await msg.channel.send(`New ${metaName} RMT ${pingOut}. I won't notify you again for at least ${cd} hours.`);
+    await msg.channel.send({ content: `New ${metaName} RMT ${pingOut}. I won't notify you again for at least ${cd} hours.`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
 }

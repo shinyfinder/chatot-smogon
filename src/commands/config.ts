@@ -15,6 +15,7 @@ import {
     TextChannel,
     PublicThreadChannel,
     PrivateThreadChannel,
+    SnowflakeUtil,
  } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
@@ -691,6 +692,8 @@ export const command: SlashCommand = {
             const msg = await threadChannel.send({
                 embeds: [embed],
                 components: [row],
+                enforceNonce: true,
+                nonce: SnowflakeUtil.generate().toString(),
             });
 
             

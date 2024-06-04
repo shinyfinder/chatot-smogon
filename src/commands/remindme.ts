@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ChannelType } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, SlashCommandSubcommandBuilder, ChannelType, SnowflakeUtil } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { errorHandler } from '../helpers/errorHandler.js';
 import { pool } from '../helpers/createPool.js';
@@ -245,7 +245,7 @@ export const command: SlashCommand = {
         if (method === 'dm') {
             try {
                 // send a test message
-                await interaction.user.send(`Ok, I will remind you on <t:${unixTimestamp}:f>`);
+                await interaction.user.send({ content: `Ok, I will remind you on <t:${unixTimestamp}:f>`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
 
                 // store in the db so we don't forget
                 await pool.query('INSERT INTO chatot.reminders (userid, channelid, tstamp, msg) VALUES ($1, $2, to_timestamp($3), $4)', [interaction.user.id, loc, unixTimestamp, message]);

@@ -1,4 +1,4 @@
-import { ChannelType, Message, MessageMentions } from 'discord.js';
+import { ChannelType, Message, MessageMentions, SnowflakeUtil } from 'discord.js';
 import { pool } from './createPool.js';
 import { errorHandler } from './errorHandler.js';
 import { INVPair } from '../types/discord';
@@ -62,7 +62,7 @@ export async function relayPings(msg: Message) {
                     continue;
                 }
 
-                await chan.send(`${sub.tour} game is starting <@&${sub.roleid}>! <${url}>`);
+                await chan.send({ content: `${sub.tour} game is starting <@&${sub.roleid}>! <${url}>`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
             }
         }
         catch (e) {

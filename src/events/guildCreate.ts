@@ -1,4 +1,4 @@
-import { Guild, ButtonBuilder, ButtonStyle, ActionRowBuilder, PermissionFlagsBits, ChannelType } from 'discord.js';
+import { Guild, ButtonBuilder, ButtonStyle, ActionRowBuilder, PermissionFlagsBits, ChannelType, SnowflakeUtil } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { Modes, botConfig } from '../config.js';
 import { pool } from '../helpers/createPool.js';
@@ -76,6 +76,8 @@ export const clientEvent: eventHandler = {
         await logChan.send({
             content: `I joined a new server: ${guild.name} (${guild.id}) | Owned by ${owner.user.username} (${owner.id}).\nWould you like to enforce gbans there and be alerted if there are issues?`,
             components: [row],
+            enforceNonce: true,
+            nonce: SnowflakeUtil.generate().toString()
         });
 
         // try to send the welcome message
@@ -92,7 +94,7 @@ If you have any questions about Chatot or its functionality, please refer to its
 Happy botting!`;
 
         try {
-            await owner.send(welcomeMsg);
+            await owner.send({ content: welcomeMsg, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
         }
         catch (e) {
             // if this trips, the owner probably has their DMs turned off.
@@ -101,7 +103,7 @@ Happy botting!`;
                 const sysChan = guild.systemChannel;
 
                 if (sysChan && sysChan.permissionsFor(botConfig.CLIENT_ID)?.has(PermissionFlagsBits.SendMessages)) {
-                    await sysChan.send(welcomeMsg);
+                    await sysChan.send({ content: welcomeMsg, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
             }
             catch (e2) {
@@ -114,7 +116,7 @@ Happy botting!`;
 
                 // if this fails, well...we tried.
                 if (firstChan?.type === ChannelType.GuildText) {
-                    await firstChan?.send(welcomeMsg);
+                    await firstChan?.send({ content: welcomeMsg, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
             }
         }

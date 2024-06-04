@@ -10,6 +10,7 @@ import {
     PrivateThreadChannel,
     PublicThreadChannel,
     TextChannel,
+    SnowflakeUtil,
  } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { Modes, botConfig } from '../config.js';
@@ -417,9 +418,12 @@ export const command: SlashCommand = {
                 return;
             }
             // post it to the channel the interaction occurred and tag the person who initiated
-            await interaction.channel.send({ content: `Here is the file, <@${interaction.member.user.id}>`, files: [
-                { attachment: buf, name: `${startFilename}-${endFilename}_linecount.csv` },
-            ] });
+            await interaction.channel.send({ 
+                content: `Here is the file, <@${interaction.member.user.id}>`, 
+                files: [{ attachment: buf, name: `${startFilename}-${endFilename}_linecount.csv` }],
+                enforceNonce: true,
+                nonce: SnowflakeUtil.generate().toString()
+            });
         }
 
 

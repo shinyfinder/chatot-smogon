@@ -1,7 +1,7 @@
 import { ICAStatus, IXFCAStatus } from '../types/ca';
 import { loadCAStatus, pollCAForum, updateCACache } from './caQueries.js';
 import { Modes, botConfig } from '../config.js';
-import { Client, ChannelType, AttachmentBuilder } from 'discord.js';
+import { Client, ChannelType, AttachmentBuilder, SnowflakeUtil } from 'discord.js';
 import { lockout, caTimeInterval } from './constants.js';
 import { errorHandler } from './errorHandler.js';
 
@@ -125,12 +125,12 @@ async function alertCAStatus(newDataArr: IXFCAStatus[], client: Client) {
                     // build the attachment 
                     const attachment = new AttachmentBuilder(filepath, { name: newData.filename });
                     // send
-                    const msg = await chan.send({ content: `${newData.title} ready for QC <@&1132969853087658045>\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>`, files: [attachment] });
+                    const msg = await chan.send({ content: `${newData.title} ready for QC <@&1132969853087658045>\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>`, files: [attachment], enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                     // react
                     await msg.react('👍');
                 }
                 else {
-                    await chan.send(`${newData.title} ready for QC <@&1132969853087658045>\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>`);
+                    await chan.send({ content: `${newData.title} ready for QC <@&1132969853087658045>\n<https://www.smogon.com/forums/threads/${newData.thread_id}/>`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
                 
             }

@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, DiscordAPIError } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, PermissionFlagsBits, DiscordAPIError, SnowflakeUtil } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { pool } from '../helpers/createPool.js';
 import { errorHandler } from '../helpers/errorHandler.js';
@@ -62,7 +62,7 @@ export const command: SlashCommand = {
                     await interaction.followUp(`I cannot ban id ${ban.target} because I lack the permissions to do so, probably because they have a role higher than mine in the roles list. Please ensure my role is adequately placed in the Roles menu then run this command again. Exiting`);
                     return;
                 }
-                await interaction.channel.send(`Cannot ban id ${ban.target}`);
+                await interaction.channel.send({ content: `Cannot ban id ${ban.target}`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 continue;
             }
         }

@@ -2,7 +2,7 @@
  * Functions related to C&C integration
  */
 import { genAliases } from './constants.js';
-import { ChannelType, Client } from 'discord.js';
+import { ChannelType, Client, SnowflakeUtil } from 'discord.js';
 import { getFromForumMap, getGenAlias, loadCCData, pollCCForums, updateCCAlertCooldowns, updateCCCache } from './ccQueries.js';
 import { IXFParsedThreadData, ICCData, IXFStatusQuery } from '../types/cc';
 import { lockout, ccTimeInterval } from './constants.js';
@@ -255,7 +255,7 @@ async function alertCCStatus(newDataArr: IXFParsedThreadData[], oldData: ICCData
                     continue;
                 }
                 else if (!tooManyTotal && !tooManyMeta) {
-                    await chan.send(alertmsg);
+                    await chan.send({ content: alertmsg, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
                 else {
                     continue;

@@ -1,4 +1,4 @@
-import { Message, MessageType } from 'discord.js';
+import { Message, MessageType, SnowflakeUtil } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { rmtMonitor } from '../helpers/rmtMonitor.js';
 import { dbmatches } from '../helpers/manageCustomsCache.js';
@@ -40,7 +40,7 @@ export const clientEvent: eventHandler = {
             // find the index in the server commands
             const index = serverCommands.findIndex(cmd => cmd === msg.content);
             // post the message
-            await msg.channel.send(serverRows[index].txt);
+            await msg.channel.send({ content: serverRows[index].txt, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
             return;
         }
         

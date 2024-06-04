@@ -1,4 +1,4 @@
-import { Client, ChannelType } from 'discord.js';
+import { Client, ChannelType, SnowflakeUtil } from 'discord.js';
 import { pool } from './createPool.js';
 import { errorHandler } from './errorHandler.js';
 
@@ -61,7 +61,7 @@ export async function alertUser(loc: string, message: string, userID: string, cl
         const user = await client.users.fetch(userID);
 
         // send them the alert
-        await user.send(`Reminder: ${message}`);
+        await user.send({ content: `Reminder: ${message}`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
     }
     else {
         // make sure the user and channel objects are cached
@@ -73,7 +73,7 @@ export async function alertUser(loc: string, message: string, userID: string, cl
         await client.users.fetch(userID);
 
         // send them the alert
-        await chan.send(`<@${userID}>, reminder: ${message}`);
+        await chan.send({ content: `<@${userID}>, reminder: ${message}`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
     }
 
     // remove the info from the db

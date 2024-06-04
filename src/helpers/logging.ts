@@ -1,4 +1,4 @@
-import { EmbedBuilder, Guild, ChannelType, User, Message } from 'discord.js';
+import { EmbedBuilder, Guild, ChannelType, User, Message, SnowflakeUtil } from 'discord.js';
 import { pool } from './createPool.js';
 import { errorHandler } from './errorHandler.js';
 
@@ -131,7 +131,7 @@ export async function postLogEvent(ogEmbed: EmbedBuilder, guild: Guild, event: l
                                 });
 
                                 // post it 
-                                await channel.send({ embeds: embedHolder });
+                                await channel.send({ embeds: embedHolder, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                                 // increment the post counter
                                 postCnt++;                    
                                 // reset the holder and attachment counter
@@ -148,31 +148,37 @@ export async function postLogEvent(ogEmbed: EmbedBuilder, guild: Guild, event: l
                                 );
                             });
                                 
-                            await channel.send({ embeds: embedHolder });
+                            await channel.send({ embeds: embedHolder, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                         }
                     }
                     else {
                         embed.addFields(
                             { name: 'Attachments', value: 'No Attachments' },
                         );
-                        await channel.send({ embeds: [embed] });
+                        await channel.send({ embeds: [embed], enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                     }
                 }
                 else {
-                    await channel.send({ embeds: [embed] });
+                    await channel.send({ embeds: [embed], enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
 
                 // if the message was too long to output (nonzero length buffer), post the message content as an attachment as well
                 if (oldBuf && oldBuf.length) {    
-                    await channel.send({ content: 'Message content was too long to output. Here\'s the original content.', files: [
-                        { attachment: oldBuf, name: 'old_message_content.txt' },
-                    ] });
+                    await channel.send({ 
+                        content: 'Message content was too long to output. Here\'s the original content.',
+                        files: [{ attachment: oldBuf, name: 'old_message_content.txt' }],
+                        enforceNonce: true,
+                        nonce: SnowflakeUtil.generate().toString()
+                    });
                 }
                 
                 if (newBuf && newBuf.length) {
-                    await channel.send({ content: 'Message content was too long to output. Here\'s the new content.', files: [
-                        { attachment: newBuf, name: 'new_message_content.txt' },
-                    ] });
+                    await channel.send({
+                        content: 'Message content was too long to output. Here\'s the new content.',
+                        files: [{ attachment: newBuf, name: 'new_message_content.txt' }],
+                        enforceNonce: true,
+                        nonce: SnowflakeUtil.generate().toString()
+                    });
                 }
             }
             catch (e) {
@@ -199,7 +205,7 @@ export async function echoPunishment(guild: Guild, target: User, reason: string,
             return;
         }
         // echo to the other chan
-        await punishChan.send(`${target.id} / ${target.tag} / ${punishment} / ${reason}`);
+        await punishChan.send({ content: `${target.id} / ${target.tag} / ${punishment} / ${reason}`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
     }
 }
 

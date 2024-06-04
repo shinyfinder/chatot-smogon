@@ -12,6 +12,7 @@ import {
     DiscordAPIError,
     ChannelType,
     AutocompleteInteraction,
+    SnowflakeUtil,
 } from 'discord.js';
 import { getRandInt } from '../helpers/getRandInt.js';
 import { SlashCommand } from '../types/slash-command-base';
@@ -145,7 +146,7 @@ export const command: SlashCommand = {
 
             if (confirmMsgContent === 'yes' || confirmMsgContent === 'y') {
                 // confirm we got the message
-                await interaction.channel?.send('Grabbing my banhammer...');
+                await interaction.channel?.send({ content: 'Grabbing my banhammer...', enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
 
                 // get the list of guild ids we care about
                 const gbanGuilds: { serverid: string, class: ServerClass }[] | [] = (await pool.query('SELECT serverid, class FROM chatot.servers WHERE class > $1', [ServerClass.OptOut])).rows;
@@ -230,19 +231,19 @@ export const command: SlashCommand = {
                     // get the list of names 
                     const failedNames = [...new Set(failedGuilds.map(f => f.name))];
                     if (altIDs.length) {
-                        await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}\n\nThis user has verified multiple Discord accounts with the same forum account; they may be alts: ${altIDs.join(', ')}`);
+                        await interaction.channel?.send({ content: `I was unable to ban in:\n\n${failedNames.join(', ')}\n\nThis user has verified multiple Discord accounts with the same forum account; they may be alts: ${altIDs.join(', ')}`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                     }
                     else {
-                        await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}`);
+                        await interaction.channel?.send({ content: `I was unable to ban in:\n\n${failedNames.join(', ')}`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                     }
                 }
                 // banned but has alts
                 else if (altIDs.length) {
-                    await interaction.channel?.send(`I have banned the user from every server of interest. However, this user has verified multiple Discord accounts with the same forum account; they may be alts: ${altIDs.join(', ')}`);
+                    await interaction.channel?.send({ content: `I have banned the user from every server of interest. However, this user has verified multiple Discord accounts with the same forum account; they may be alts: ${altIDs.join(', ')}`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
                 // no failures, nothing to report
                 else {
-                    await interaction.channel?.send('I have banned the user from every server of interest.');
+                    await interaction.channel?.send({ content: 'I have banned the user from every server of interest.', enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
 
                 // add this entry to the gban db
@@ -301,7 +302,7 @@ export const command: SlashCommand = {
                 }
             } 
             else {
-                await interaction.channel?.send('Global ban exited');
+                await interaction.channel?.send({ content: 'Global ban exited', enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 return;
             }
 
@@ -405,7 +406,7 @@ export const command: SlashCommand = {
 
             if (confirmMsgContent === 'yes' || confirmMsgContent === 'y') {
                 // confirm we got the message
-                await interaction.channel?.send('Grabbing my banhammer...');
+                await interaction.channel?.send({ content: 'Grabbing my banhammer...', enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
 
                 // get the list of guild IDs the bot is in
                 // const guildIds = interaction.client.guilds.cache.map(guild => guild.id);
@@ -461,7 +462,7 @@ export const command: SlashCommand = {
                         catch (err) {
                             failedBans = true;
                             if (err instanceof DiscordAPIError && err.message === 'Unknown User') {
-                                await interaction.channel?.send(`Unable to fetch user with id ${uid}. Cancelling.`);
+                                await interaction.channel?.send({ content: `Unable to fetch user with id ${uid}. Cancelling.`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                                 return;
                             }
                             else {
@@ -507,19 +508,19 @@ export const command: SlashCommand = {
                     // get the unique names of the failed guilds
                     const failedNames = [...new Set(failedGuilds.map(f => f.name))];
                     if (altIDs.length) {
-                        await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}\n\nUsers have verified multiple Discord accounts with the same forum account; they may be alts of the provided IDs: ${altIDs.join(', ')}`);
+                        await interaction.channel?.send({ content: `I was unable to ban in:\n\n${failedNames.join(', ')}\n\nUsers have verified multiple Discord accounts with the same forum account; they may be alts of the provided IDs: ${altIDs.join(', ')}`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                     }
                     else {
-                        await interaction.channel?.send(`I was unable to ban in:\n\n${failedNames.join(', ')}`);
+                        await interaction.channel?.send({ content: `I was unable to ban in:\n\n${failedNames.join(', ')}`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                     }
                     
                 }
                 // no fail, but found alts
                 else if (altIDs.length) {
-                    await interaction.channel?.send(`I have banned the user from every server of interest. However, users have verified multiple Discord accounts with the same forum account; they may be alts of the provided IDs: ${altIDs.join(', ')}`);
+                    await interaction.channel?.send({ content: `I have banned the user from every server of interest. However, users have verified multiple Discord accounts with the same forum account; they may be alts of the provided IDs: ${altIDs.join(', ')}`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
                 else {
-                    await interaction.channel?.send('I have banned the provided id(s) from every server of interest.');
+                    await interaction.channel?.send({ content: 'I have banned the provided id(s) from every server of interest.', enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
 
                 // add these entries to the gban db
@@ -587,7 +588,7 @@ export const command: SlashCommand = {
                 
             }
             else {
-                await interaction.channel?.send('Global ban exited');
+                await interaction.channel?.send({ content: 'Global ban exited', enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
             }
 
             

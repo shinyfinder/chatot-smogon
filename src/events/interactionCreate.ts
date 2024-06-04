@@ -1,4 +1,4 @@
-import { DiscordAPIError, Collection, BaseInteraction } from 'discord.js';
+import { DiscordAPIError, Collection, BaseInteraction, SnowflakeUtil } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { SlashCommand } from '../types/slash-command-base';
 import { createTicket } from '../helpers/createTicket.js';
@@ -101,7 +101,7 @@ export const clientEvent: eventHandler = {
                     }
                     // if we already replied, send a new one
                     if (interaction.replied) {
-                        await interaction.channel?.send(msgout);
+                        await interaction.channel?.send({ content: msgout, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                     }
                     // if we haven't replied yet, but we deferred a reply, follow up
                     else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
@@ -122,11 +122,11 @@ export const clientEvent: eventHandler = {
                     return;
                 }
                 else if (error instanceof Collection && error.size === 0) {
-                    await interaction.channel?.send('Collector timed out without receiving an interaction');
+                    await interaction.channel?.send({ content: 'Collector timed out without receiving an interaction', enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
                 // if we already replied, send a new one
                 else if (interaction.replied) {
-                    await interaction.channel?.send('There was en error while executing this command');
+                    await interaction.channel?.send({ content: 'There was en error while executing this command', enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
                 // if we haven't replied yet, but we deferred a reply, follow up
                 else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
@@ -165,7 +165,7 @@ export const clientEvent: eventHandler = {
                 if (error instanceof DiscordAPIError) {
                     // if we already replied, send a new one
                     if (interaction.replied) {
-                        await interaction.channel?.send(error.message);
+                        await interaction.channel?.send({ content: error.message, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                     }
                     // if we haven't replied yet, but we deferred a reply, follow up
                     else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {
@@ -186,7 +186,7 @@ export const clientEvent: eventHandler = {
                 }
                 // if we already replied, send a new one
                 else if (interaction.replied) {
-                    await interaction.channel?.send('There was en error while executing this command');
+                    await interaction.channel?.send({ content: 'There was en error while executing this command', enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
                 // if we haven't replied yet, but we deferred a reply, follow up
                 else if (!interaction.replied && interaction.deferred && interaction.isRepliable()) {

@@ -1,4 +1,4 @@
-import { ButtonInteraction, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction, ChannelType } from 'discord.js';
+import { ButtonInteraction, ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder, ModalActionRowComponentBuilder, ModalSubmitInteraction, ChannelType, SnowflakeUtil } from 'discord.js';
 import { pool } from './createPool.js';
 import { getRandInt } from './getRandInt.js';
 
@@ -81,13 +81,13 @@ export async function createTicket(interaction: ButtonInteraction) {
     
     // invite the users to the thread
     // await thread.members.add(interaction.user.id);
-    await thread.send(`<@${interaction.user.id}> this is the start of your private thread with ${staffPings.join(', ')} for the reason below. If you wish to provide more information, you can do so here. Staff will respond as soon as they can.\n\`\`\`\n${txt}\n\`\`\``);
+    await thread.send({ content: `<@${interaction.user.id}> this is the start of your private thread with ${staffPings.join(', ')} for the reason below. If you wish to provide more information, you can do so here. Staff will respond as soon as they can.\n\`\`\`\n${txt}\n\`\`\``, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
 
     // log the creation
     if (threadSetup[0].logchanid) {
         const logchan = interaction.client.channels.cache.get(threadSetup[0].logchanid);
         if (logchan?.type === ChannelType.GuildText || logchan?.type === ChannelType.PublicThread || logchan?.type === ChannelType.PrivateThread) {
-            await logchan.send(`<@${interaction.user.id}> (${interaction.user.username}) created a support ticket: <#${thread.id}>`);
+            await logchan.send({ content: `<@${interaction.user.id}> (${interaction.user.username}) created a support ticket: <#${thread.id}>`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
         }
     }
     // reply to the interaction so we don't leave it hanging

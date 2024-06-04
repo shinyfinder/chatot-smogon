@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, EmbedBuilder, ChannelType, Message } from 'discord.js';
+import { ChatInputCommandInteraction, EmbedBuilder, ChannelType, Message, SnowflakeUtil } from 'discord.js';
 import { addRRMessage } from './loadReactRoleMessages.js';
 import { pool } from './createPool.js';
 import { botConfig } from '../config.js';
@@ -30,7 +30,7 @@ export async function rrInit(msgID: string | null, interaction: ChatInputCommand
             .setTitle('React Roles')
             .setDescription('Choose your roles by reacting with the following. Roles can be removed at any time by removing your reaction (clicking your reaction again).\n\u200B\n');
                 
-        const msg = await interaction.channel.send({ embeds: [embed] });
+        const msg = await interaction.channel.send({ embeds: [embed], enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
         // store it in the db
         // it's a bit hacky, but because we want to allow for multiple RR messages per server, we need to store an arbitrary unique emoji id on init
         // so I chose the message id prepended with - so they don't accidentally enter it

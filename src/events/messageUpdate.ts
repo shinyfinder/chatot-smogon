@@ -1,4 +1,4 @@
-import { ChannelType, EmbedBuilder, Message } from 'discord.js';
+import { ChannelType, EmbedBuilder, Message, SnowflakeUtil } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { buildEmbed, postLogEvent, embedField, loggedEventTypes } from '../helpers/logging.js';
 import { pool } from '../helpers/createPool.js';
@@ -50,8 +50,8 @@ export const clientEvent: eventHandler = {
                                     { name: 'Old edit by', value: oldEditor, inline: true },
                                     { name: 'Current edit by', value: newEditor, inline: true },
                                 );
-                            await chan.send({ embeds: [embed]});
-                            await chan.send(oldUnsignedText);
+                            await chan.send({ embeds: [embed], enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
+                            await chan.send({ content: oldUnsignedText, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                         }
                         
                     }

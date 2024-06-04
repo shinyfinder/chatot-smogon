@@ -1,4 +1,4 @@
-import { Guild, EmbedBuilder } from 'discord.js';
+import { Guild, EmbedBuilder, SnowflakeUtil } from 'discord.js';
 import { eventHandler } from '../types/event-base';
 import { pool } from '../helpers/createPool.js';
 import { errorHandler } from '../helpers/errorHandler.js';
@@ -76,7 +76,7 @@ export const clientEvent: eventHandler = {
                     .setDescription(`I just left an official guild! ${guild.name} (${guild.id})`)
                     .setColor(0xED4245);
                     
-                    await logChan.send({ embeds: [embed] });
+                    await logChan.send({ embeds: [embed], enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 }
             }
         }

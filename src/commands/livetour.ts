@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, ChannelType, EmbedBuilder, SlashCommandSubcommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, ChannelType, EmbedBuilder, SlashCommandSubcommandBuilder, SnowflakeUtil } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { Modes, botConfig } from '../config.js';
 import { checkChanPerms } from '../helpers/checkChanPerms.js';
@@ -167,7 +167,7 @@ export const command: SlashCommand = {
             const timerPrim = timer[Symbol.toPrimitive]();
 
             // send it off, returning the message that we create
-            const msg = await announcementChan.send({ embeds: [embed] });
+            const msg = await announcementChan.send({ embeds: [embed], enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
 
             // seed the message with the reaction
             await msg.react('👍');

@@ -1,4 +1,4 @@
-import { Message, MessageFlags } from 'discord.js';
+import { Message, MessageFlags, SnowflakeUtil } from 'discord.js';
 import { Modes, botConfig } from '../config.js';
 import { pool } from './createPool.js';
 
@@ -42,10 +42,10 @@ export async function justForFun(msg: Message) {
 
         // if it's permitted, respond
         if (msg.author.id === lilyID && !apologized) {
-            await msg.channel.send(`you're welcome ${msg.author.displayName}`);
+            await msg.channel.send({ content: `you're welcome ${msg.author.displayName}`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
         }
         else {
-            await msg.channel.send(`you're welcome ${msg.author.displayName} <3`);
+            await msg.channel.send({ content: `you're welcome ${msg.author.displayName} <3`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
         }
         
         lastUsed[msg.channelId] = Date.now();
@@ -68,7 +68,7 @@ export async function justForFun(msg: Message) {
             }
 
             apologized = true;
-            await msg.channel.send(`Thank you ${msg.author.toString()}. I forgive you.`);
+            await msg.channel.send({ content: `Thank you ${msg.author.toString()}. I forgive you.`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
             lastUsed[msg.channelId] = Date.now();
             return;
         }
@@ -107,11 +107,11 @@ export async function justForFun(msg: Message) {
     
         if (msg.author.id == lilyID && !apologized) {
             const res = lilyGreetings[Math.floor(Math.random() * lilyGreetings.length)];
-            await msg.channel.send(res);
+            await msg.channel.send({ content: res, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
         }
         else {
             const res = normalGreetings[Math.floor(Math.random() * normalGreetings.length)];
-            await msg.channel.send(res);
+            await msg.channel.send({ content: res, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
         }
 
         lastUsed[msg.channelId] = Date.now();
@@ -144,7 +144,7 @@ export async function justForFun(msg: Message) {
             const member = msg.guild?.members.cache.find(mem => mem.displayName.toLowerCase() === mentionedUser.toLowerCase() || mem.user.displayName.toLowerCase() === mentionedUser || mem.user.username === mentionedUser.toLowerCase() || mem.user.toString() === mentionedUser);
 
             if (!member) {
-                await msg.channel.send('Who? I couldn\'t find them in this server.');
+                await msg.channel.send({ content: 'Who? I couldn\'t find them in this server.', enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 return;
             }
 
@@ -170,14 +170,14 @@ export async function justForFun(msg: Message) {
             // to lily
             if (taggedUser == `<@${lilyID}>` && !apologized) {
                 const res = lilyGreetings[Math.floor(Math.random() * lilyGreetings.length)];
-                await msg.channel.send({ content: res, flags: MessageFlags.SuppressNotifications });
+                await msg.channel.send({ content: res, flags: MessageFlags.SuppressNotifications, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 // update the last used timestamp
                 lastUsed[msg.channelId] = Date.now();
             }
             // to everyone else
             else {
                 const res = normalGreetings[Math.floor(Math.random() * normalGreetings.length)];
-                await msg.channel.send({ content: res, flags: MessageFlags.SuppressNotifications });
+                await msg.channel.send({ content: res, flags: MessageFlags.SuppressNotifications, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
                 // update the last used timestamp
                 lastUsed[msg.channelId] = Date.now();
             }
@@ -195,7 +195,7 @@ export async function justForFun(msg: Message) {
         }
 
         apologized = false;
-        await msg.channel.send(':(');
+        await msg.channel.send({ content: ':(', enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
         lastUsed[msg.channelId] = Date.now();
     }
 }

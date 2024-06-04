@@ -9,6 +9,7 @@ import {
     ActionRowBuilder,
     ModalActionRowComponentBuilder,
     ModalSubmitInteraction,
+    SnowflakeUtil,
  } from 'discord.js';
 import { SlashCommand } from '../types/slash-command-base';
 import { getRandInt } from '../helpers/getRandInt.js';
@@ -100,7 +101,7 @@ export const command: SlashCommand = {
         modMsg += `\n\nLast modpost edit: ${interaction.user.username} ${cordTime}`;
 
         // respond with their message
-        await chan.send(modMsg);
+        await chan.send({ content: modMsg, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
 
         // done
         await submittedModal.followUp({ content: 'Post made', ephemeral: true });

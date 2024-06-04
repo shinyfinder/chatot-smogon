@@ -1,4 +1,4 @@
-import { Client } from 'discord.js';
+import { Client, SnowflakeUtil } from 'discord.js';
 import { botConfig } from '../config.js';
 import { pool } from './createPool.js';
 import { errorHandler } from './errorHandler.js';
@@ -27,17 +27,17 @@ export async function getLTPlayers(hostID: string, title: string, messageID: str
     }
 
     if (!entrants) {
-        await intChan.send(`No one signed up for ${title} <@${hostID}>`);
+        await intChan.send({ content: `No one signed up for ${title} <@${hostID}>`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
         return;
     }
     const filteredEntrants = (await entrants.users.fetch()).filter(entrant => entrant.id !== botConfig.CLIENT_ID);
 
     // if we were the only people to react, return;
     if (!filteredEntrants.size) {
-        await intChan.send(`No one signed up for ${title} <@${hostID}>`);
+        await intChan.send({ content: `No one signed up for ${title} <@${hostID}>`, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
     }
     else {
-        await intChan.send(`Here are the signups for ${title} <@${hostID}>:\n\`\`\`\n${filteredEntrants.map(e => e.username).join('\n')}\n\`\`\``);
+        await intChan.send({ content: `Here are the signups for ${title} <@${hostID}>:\n\`\`\`\n${filteredEntrants.map(e => e.username).join('\n')}\n\`\`\``, enforceNonce: true, nonce: SnowflakeUtil.generate().toString() });
     }
 }
 
