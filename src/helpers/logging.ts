@@ -271,5 +271,12 @@ export function buildMsgDeleteEmbedParams(executor: User | string, message: Mess
         { name: 'Deleted By', value: `${executorOut}` },
     ];
 
+    // check for a poll
+    if (message.poll) {
+        const pollAns = message.poll.answers.map(ans => ans.text);
+        const pollStr = `Q: ${message.poll.question.text}\nA: ${pollAns.join(' | ')}`;
+        fields.push({ name: 'Poll', value: pollStr });
+    }
+
     return [title, description, color, fields, buf];
 }
