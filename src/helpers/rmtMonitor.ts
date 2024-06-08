@@ -46,21 +46,12 @@ export async function rmtMonitor(msg: Message) {
     if (!pokeURL) {
         return;
     }
-
-    // temp log processing
-    const devLogChan = await msg.client.channels.fetch('1246528141497995314');
-    if (devLogChan && devLogChan.isTextBased()) {
-        await devLogChan.send(`Processing RMT rate:\nChannel: <#${msg.channelId}>\nMessage: ${msg.id}\nURL: <${pokeURL[0]}>\nUp time: ${msg.client.readyAt}`)
-    }
-    
-
+    // this was added to prevent the bot from pinging multiple times, but that was fixed by enforcing nonce
+    // ig this is fine to leave in case someone posts the same url twice on accident?
     if (lastProcessedRate[msg.channelId] !== pokeURL[0]) {
         lastProcessedRate[msg.channelId] = pokeURL[0];
     }
     else {
-        if (devLogChan && devLogChan.isTextBased()) {
-            await devLogChan.send(`Rate already processed`)
-        }
         return;
     }
 
