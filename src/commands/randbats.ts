@@ -9,7 +9,9 @@ interface PS_RAND_SETS {
         sets?: {
             role: string,
             movepool: string[],
-            teraTypes: string[]
+            teraTypes: string[],
+            preferredTypes?: string[],
+            abilities?: string[],
         }[],
         moves?: string[],
         essentialMoves?: string[],
@@ -56,6 +58,7 @@ export const command: SlashCommand = {
                 { name: 'BDSP', value: 'bdsp' },
                 { name: 'Doubles', value: 'doubles' },
                 { name: 'No Dynamax', value: 'nodyna' },
+                { name: 'Baby', value: 'baby' },
             )
             .setRequired(false))
         .setDMPermission(false) as SlashCommandBuilder,
@@ -155,6 +158,10 @@ export const command: SlashCommand = {
             path = pathBase + `gen${genNum}/data.json`;
             modpath = pathBase + `gen${genNum}${mod}/data.json`;
         }
+        // gen 9 baby
+        else if (mod  === 'baby') {
+            path = pathBase + `gen${genNum}${mod}/sets.json`;
+        }
         // gens 1 and 8 use a different filename convention
         else if (gen === 'rb' || gen === 'ss') {
             path = pathBase + `gen${genNum}/data.json`;
@@ -216,8 +223,14 @@ export const command: SlashCommand = {
             else {
                 for (const set of randData.sets) {
                     str += `**${set.role}**\nLevel: ${randData.level ?? 'N/A'}\nMovepool: ${set.movepool.join(', ')}`;
+                    if (set.abilities) {
+                        str += `\nAbilities: ${set.abilities.join(', ')}`;
+                    }
                     if (set.teraTypes) {
                         str += `\nTera Types: ${set.teraTypes.join(', ')}`;
+                    }
+                    if (set.preferredTypes) {
+                        str += `\nPreferred Types: ${set.preferredTypes.join(', ')}`;
                     }
                     str += '\n\n';
                 }
