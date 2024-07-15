@@ -40,3 +40,11 @@ SSH = false
 # defaults: 'production'
 # OPTIONAL, (technically) but set it to dev
 MODE = 'dev'
+
+# Whether to skip connecting to the local PG/MySQL databases
+# Skipping the connection to the dbs will allow Chatot to be run locally without setting up a db schema,
+# but many of its commands will error or not work as a result.
+# Useful for contributing minor additions without needing a full setup
+# defaults: false
+# OPTIONAL
+SKIP_DB = false

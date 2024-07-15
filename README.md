@@ -29,6 +29,14 @@ guilds: <string[]>
 ```
 Setting the global flag to `true` will cause the command to be deployed globally (i.e. to every server the bot is in). Setting the global flag to `false` and providing a list of server IDs as strings within the guilds array will instead deploy the command as a guild command (i.e. only to that guild) to the listed servers. Note that if the bot is in 'dev' mode, the specified guild array will be overwritten with the dev guild id specifed in the `.env`. 
 
+# Database connections
+
+Many of Chatot's features require connecting to a local PostgreSQL and/or MySQL server, and these connections are used during the startup procedure. Please refer to these databases's documentations, available online, for how to set them up and run them. Chatot primarily uses Postgres for its storage; the schema is defined in the [schema.sql](./src/sql/schema.sql) file. However, certain features (such as /verify and C&C/CA monitoring) require a mySQL connection, as that is the schema used by Xenforo. Please refer to the forum's source code for that [schema](https://github.com/smogon/forum/blob/572af5835637528ba7c49ae8899d85b1def67c4b/forums/src/XF/Install/Data/MySql.php); the specific tables used by Chatot can be found within the respective functions.
+
+If you are trying to quickly setup Chatot to contribute to its development, you can set the `SKIP_DB` flag to `true` within your `.env`. In this mode you will have limited usage of the bot; many of its commands will not work and SSH is disabled.
+
+# Starting the bot
+
 Start the bot from the terminal with the following:
 
 ```
@@ -36,7 +44,7 @@ pnpm build
 pnpm start
 ```
 
-You should see that the bot is now online in Discord. To confirm it is responding to commands, post the following within Discord:
+You should see that the bot is now online in Discord. To confirm it is responding to commands, type the following within Discord:
 
 `/ping`
 
@@ -46,6 +54,8 @@ The bot should respond with "Pong!".
 The bot supports tunneling into and making (read) queries against select production databases. To use this feature, you must be setup with SSH access to the production server. This is restricted to trusted developers, but if you believe you qualify, contact chaos.
 
 To use this feature, first SSH into the server within the terminal. This creates a live connection (which can be killed with ctrl + c). Then, in a new terminal, set the `SSH` flag to true within your `.env` and run Chatot. SQL queries against the `variablePool` connection will now query against the production database. If the `SSH` flag is set to false, `variablePool` queries will default to the local database. See `/src/helpers/createPool.ts`.
+
+SSH is disabled if `SKIP_DB` is set to true within your `.env`.
 
 # Further Reading
 Please refer to the Discord documentation for further information on [adding](https://discordjs.guide/creating-your-bot/creating-commands.html), [using](https://discordjs.guide/interactions/slash-commands.html), and [deleting](https://discordjs.guide/creating-your-bot/deleting-commands.html) slash commands. For more in-depth information, see the devloper documentation on [application commands](https://discord.com/developers/docs/interactions/application-commands).

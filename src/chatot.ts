@@ -155,55 +155,64 @@ for (const mod of localMods) {
     }
 }
 
-/**
- * Connect to the postgres DB
- */
-createPool();
+if (!botConfig.SKIP_DB) {
+    /**
+     * Connect to the postgres DB
+     */
+    createPool();
 
-/**
- * Cache the info from the db so we don't overload postgres with queries
- */
-await Promise.all([
-    updateState(client),
-    loadCustoms(),
-    loadCCCooldowns(),
-    recreateReminders(client),
-    loadSpriteDex(),
-    loadAllDexNames(),
-    loadMoves(),
-    loadItems(),
-    loadPSFormats(),
-    recreateLiveTours(client),
-    loadRMTChans(),
-    getImageCommitHash(),
-]);
+    /**
+     * Cache the info from the db so we don't overload postgres with queries
+     */
+    await Promise.all([
+        updateState(client),
+        loadCustoms(),
+        loadCCCooldowns(),
+        recreateReminders(client),
+        loadSpriteDex(),
+        loadAllDexNames(),
+        loadMoves(),
+        loadItems(),
+        loadPSFormats(),
+        recreateLiveTours(client),
+        loadRMTChans(),
+        getImageCommitHash(),
+    ]);
 
 
-/**
- * Login to Discord with your client's token, or log any errors
- */
-await client.login(botConfig.TOKEN);
+    /**
+     * Login to Discord with your client's token, or log any errors
+     */
+    await client.login(botConfig.TOKEN);
 
-/**
- * Cache the monitored messages for role reactions
- * Has to be done after login since we are fetching messages
- */
+    /**
+     * Cache the monitored messages for role reactions
+     * Has to be done after login since we are fetching messages
+     */
 
-await loadRRMessages(client);
+    await loadRRMessages(client);
 
-/**
- * Schedule timers
- */
+    /**
+     * Schedule timers
+     */
 
-// schedule checking for new/updated QC threads
-createCCTimer(client);
-createCATimer(client);
+    // schedule checking for new/updated QC threads
+    createCCTimer(client);
+    createCATimer(client);
 
-// garbage day
-initGarbageCollection(client);
+    // garbage day
+    initGarbageCollection(client);
 
-// set a timer to update the cached data from the db/PS
-createCacheTimer(client);
+    // set a timer to update the cached data from the db/PS
+    createCacheTimer(client);
+}
+else {
+    /**
+     * Login to Discord with your client's token, or log any errors
+     */
+    await client.login(botConfig.TOKEN);
+}
+
 
 /**
  * Everything is done, so close fd 3 to signal ready.
