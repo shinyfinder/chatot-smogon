@@ -90,10 +90,10 @@ export const clientEvent: eventHandler = {
                 if (error instanceof DiscordAPIError) {
                     let msgout = '';
 
-                    if (error.message.includes('IMAGE_INVALID')) {
+                    if (error.message.toLowerCase().includes('image_invalid')) {
                         msgout = `Error: ${error.message}. \n\nIf you are creating an emoji, make sure you are using the proper image format (jpg, png, gif) and copied the correct link. On Discord, select "Copy Link" **not** "Copy Message Link." From Google, select "Copy Image Link."`;
                     }
-                    else if (error.message.includes('Unknown Emoji')) {
+                    else if (error.message.toLowerCase().includes('unknown emoji')) {
                         msgout = `Error: ${error.message}. \n\nI did not recognize that emoji. Make sure it's spelled correctly and available in this guild`;
                     }
                     else {
@@ -118,7 +118,7 @@ export const clientEvent: eventHandler = {
                     }
                 }
                  // if it's a collector timeout error, just return without letting them know
-                 else if (error instanceof Error && error.message === 'Collector received no interactions before ending with reason: time') {
+                 else if (error instanceof Error && error.message.toLowerCase().includes('collector received no interactions')) {
                     return;
                 }
                 else if (error instanceof Collection && error.size === 0) {
@@ -181,7 +181,7 @@ export const clientEvent: eventHandler = {
                     }
                 }
                 // if it's a collector timeout error, just return without letting them know
-                else if (error instanceof Error && error.message === 'Collector received no interactions before ending with reason: time') {
+                else if (error instanceof Error && error.message.toLowerCase().includes('collector received no interactions')) {
                     return;
                 }
                 // if we already replied, send a new one

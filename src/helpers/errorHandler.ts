@@ -18,14 +18,14 @@ export function errorHandler(err: unknown) {
         'Unknown Ban',
         'Unknown Message',
         'Members didn\'t arrive in time',
-        'Collector received no interactions before ending with reason: time',
+        'collector received no interactions',
         'Unknown Member',
         'Unknown Interaction',
     ];
 
     // some errors we don't want to log, so make sure it's not in the list above
     if (errObj instanceof DiscordAPIError || errObj instanceof Error) {
-        if (swallowedErrors.some(str => errObj.message.includes(str))) {
+        if (swallowedErrors.some(str => errObj.message.toLowerCase().includes(str.toLowerCase()))) {
             return;
         }
     }
