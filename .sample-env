@@ -48,3 +48,6 @@ MODE = 'dev'
 # defaults: false
 # OPTIONAL
 SKIP_DB = false
+
+# This is the key used to encrypt data sent to the Smogon infra (i.e. in /verify)
+ENCRYPT_KEY = 'abc'

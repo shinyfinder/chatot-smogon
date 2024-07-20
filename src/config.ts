@@ -47,6 +47,7 @@ interface Config {
     SMOGON_PG_HOST: string,
     SSH: boolean,
     SKIP_DB: boolean,
+    ENCRYPT_KEY: string,
     // ...
 }
 
@@ -90,6 +91,7 @@ const envVar: ENV = {
     MODE: process.env.MODE as Modes || Modes.Production,
     SSH: process.env.SSH === 'true',
     SKIP_DB: process.env.SKIP_DB === 'true',
+    ENCRYPT_KEY: process.env.ENCRYPT_KEY,
     // ...
 };
 
