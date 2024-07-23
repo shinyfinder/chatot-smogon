@@ -71,7 +71,7 @@ export const command: SlashCommand = {
         // get the gen number for the supplied gen
         const genNum = dexGenNumAbbrMap.find(g => g.abbr === gen)!.num;
 
-        let embedColor = 0x6363b0;
+        let embedColor = myColors.Smogon;
 
         /**
          * POKEDEX

@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { variablePool } from './createPool.js';
 import { dexGenNumAbbrMap, dexFormats, commitHash } from './loadDex.js';
+import { myColors } from './constants.js';
 
 export async function fetchTierResources(tier: string, gen: string, interaction: ChatInputCommandInteraction) {
     const gaveInput = interaction.options.getString('gen');
@@ -52,7 +53,7 @@ export async function fetchTierResources(tier: string, gen: string, interaction:
     .addFields([
         { name: 'Overview', value: `For more info, see this format's [Dex page](https://www.smogon.com/dex/${genQuery}/formats/${tier}/).` },
     ])
-    .setColor(0x6363b0);
+    .setColor(myColors.Smogon);
 
     return embed;
 
