@@ -24,6 +24,7 @@ import { createCacheTimer } from './helpers/updateCache.js';
 import { recreateLiveTours } from './helpers/livetourWorkers.js';
 import { startupFlags } from './helpers/constants.js';
 import { loadRMTChans } from './helpers/manageRMTCache.js';
+import { createDraftTimer } from './helpers/draft_notifty.js';
 
 /**
  * Note: Loading of enviornment variables, contained within config.js, is abstracted into a separate file to allow for any number of inputs.
@@ -155,6 +156,7 @@ for (const mod of localMods) {
     }
 }
 
+// do we need this anymore?
 if (!botConfig.SKIP_DB) {
     /**
      * Connect to the postgres DB
@@ -199,6 +201,7 @@ if (!botConfig.SKIP_DB) {
     // schedule checking for new/updated QC threads
     createCCTimer(client);
     createCATimer(client);
+    createDraftTimer(client);
 
     // garbage day
     initGarbageCollection(client);

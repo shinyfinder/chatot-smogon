@@ -14,6 +14,7 @@ export const ccTimeInterval = 15 * 1000;
 export const cacheInterval = 30 * 60 * 1000;
 export const caTimeInterval = 15 * 1000;
 export const garbageInterval = 2 * 24 * 60 * 60 * 1000;
+export const draftInterval = 30 * 1000;
 
 /**
  * Gens
@@ -250,6 +251,7 @@ const customColors = {
     Dragon: 0x7b63e7,
     Dark: 0x735a4a,
     Fairy: 0xff65d5,
+    Smogon: 0x6363b0,
 };
 
 export const myColors = { ...Colors, ...customColors };
