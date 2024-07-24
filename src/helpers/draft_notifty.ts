@@ -105,16 +105,16 @@ async function alertAds(posts: Map<number, IDraftAds>, client: Client) {
             // parse the messaage for the info we need
             const league = parseFormResponse(post);
             
-            if (!league.name.length || !league.format.length) {
+            if (!league.name || !league.format || !league.closeDate) {
                 continue;
             }
 
             const embed = new EmbedBuilder()
-                .setTitle('New Draft League!')
+                .setTitle(league.name)
                 .setDescription(`A new Draft league has been announced! Check out the link in the title for more info!`)
                 .addFields(
-                    { name: 'League Name', value: league.name, inline: true },
-                    { name: 'Format', value: league.format, inline: true }
+                    { name: 'Format', value: league.format, inline: true },
+                    { name: 'Signups Close (YYYY/MM/DD)', value: league.closeDate, inline: true }
                 )
                 .setColor(myColors.Smogon)
                 .setURL(`https://www.smogon.com/forums/threads/3710830/post-${id}`);
@@ -166,8 +166,13 @@ function parseFormResponse(post: IDraftAds) {
     // for lines that don't have a starting [B], add one
     modStr = modStr.replace(/^((?!\[B\]).)*\[\/B\]/gm, '[B]$&');
 
-    const name = (modStr.match(/(?<=League Name\[\/B\]\n).*/i) ?? '')[0];
-    const format = (modStr.match(/(?<=League Format\[\/B\]\n).*/i) ?? '')[0];
+    // we might not need the \s*, but it's unclear if the presence of a space is inherent to the post
+    // or inserted as a result of using the xenforo editor and copy/paste.
+    // prob the latter, but better safe than sorry ig
+    // these can also be undef....
+    const name = (modStr.match(/(?<=League Name\[\/B\]\s*\n).*/i) ?? '')[0];
+    const format = (modStr.match(/(?<=League Format\[\/B\]\s*\n).*/i) ?? '')[0];
+    const closeDate = (modStr.match(/(?<=Plug End Date.*\[\/B\]\s*\n).*/i) ?? '')[0];
 
-    return { name, format};
+    return { name, format, closeDate};
 }
