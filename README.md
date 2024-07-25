@@ -1,3 +1,9 @@
+# Update - July 25, 2024
+
+The source code for Chatot has been merged with the main Smogon repo; the code provided here is no longer maintained but kept for informational purposes (i.e. if you're curious about how Chatot generally works). If you wish to help with development, please coordinate with chaos.
+
+**The wiki is still actively maintained**
+
 # Chatot
 Supplemental Discord bot for Smogon, written in TypeScript.
 
@@ -8,7 +14,7 @@ This code assumes you have v.16.9.0 or later installed of [NodeJs](https://nodej
 
 1. Obtain a copy of the source code by downloading the [zip](https://github.com/shinyfinder/chatot-smogon/archive/refs/heads/main.zip) of the repository or, if you have git installed, via the command line in your desired destination folder:
 
-`git clone https://github.com/shinyfinder/chatot.git`
+`git clone https://github.com/shinyfinder/chatot-smogon.git`
 
 If you download the zip, extract the file into your desired directory.
 
