@@ -10,7 +10,7 @@ interface customdb {
     prefix: string,
 }
 
-export let dbmatches: customdb[] | [];
+export let dbmatches: customdb[] | [] = [];
 
 /**
  * Caches the custom commands table so we don't query it on every message

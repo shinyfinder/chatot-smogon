@@ -8,7 +8,7 @@ interface IRMTChans {
     meta: string,
 }
 
-export let rmtChannels: IRMTChans[];
+export let rmtChannels: IRMTChans[] = [];
 
 /**
  * Caches the rmt channel table so we don't query it on every message
